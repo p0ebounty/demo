@@ -1,0 +1,183 @@
+{
+  "id": "agw6jjdVg6yAawFi",
+  "name": "Error CS",
+  "nodes": [
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.errorTrigger",
+      "typeVersion": 1,
+      "position": [
+        -160,
+        -80
+      ],
+      "id": "ffb31b5e-5ac3-45a1-918d-7ecfe301f820",
+      "name": "Error Trigger"
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $vars.warngroup }}",
+        "text": "=Error in the call system.\n\nWorkflow name: {{ $('Error Trigger').item.json.workflow.name }}\n\nWorkflow ID: {{ $('Error Trigger').item.json.workflow.id }}\n\nError message: {{ $('Error Trigger').item.json.execution.error.message.replace(/[\\\\`*_{}[\\]()#+\\-.!|<>~]/g, '').substring(0, 400) }}\n\nURL: {{ $('Error Trigger').item.json.execution.url }}\n\n@p0ebounty",
+        "additionalFields": {
+          "appendAttribution": false,
+          "message_thread_id": 2
+        }
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        64,
+        -176
+      ],
+      "id": "177e33dc-5637-4119-9e2f-49f84539146b",
+      "name": "Sent error",
+      "webhookId": "48199868-b398-4b55-87df-ffaa5f874f35",
+      "credentials": {
+        "telegramApi": {
+          "id": "yv48JNV4VmuIREaW",
+          "name": "TGBot"
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "schema": {
+          "__rl": true,
+          "mode": "list",
+          "value": "public"
+        },
+        "table": {
+          "__rl": true,
+          "value": "settings",
+          "mode": "list",
+          "cachedResultName": "settings"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "primary_processor": false,
+            "id": 1
+          },
+          "matchingColumns": [
+            "id"
+          ],
+          "schema": [
+            {
+              "id": "id",
+              "displayName": "id",
+              "required": false,
+              "defaultMatch": true,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "wh_start",
+              "displayName": "wh_start",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "wh_end",
+              "displayName": "wh_end",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "agent_name",
+              "displayName": "agent_name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "check_weekend",
+              "displayName": "check_weekend",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "boolean",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "primary_processor",
+              "displayName": "primary_processor",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "boolean",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        64,
+        16
+      ],
+      "id": "b6345b5a-aefa-42a1-bad8-84a13c0e88c2",
+      "name": "disable processor",
+      "credentials": {
+        "postgres": {
+          "id": "oZABCHH2vjfMvXoi",
+          "name": "directus"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Error Trigger": {
+      "main": [
+        [
+          {
+            "node": "Sent error",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "disable processor",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Sent error": {
+      "main": [
+        []
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "triggerCount": 0,
+  "versionId": "3545e287-d40e-4da8-8092-a2f23f29ff35",
+  "owner": {
+    "type": "personal",
+    "projectId": "I8ZweZXokOc0zbYb",
+    "projectName": "BSU Agency <info@brilliantseedup.com>",
+    "personalEmail": "info@brilliantseedup.com"
+  },
+  "parentFolderId": "v1Un8AcPCflFCY9o",
+  "isArchived": false
+}

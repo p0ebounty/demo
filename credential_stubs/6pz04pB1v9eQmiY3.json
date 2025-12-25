@@ -1,0 +1,16 @@
+{
+  "id": "6pz04pB1v9eQmiY3",
+  "name": "QdrantApi account",
+  "type": "qdrantApi",
+  "data": {
+    "apiKey": "",
+    "qdrantUrl": ""
+  },
+  "ownedBy": {
+    "type": "personal",
+    "projectId": "I8ZweZXokOc0zbYb",
+    "projectName": "BSU Agency <info@brilliantseedup.com>",
+    "personalEmail": "info@brilliantseedup.com"
+  },
+  "isGlobal": false
+}

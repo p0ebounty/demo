@@ -1,0 +1,163 @@
+{
+  "id": "GngxoA7by6E84OIp",
+  "name": "mcp",
+  "nodes": [
+    {
+      "parameters": {
+        "descriptionType": "manual",
+        "toolDescription": "This tool allows you to send SQL queries directly to the entire NocoDB application database.\nDatabase - PostgreSQL.",
+        "operation": "executeQuery",
+        "query": "{{ $fromAI('sql', ``, 'string') }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgresTool",
+      "typeVersion": 2.6,
+      "position": [
+        -80,
+        352
+      ],
+      "id": "b85b3231-6e80-417b-98f4-1249f5029522",
+      "name": "execute sql",
+      "credentials": {
+        "postgres": {
+          "id": "oZABCHH2vjfMvXoi",
+          "name": "directus"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "path": "2759baa4-2fd2-494d-9ba9-ef1ad2e8fc3e"
+      },
+      "type": "@n8n/n8n-nodes-langchain.mcpTrigger",
+      "typeVersion": 2,
+      "position": [
+        -160,
+        -80
+      ],
+      "id": "e4a96016-086f-4042-8413-3104e1941fde",
+      "name": "SQL",
+      "webhookId": "2759baa4-2fd2-494d-9ba9-ef1ad2e8fc1e"
+    },
+    {
+      "parameters": {
+        "path": "2759baa4-2fd2-494d-9ba9-ef1ad2e8fc1e"
+      },
+      "type": "@n8n/n8n-nodes-langchain.mcpTrigger",
+      "typeVersion": 2,
+      "position": [
+        -320,
+        112
+      ],
+      "id": "efc8e7ee-31a1-4c5b-8bde-f9882db70fe1",
+      "name": "AI",
+      "webhookId": "2759baa4-2fd2-494d-9ba9-ef1ad2e8fc1e"
+    },
+    {
+      "parameters": {
+        "path": "2759baa4-2fd2-494d-9ba9-ef1ad2e8fc2h"
+      },
+      "type": "@n8n/n8n-nodes-langchain.mcpTrigger",
+      "typeVersion": 2,
+      "position": [
+        224,
+        -80
+      ],
+      "id": "824f20cb-2736-406f-b799-3a41e3865fff",
+      "name": "CRM",
+      "webhookId": "2759baa4-2fd2-494d-9ba9-ef1ad2e8fc1e"
+    },
+    {
+      "parameters": {
+        "endpointUrl": "https://base.citycompany.net/mcp/ncxpeqkhh33zogtd",
+        "authentication": "headerAuth",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.mcpClientTool",
+      "typeVersion": 1.2,
+      "position": [
+        -336,
+        320
+      ],
+      "id": "bc94cee5-e3bc-4774-bb5c-c32f9e72bb84",
+      "name": "ai base",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "xqmP12NcqJIddZrW",
+          "name": "nocodb mcp ai base"
+        }
+      },
+      "disabled": true
+    },
+    {
+      "parameters": {
+        "endpointUrl": "https://base.citycompany.net/mcp/ncmdcavnergvw4tg",
+        "authentication": "headerAuth",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.mcpClientTool",
+      "typeVersion": 1.2,
+      "position": [
+        128,
+        304
+      ],
+      "id": "09a41930-e8ed-4355-a9b8-9fb77b2a938b",
+      "name": "crm",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "ZSspZEw6pK25yJzN",
+          "name": "nocodb mcp crm"
+        }
+      },
+      "disabled": true
+    }
+  ],
+  "connections": {
+    "execute sql": {
+      "ai_tool": [
+        [
+          {
+            "node": "SQL",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "ai base": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "crm": {
+      "ai_tool": [
+        [
+          {
+            "node": "CRM",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "triggerCount": 3,
+  "versionId": "2c539dfe-e693-48f9-8044-31d008e8b5d2",
+  "owner": {
+    "type": "personal",
+    "projectId": "I8ZweZXokOc0zbYb",
+    "projectName": "BSU Agency <info@brilliantseedup.com>",
+    "personalEmail": "info@brilliantseedup.com"
+  },
+  "parentFolderId": null,
+  "isArchived": false
+}

@@ -1,0 +1,116 @@
+{
+  "id": "TzPSlJCrmIa3aftV",
+  "name": "Comment",
+  "nodes": [
+    {
+      "parameters": {
+        "workflowInputs": {
+          "values": [
+            {
+              "name": "collection"
+            },
+            {
+              "name": "item"
+            },
+            {
+              "name": "comment"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        0,
+        80
+      ],
+      "id": "37df614e-71f8-49a8-b976-deb84fbb2602",
+      "name": "start"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $vars.directus_url }}comments",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "directusApi",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ $json.data.toJsonString() }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        448,
+        80
+      ],
+      "id": "18ea4872-82e9-4f41-b147-ec5fd6fe7125",
+      "name": "comment",
+      "credentials": {
+        "directusApi": {
+          "id": "kIJhRDZv2PR5UO1f",
+          "name": "Directus"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "aggregate": "aggregateAllItemData",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.aggregate",
+      "typeVersion": 1,
+      "position": [
+        224,
+        80
+      ],
+      "id": "a080984f-262e-4355-ab08-8b6c74e480f8",
+      "name": "Aggregate"
+    }
+  ],
+  "connections": {
+    "start": {
+      "main": [
+        [
+          {
+            "node": "Aggregate",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "comment": {
+      "main": [
+        []
+      ]
+    },
+    "Aggregate": {
+      "main": [
+        [
+          {
+            "node": "comment",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "callerPolicy": "workflowsFromSameOwner",
+    "saveDataSuccessExecution": "none",
+    "availableInMCP": false
+  },
+  "triggerCount": 0,
+  "versionId": "32424e91-5973-4975-8691-9145219213a5",
+  "owner": {
+    "type": "personal",
+    "projectId": "I8ZweZXokOc0zbYb",
+    "projectName": "BSU Agency <info@brilliantseedup.com>",
+    "personalEmail": "info@brilliantseedup.com"
+  },
+  "parentFolderId": "kK192fbu6GJvHsuJ",
+  "isArchived": false
+}

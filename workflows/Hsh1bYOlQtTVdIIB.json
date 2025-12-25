@@ -1,0 +1,456 @@
+{
+  "id": "Hsh1bYOlQtTVdIIB",
+  "name": "Seeker of Lost Calls",
+  "nodes": [
+    {
+      "parameters": {
+        "url": "=https://api.vapi.ai/call/{{ $node[\"Loop\"].json[\"Call ID\"] }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpBearerAuth",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        544,
+        320
+      ],
+      "id": "30b06420-15fa-4b6d-afcc-169a430a76c1",
+      "name": "get call",
+      "credentials": {
+        "httpBearerAuth": {
+          "id": "ipZ3sNSO2duuH9Qw",
+          "name": "Vapi"
+        }
+      },
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "e2b5c80d-802a-4847-a79b-1151392ba19e",
+              "leftValue": "={{ new Date($now).getTime() - new Date($json['CreatedAt']).getTime() > 1900000 }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -272,
+        240
+      ],
+      "id": "0624a8d3-6c03-4d2b-8ff2-0db6376fedf2",
+      "name": "old?"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "39687088-63d3-4476-ae43-8b605be9f534",
+              "leftValue": "={{ $json['Call ID'] }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "or"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        320,
+        320
+      ],
+      "id": "8a193c14-278a-44f8-88b1-d64cc8b5f98e",
+      "name": "call id?"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "7b4b4086-13fb-4865-a087-3053de92e211",
+              "leftValue": "={{ $json.endedReason }}",
+              "rightValue": "unknown-error",
+              "operator": {
+                "type": "string",
+                "operation": "notEquals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        768,
+        320
+      ],
+      "id": "90f653e9-a2ee-46bb-af40-6e41ba1bc530",
+      "name": "If"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Входной объект приходит из предыдущего нода: items[0].json\nconst call = items[0].json;\n\nconst output = {\n  message: {\n    type: \"end-of-call-report\",\n    timestamp: Date.now(),\n    startedAt: call.startedAt,\n    endedAt: call.endedAt,\n    endedReason: call.endedReason || call.status,\n    durationSeconds: call.startedAt && call.endedAt ? ((new Date(call.endedAt) - new Date(call.startedAt)) / 1000) : 0,\n    cost: call.cost || 0,\n    costBreakdown: call.costBreakdown || {},\n    costs: call.costs || [],\n    summary: call.summary || \"\",\n    transcript: call.transcript || \"\",\n    messages: call.messages || [],\n    phoneNumber: {\n      id: call.phoneNumberId,\n      number: call.phoneNumber?.number || undefined,\n    },\n    customer: call.customer || {},\n    assistant: {\n      id: call.assistantId,\n      name: call.assistantOverrides?.variableValues?.name || \"Unknown\",\n    },\n    call: {\n      id: call.id,\n      type: call.type,\n      status: call.status,\n      assistantId: call.assistantId,\n      phoneNumberId: call.phoneNumberId,\n      phoneCallProvider: call.phoneCallProvider,\n      phoneCallProviderId: call.phoneCallProviderId,\n      phoneCallTransport: call.phoneCallTransport,\n      monitor: call.monitor,\n      transport: call.transport,\n      assistantOverrides: call.assistantOverrides || {},\n      createdAt: call.createdAt,\n      updatedAt: call.updatedAt,\n      customer: call.customer || {},\n    },\n    artifact: {\n      recordingUrl: call.recordingUrl || call.artifact?.recordingUrl,\n      stereoRecordingUrl: call.stereoRecordingUrl || call.artifact?.stereoRecordingUrl,\n      recording: call.artifact?.recording || {},\n      messages: call.artifact?.messages || call.messages || [],\n      messagesOpenAIFormatted: call.artifact?.messagesOpenAIFormatted || [],\n      transcript: call.transcript || \"\",\n      nodes: call.artifact?.nodes || [],\n      variables: call.artifact?.variables || {},\n    },\n    analysis: call.analysis || {},\n  }\n};\n\nreturn [{ json: output }];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        992,
+        320
+      ],
+      "id": "55b42901-f6ea-4038-a24e-5b27233551be",
+      "name": "Code"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        32,
+        240
+      ],
+      "id": "799e82e3-8e66-460e-a1c9-6f31e69d8904",
+      "name": "Loop"
+    },
+    {
+      "parameters": {
+        "amount": 3
+      },
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        1216,
+        608
+      ],
+      "id": "610fda53-a086-40d2-b299-47654ba88542",
+      "name": "Wait",
+      "webhookId": "1984e58c-07d3-4a27-8520-46f32581f1c1"
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "minutes",
+              "minutesInterval": 30
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        -784,
+        240
+      ],
+      "id": "4c910ec2-24aa-412e-b560-1a1e16d5a2d5",
+      "name": "Schedule Trigger"
+    },
+    {
+      "parameters": {
+        "authentication": "nocoDbApiToken",
+        "operation": "update",
+        "workspaceId": "wqp6q0zt",
+        "projectId": "p0a3eirwme1bmw7",
+        "table": "mq8zrzuevo96lmw",
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldName": "=Id",
+              "fieldValue": "={{ $node[\"Loop\"].json[\"Id\"] }}"
+            },
+            {
+              "fieldName": "=Status",
+              "fieldValue": "=Error"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.nocoDb",
+      "typeVersion": 3,
+      "position": [
+        304,
+        608
+      ],
+      "id": "c6b91209-47cc-4e9e-8258-b2af731f50a3",
+      "name": "error call",
+      "credentials": {
+        "nocoDbApiToken": {
+          "id": "tg1sd8Mux2yjJLx7",
+          "name": "NocoDB"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://{{ $env[\"N8N_HOST\"] }}/webhook/921a7db2-2e22-4cd9-8ede-e3c2e91857a5",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify($node[\"Code\"].json, null, 2) }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1216,
+        320
+      ],
+      "id": "ea5fc4d4-602d-45f9-a3a8-85b0b1500fce",
+      "name": "send data"
+    },
+    {
+      "parameters": {
+        "inputSource": "passthrough"
+      },
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        -272,
+        32
+      ],
+      "id": "d5fefd52-2da8-492d-895f-a196b55423d4",
+      "name": "start"
+    },
+    {
+      "parameters": {
+        "authentication": "nocoDbApiToken",
+        "operation": "getAll",
+        "workspaceId": "wqp6q0zt",
+        "projectId": "p0a3eirwme1bmw7",
+        "table": "mq8zrzuevo96lmw",
+        "returnAll": true,
+        "options": {
+          "where": "(Status,eq,Ringing)"
+        }
+      },
+      "type": "n8n-nodes-base.nocoDb",
+      "typeVersion": 3,
+      "position": [
+        -496,
+        240
+      ],
+      "id": "0fc0af72-0da4-42a7-827a-dafd0caa8f8c",
+      "name": "get ringing calls",
+      "credentials": {
+        "nocoDbApiToken": {
+          "id": "tg1sd8Mux2yjJLx7",
+          "name": "NocoDB"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "get call": {
+      "main": [
+        [
+          {
+            "node": "If",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "error call",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "old?": {
+      "main": [
+        [
+          {
+            "node": "Loop",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "call id?": {
+      "main": [
+        [
+          {
+            "node": "get call",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "error call",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If": {
+      "main": [
+        [
+          {
+            "node": "Code",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "error call",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code": {
+      "main": [
+        [
+          {
+            "node": "send data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Loop": {
+      "main": [
+        [],
+        [
+          {
+            "node": "call id?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait": {
+      "main": [
+        [
+          {
+            "node": "Loop",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "get ringing calls",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "error call": {
+      "main": [
+        [
+          {
+            "node": "Loop",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "send data": {
+      "main": [
+        [
+          {
+            "node": "Wait",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "start": {
+      "main": [
+        [
+          {
+            "node": "Loop",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "get ringing calls": {
+      "main": [
+        [
+          {
+            "node": "old?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "saveDataSuccessExecution": "none",
+    "callerPolicy": "workflowsFromSameOwner",
+    "availableInMCP": false,
+    "errorWorkflow": "agw6jjdVg6yAawFi"
+  },
+  "triggerCount": 1,
+  "versionId": "ee7bb509-362f-491d-b2a8-07578d3f9093",
+  "owner": {
+    "type": "personal",
+    "projectId": "I8ZweZXokOc0zbYb",
+    "projectName": "BSU Agency <info@brilliantseedup.com>",
+    "personalEmail": "info@brilliantseedup.com"
+  },
+  "parentFolderId": "mIvDkh1v9thmXFfY",
+  "isArchived": false
+}

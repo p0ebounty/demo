@@ -1,0 +1,370 @@
+{
+  "id": "1F3zaKVNChWlK0HJ",
+  "name": "Retrieve call cost",
+  "nodes": [
+    {
+      "parameters": {
+        "workflowInputs": {
+          "values": [
+            {
+              "name": "id",
+              "type": "number"
+            },
+            {
+              "name": "call_id"
+            },
+            {
+              "name": "cost",
+              "type": "number"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        -1440,
+        96
+      ],
+      "id": "0ba6dc01-b861-447f-8c24-bcf72aee9553",
+      "name": "start"
+    },
+    {
+      "parameters": {
+        "authentication": "nocoDbApiToken",
+        "operation": "update",
+        "workspaceId": "wqp6q0zt",
+        "projectId": "p0a3eirwme1bmw7",
+        "table": "mq8zrzuevo96lmw",
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldName": "Id",
+              "fieldValue": "={{ $node[\"start\"].json[\"id\"] }}"
+            },
+            {
+              "fieldName": "TCost",
+              "fieldValue": "={{ Math.abs(parseFloat($json.price || 0)).toFixed(3) }}"
+            },
+            {
+              "fieldName": "VCost",
+              "fieldValue": "={{ parseFloat($node[\"start\"].json[\"cost\"] || 0).toFixed(3) }}"
+            },
+            {
+              "fieldName": "Cost",
+              "fieldValue": "={{ parseFloat((Math.abs(parseFloat($json.price || 0)) + parseFloat($node[\"start\"].json[\"cost\"] || 0)).toFixed(3)) }}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.nocoDb",
+      "typeVersion": 3,
+      "position": [
+        -208,
+        -128
+      ],
+      "id": "f4d5dbf0-2622-4486-813a-a90a69f48c62",
+      "name": "update call",
+      "credentials": {
+        "nocoDbApiToken": {
+          "id": "tg1sd8Mux2yjJLx7",
+          "name": "NocoDB"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "amount": 15,
+        "unit": "minutes"
+      },
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        -208,
+        112
+      ],
+      "id": "dfa1dd11-c12f-4e7e-a544-3ed90e46a985",
+      "name": "Wait",
+      "webhookId": "12d8487e-2824-4a4a-9d4d-75cd52fbba30"
+    },
+    {
+      "parameters": {
+        "url": "=https://api.twilio.com/2010-04-01/Accounts/{{ $vars.twillio_sid }}/Calls/{{ $node[\"start\"].json[\"call_id\"] }}.json",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "twilioApi",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -688,
+        112
+      ],
+      "id": "40d92097-304b-45d8-a3bb-b72575b8f68b",
+      "name": "twillio",
+      "retryOnFail": true,
+      "maxTries": 5,
+      "waitBetweenTries": 5000,
+      "credentials": {
+        "twilioApi": {
+          "id": "klH0prjqGeh22FZZ",
+          "name": "Twilio MagnaQore"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "10749429-b709-4029-a522-327f7a1b3751",
+              "leftValue": "={{ $json.price }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "empty",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -496,
+        112
+      ],
+      "id": "f6dfda9e-f224-4f28-9e7f-5afac7ef1d76",
+      "name": "done"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "0abd9037-8b0c-417a-b2e8-12b279a8d3f4",
+              "name": "count",
+              "value": "={{ ($json.count || 0) + 1 }}",
+              "type": "number"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -1200,
+        96
+      ],
+      "id": "8cddb388-b520-4077-ada0-da7e2320003f",
+      "name": "plus"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "bf04ba50-97b1-4aca-b955-62caebc37ea9",
+              "leftValue": "={{ $json.count }}",
+              "rightValue": 10,
+              "operator": {
+                "type": "number",
+                "operation": "gt"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -976,
+        96
+      ],
+      "id": "f1af8956-0e7e-4c86-939b-34f5da2ae798",
+      "name": "limit"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "0abd9037-8b0c-417a-b2e8-12b279a8d3f4",
+              "name": "count",
+              "value": "={{ $('plus').item.json.count }}",
+              "type": "number"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        0,
+        112
+      ],
+      "id": "59584b79-8c4d-48a6-b6e8-4b8d2f8891f3",
+      "name": "get"
+    },
+    {
+      "parameters": {
+        "chatId": "={{$vars.warngroup}}",
+        "text": "=Сall cost calculation is not fully completed\nhttps://{{ $env[\"N8N_HOST\"] }}/workflow/{{ $workflow.id }}/executions/{{ $execution.id }}",
+        "additionalFields": {
+          "appendAttribution": false,
+          "message_thread_id": 88
+        }
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        -736,
+        -192
+      ],
+      "id": "b26c1f71-73ce-4e16-abca-9e8a6676b510",
+      "name": "uncomplate warn",
+      "webhookId": "1dae21fc-fbc5-4042-bb09-ff91fdec2c3e",
+      "credentials": {
+        "telegramApi": {
+          "id": "yv48JNV4VmuIREaW",
+          "name": "Citycompany"
+        }
+      },
+      "onError": "continueRegularOutput"
+    }
+  ],
+  "connections": {
+    "start": {
+      "main": [
+        [
+          {
+            "node": "plus",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait": {
+      "main": [
+        [
+          {
+            "node": "get",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "twillio": {
+      "main": [
+        [
+          {
+            "node": "done",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "done": {
+      "main": [
+        [
+          {
+            "node": "Wait",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "update call",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "plus": {
+      "main": [
+        [
+          {
+            "node": "limit",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "limit": {
+      "main": [
+        [
+          {
+            "node": "update call",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "uncomplate warn",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "twillio",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "get": {
+      "main": [
+        [
+          {
+            "node": "plus",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "callerPolicy": "workflowsFromSameOwner",
+    "executionTimeout": -1,
+    "availableInMCP": false,
+    "errorWorkflow": "agw6jjdVg6yAawFi"
+  },
+  "triggerCount": 0,
+  "versionId": "77824464-383f-4221-afbb-64ea5036556e",
+  "owner": {
+    "type": "personal",
+    "projectId": "I8ZweZXokOc0zbYb",
+    "projectName": "BSU Agency <info@brilliantseedup.com>",
+    "personalEmail": "info@brilliantseedup.com"
+  },
+  "parentFolderId": "mIvDkh1v9thmXFfY",
+  "isArchived": false
+}

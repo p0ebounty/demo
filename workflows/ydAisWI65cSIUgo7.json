@@ -1,0 +1,194 @@
+{
+  "id": "ydAisWI65cSIUgo7",
+  "name": "Primary processor",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "triggerAtHour": 5
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        0,
+        80
+      ],
+      "id": "20673ff9-00a0-4a1d-ad93-6b9b92891c4e",
+      "name": "Schedule Trigger"
+    },
+    {
+      "parameters": {
+        "authentication": "nocoDbApiToken",
+        "operation": "getAll",
+        "workspaceId": "wqp6q0zt",
+        "projectId": "p0a3eirwme1bmw7",
+        "table": "meyq439syguvqhb",
+        "returnAll": true,
+        "options": {
+          "where": "(Campagin,eq,Waiting)~and(Fix,eq,true)"
+        }
+      },
+      "type": "n8n-nodes-base.nocoDb",
+      "typeVersion": 3,
+      "position": [
+        224,
+        80
+      ],
+      "id": "b1bb3967-fb42-43d9-8de3-3a06255d28f9",
+      "name": "get Waiting",
+      "credentials": {
+        "nocoDbApiToken": {
+          "id": "tg1sd8Mux2yjJLx7",
+          "name": "NocoDB"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "authentication": "nocoDbApiToken",
+        "operation": "update",
+        "workspaceId": "wqp6q0zt",
+        "projectId": "p0a3eirwme1bmw7",
+        "table": "meyq439syguvqhb",
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldName": "Id",
+              "fieldValue": "={{ $json.Id }}"
+            },
+            {
+              "fieldName": "Campagin",
+              "fieldValue": "Progress"
+            },
+            {
+              "fieldName": "CData",
+              "fieldValue": "{\"email_interval\":84}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.nocoDb",
+      "typeVersion": 3,
+      "position": [
+        656,
+        144
+      ],
+      "id": "208a13ed-da02-4ce7-8d8c-b113ec95d6dd",
+      "name": "update contact",
+      "credentials": {
+        "nocoDbApiToken": {
+          "id": "tg1sd8Mux2yjJLx7",
+          "name": "NocoDB"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "batchSize": 500,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        432,
+        80
+      ],
+      "id": "9e69f095-fbc1-4b2e-815b-9dd86f190390",
+      "name": "loop"
+    },
+    {
+      "parameters": {
+        "amount": 3
+      },
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        864,
+        144
+      ],
+      "id": "2754626f-1ba7-4bab-872a-554cd627c099",
+      "name": "Wait",
+      "webhookId": "7102e49e-374d-4fbd-aa3e-d69492df4a3c"
+    }
+  ],
+  "connections": {
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "get Waiting",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "get Waiting": {
+      "main": [
+        [
+          {
+            "node": "loop",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "loop": {
+      "main": [
+        [],
+        [
+          {
+            "node": "update contact",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "update contact": {
+      "main": [
+        [
+          {
+            "node": "Wait",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait": {
+      "main": [
+        [
+          {
+            "node": "loop",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "callerPolicy": "workflowsFromSameOwner",
+    "availableInMCP": false,
+    "errorWorkflow": "EuAkMSh7w9p9TJgj",
+    "executionTimeout": -1
+  },
+  "triggerCount": 1,
+  "versionId": "f7659e98-d9d0-45f9-a0d1-379a44ccdb55",
+  "owner": {
+    "type": "personal",
+    "projectId": "I8ZweZXokOc0zbYb",
+    "projectName": "BSU Agency <info@brilliantseedup.com>",
+    "personalEmail": "info@brilliantseedup.com"
+  },
+  "parentFolderId": "HWn7vIRYn4vaHZR5",
+  "isArchived": true
+}

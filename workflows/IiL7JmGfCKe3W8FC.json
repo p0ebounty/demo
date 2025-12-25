@@ -1,0 +1,98 @@
+{
+  "id": "IiL7JmGfCKe3W8FC",
+  "name": "My workflow",
+  "nodes": [
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        -160,
+        0
+      ],
+      "id": "fb585d65-9f0b-4c8d-9f03-c0e7e5cc1565",
+      "name": "When clicking ‘Execute workflow’"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "-- SQL для n8n: обновление TimeZone для контакта\nWITH contact_data AS (\n  -- Получаем данные контакта\n  SELECT \n    c.id,\n    c.\"TimeZone\",\n    c.\"Phone\",\n    -- Проверяем валидность текущего TimeZone через LEFT JOIN\n    CASE \n      WHEN c.\"TimeZone\" IS NOT NULL \n        AND c.\"TimeZone\" != '' \n        AND ptz.name IS NOT NULL\n      THEN true\n      ELSE false\n    END as is_valid_timezone\n  FROM {{ $vars.ncdbid }}.\"Contacts\" c\n  LEFT JOIN pg_timezone_names ptz ON ptz.name = c.\"TimeZone\"\n  WHERE c.id = {{ $node[\"loop\"].json[\"Id\"] }}\n),\nphone_timezone AS (\n  -- Пытаемся найти часовой пояс по коду телефона\n  SELECT DISTINCT ON (cd.id)\n    cd.id,\n    COALESCE(\n      ctz.\"TimeZone\",\n      {{ $env['GENERIC_TIMEZONE'] }}\n    ) as new_timezone\n  FROM contact_data cd\n  -- Создаем очищенный номер телефона (только цифры)\n  CROSS JOIN LATERAL (\n    SELECT REGEXP_REPLACE(cd.\"Phone\", '[^0-9]', '', 'g') as clean_phone\n  ) cleaned\n  LEFT JOIN {{ $vars.ncdbid_data }}.\"Code-TimeZones\" ctz\n    ON cleaned.clean_phone IS NOT NULL \n    AND cleaned.clean_phone != ''\n    -- Пытаемся сопоставить код страны из начала очищенного номера\n    AND (\n      -- Проверяем коды длиной от 1 до 4 цифр\n      (LENGTH(ctz.\"Code\"::text) = 1 AND SUBSTRING(cleaned.clean_phone FROM 1 FOR 1) = ctz.\"Code\"::text)\n      OR (LENGTH(ctz.\"Code\"::text) = 2 AND SUBSTRING(cleaned.clean_phone FROM 1 FOR 2) = ctz.\"Code\"::text)\n      OR (LENGTH(ctz.\"Code\"::text) = 3 AND SUBSTRING(cleaned.clean_phone FROM 1 FOR 3) = ctz.\"Code\"::text)\n      OR (LENGTH(ctz.\"Code\"::text) = 4 AND SUBSTRING(cleaned.clean_phone FROM 1 FOR 4) = ctz.\"Code\"::text)\n    )\n  WHERE cd.is_valid_timezone = false\n  -- Сортируем по длине кода (более длинные коды более специфичны)\n  ORDER BY cd.id, LENGTH(ctz.\"Code\"::text) DESC NULLS LAST\n)\n-- Обновляем TimeZone только если он невалидный\nUPDATE {{ $vars.ncdbid }}.\"Contacts\" c\nSET \"TimeZone\" = pt.new_timezone\nFROM contact_data cd\nINNER JOIN phone_timezone pt ON cd.id = pt.id\nWHERE c.id = cd.id\n  AND cd.is_valid_timezone = false\nRETURNING \n  c.id,\n  c.\"TimeZone\" as updated_timezone,\n  cd.\"TimeZone\" as old_timezone,\n  cd.\"Phone\" as phone_used;",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        368,
+        0
+      ],
+      "id": "9b1e9b34-e7e7-49b4-b09d-b87eab9f3477",
+      "name": "Execute a SQL query",
+      "credentials": {
+        "postgres": {
+          "id": "oZABCHH2vjfMvXoi",
+          "name": "nocodb"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "452fa57c-037c-4fd9-9e6c-31bbfdcfb556",
+              "name": "Id",
+              "value": 5,
+              "type": "number"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        48,
+        0
+      ],
+      "id": "5f04f9e7-89aa-4248-be15-c133864ade92",
+      "name": "loop"
+    }
+  ],
+  "connections": {
+    "When clicking ‘Execute workflow’": {
+      "main": [
+        [
+          {
+            "node": "loop",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "loop": {
+      "main": [
+        [
+          {
+            "node": "Execute a SQL query",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "triggerCount": 0,
+  "versionId": "802200ab-a4ce-402c-a4ed-d0fc851f4c23",
+  "owner": {
+    "type": "personal",
+    "projectId": "I8ZweZXokOc0zbYb",
+    "projectName": "BSU Agency <info@brilliantseedup.com>",
+    "personalEmail": "info@brilliantseedup.com"
+  },
+  "parentFolderId": null,
+  "isArchived": true
+}

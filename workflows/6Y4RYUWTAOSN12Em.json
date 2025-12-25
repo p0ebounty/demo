@@ -1,0 +1,89 @@
+{
+  "id": "6Y4RYUWTAOSN12Em",
+  "name": "My workflow 4",
+  "nodes": [
+    {
+      "parameters": {
+        "path": "5c59a292-e9d7-41ca-8b14-d32e5d6f08f7",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        -80,
+        0
+      ],
+      "id": "b52daa37-957e-4dbf-8a13-f7bcc9d140bb",
+      "name": "Webhook",
+      "webhookId": "5c59a292-e9d7-41ca-8b14-d32e5d6f08f7"
+    },
+    {
+      "parameters": {
+        "resume": "webhook",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        368,
+        0
+      ],
+      "id": "1ee37637-9d1f-4fc0-9e5a-db8e372daf4b",
+      "name": "Wait",
+      "webhookId": "66e2aaf8-d9cf-4577-a95e-f55c3faf8b9e"
+    },
+    {
+      "parameters": {
+        "respondWith": "text",
+        "responseBody": "={{ $execution.resumeUrl }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.4,
+      "position": [
+        144,
+        0
+      ],
+      "id": "d015e1ae-cae5-4e0d-8ebb-cdecf1e48e32",
+      "name": "Respond to Webhook"
+    }
+  ],
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Respond to Webhook": {
+      "main": [
+        [
+          {
+            "node": "Wait",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "triggerCount": 1,
+  "versionId": "35cc8d7a-6bfb-47b9-868e-427f381642d4",
+  "owner": {
+    "type": "personal",
+    "projectId": "I8ZweZXokOc0zbYb",
+    "projectName": "BSU Agency <info@brilliantseedup.com>",
+    "personalEmail": "info@brilliantseedup.com"
+  },
+  "parentFolderId": null,
+  "isArchived": true
+}

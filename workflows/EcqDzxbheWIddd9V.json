@@ -1,0 +1,333 @@
+{
+  "id": "EcqDzxbheWIddd9V",
+  "name": "Trigger",
+  "nodes": [
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        -1664,
+        32
+      ],
+      "id": "c90442cb-aa15-4ecf-99c4-00e4395dd01d",
+      "name": "When clicking ‘Execute workflow’"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        -992,
+        128
+      ],
+      "id": "9017301b-6a5e-43f3-a932-f94b229af03d",
+      "name": "loop"
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "minutes",
+              "minutesInterval": 1
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        -1664,
+        224
+      ],
+      "id": "9d5dd594-1c08-4af5-88c4-2249af7c42fc",
+      "name": "Schedule Trigger"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT *\nFROM {{ $vars.ncdbid}}.\"Scheduler\"\nWHERE \"Trigger\" < NOW()\n  AND \"Type\" <> 'Outdated';",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        -1440,
+        128
+      ],
+      "id": "1e7bccac-66fb-4780-8963-7ded38a6a986",
+      "name": "check schedule",
+      "credentials": {
+        "postgres": {
+          "id": "oZABCHH2vjfMvXoi",
+          "name": "nocodb"
+        }
+      }
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        -320,
+        448
+      ],
+      "id": "fade1b52-0f3f-4ee3-a675-c3a5354790f6",
+      "name": "Wait",
+      "webhookId": "4ac97d5b-a908-4e85-bde1-ef4d6fd20879"
+    },
+    {
+      "parameters": {
+        "maxItems": 5
+      },
+      "type": "n8n-nodes-base.limit",
+      "typeVersion": 1,
+      "position": [
+        -1216,
+        128
+      ],
+      "id": "4c739022-b38e-4ff0-88ff-b0b3fe71722b",
+      "name": "Limit"
+    },
+    {
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "value": "lPsyg1sBbGWfkXo8",
+          "mode": "list",
+          "cachedResultUrl": "/workflow/lPsyg1sBbGWfkXo8",
+          "cachedResultName": "Run call"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "cs_id": "={{ $json['Call system_id'] }}"
+          },
+          "matchingColumns": [
+            "cs_id"
+          ],
+          "schema": [
+            {
+              "id": "cs_id",
+              "displayName": "cs_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "number"
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": true
+        },
+        "mode": "each",
+        "options": {
+          "waitForSubWorkflow": false
+        }
+      },
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.2,
+      "position": [
+        -736,
+        432
+      ],
+      "id": "f01bb7f4-f4de-4941-831b-3251a8f52f7c",
+      "name": "Run call"
+    },
+    {
+      "parameters": {
+        "authentication": "nocoDbApiToken",
+        "operation": "delete",
+        "workspaceId": "wqp6q0zt",
+        "projectId": "p0a3eirwme1bmw7",
+        "table": "my3mge2lsx8utvk",
+        "id": "={{ $('loop').item.json.id }}"
+      },
+      "type": "n8n-nodes-base.nocoDb",
+      "typeVersion": 3,
+      "position": [
+        -320,
+        144
+      ],
+      "id": "1c166873-0f8a-4990-b2e9-aa7ec002ca5b",
+      "name": "del",
+      "credentials": {
+        "nocoDbApiToken": {
+          "id": "tg1sd8Mux2yjJLx7",
+          "name": "NocoDB"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "b8a9a9e7-f92e-4dfe-884d-59bd5d179bad",
+              "leftValue": "={{ $json.Trigger }}",
+              "rightValue": "={{ new Date(Date.now() - 60 * 60 * 1000).toISOString() }}",
+              "operator": {
+                "type": "dateTime",
+                "operation": "before"
+              }
+            },
+            {
+              "id": "b60d1c66-dc64-40b6-8862-2f17db75c97c",
+              "leftValue": "={{ $json['Call system_id'] }}",
+              "rightValue": "",
+              "operator": {
+                "type": "number",
+                "operation": "notEmpty",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -752,
+        160
+      ],
+      "id": "e1fa695f-2440-4af3-ae22-6001ba526965",
+      "name": "invalid?"
+    }
+  ],
+  "connections": {
+    "When clicking ‘Execute workflow’": {
+      "main": [
+        [
+          {
+            "node": "check schedule",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "loop": {
+      "main": [
+        [],
+        [
+          {
+            "node": "invalid?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "check schedule",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "check schedule": {
+      "main": [
+        [
+          {
+            "node": "Limit",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait": {
+      "main": [
+        [
+          {
+            "node": "loop",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Limit": {
+      "main": [
+        [
+          {
+            "node": "loop",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Run call": {
+      "main": [
+        [
+          {
+            "node": "del",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "del": {
+      "main": [
+        [
+          {
+            "node": "Wait",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "invalid?": {
+      "main": [
+        [
+          {
+            "node": "del",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Run call",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "saveDataSuccessExecution": "none",
+    "callerPolicy": "workflowsFromSameOwner",
+    "availableInMCP": false
+  },
+  "triggerCount": 1,
+  "versionId": "6c598485-225a-497d-85bb-bc5e19d66985",
+  "owner": {
+    "type": "personal",
+    "projectId": "I8ZweZXokOc0zbYb",
+    "projectName": "BSU Agency <info@brilliantseedup.com>",
+    "personalEmail": "info@brilliantseedup.com"
+  },
+  "parentFolderId": "ZtZlVganCQMwp6yk",
+  "isArchived": false
+}

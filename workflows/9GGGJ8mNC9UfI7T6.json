@@ -1,0 +1,797 @@
+{
+  "id": "9GGGJ8mNC9UfI7T6",
+  "name": "Completing",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "minutes",
+              "minutesInterval": 10
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        0,
+        0
+      ],
+      "id": "30ed92e1-625b-4e65-ae62-8779b607edd8",
+      "name": "Schedule Trigger"
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{  $json.Type }}",
+                    "rightValue": "Email",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "id": "6041841e-feec-4977-b099-34168143fe52"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "email"
+            }
+          ]
+        },
+        "options": {
+          "fallbackOutput": "extra"
+        }
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.3,
+      "position": [
+        656,
+        0
+      ],
+      "id": "b6e1de80-6e1a-4b69-8823-287caadc9f14",
+      "name": "Switch"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "-- Извлекаем 50 записей Ready из CMails с данными контактов\nSELECT \n    cm.id AS id,\n    cm.\"Contacts_id\" AS contact_id,\n    cm.\"Type\",\n    cm.\"Title\",\n    cm.\"FContent\",\n    c.\"Email\",\n    c.\"Phone\",\n    c.\"DNC\"\nFROM p0a3eirwme1bmw7.\"CMails\" cm\nINNER JOIN p0a3eirwme1bmw7.\"Contacts\" c \n    ON cm.\"Contacts_id\" = c.id\nWHERE cm.\"Status\" = 'Ready'\n  AND cm.\"Type\" IS NOT NULL\n  AND cm.\"Type\" != ''\nORDER BY cm.\"Trigger\" ASC\nLIMIT 250;",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        224,
+        0
+      ],
+      "id": "1461de99-70bf-4f1c-9538-0d5f1e1df225",
+      "name": "SELECT",
+      "credentials": {
+        "postgres": {
+          "id": "oZABCHH2vjfMvXoi",
+          "name": "nocodb"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "authentication": "nocoDbApiToken",
+        "operation": "update",
+        "workspaceId": "wqp6q0zt",
+        "projectId": "p0a3eirwme1bmw7",
+        "table": "m6axccf0owo5kzd",
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldName": "Id",
+              "fieldValue": "={{ $json.id }}"
+            },
+            {
+              "fieldName": "Status",
+              "fieldValue": "Canceled"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.nocoDb",
+      "typeVersion": 3,
+      "position": [
+        16,
+        256
+      ],
+      "id": "e4ba2c38-9553-4bec-9468-ce4c77ee52e6",
+      "name": "to canceled",
+      "credentials": {
+        "nocoDbApiToken": {
+          "id": "tg1sd8Mux2yjJLx7",
+          "name": "NocoDB"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "72d1c173-77ad-4799-b45a-926798ceb315",
+              "leftValue": "={{ $json.DNC }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "notEquals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        432,
+        0
+      ],
+      "id": "5d5b60ef-8446-47c9-be68-ad28f5a92e27",
+      "name": "dnc check"
+    },
+    {
+      "parameters": {
+        "batchSize": 10,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        960,
+        48
+      ],
+      "id": "13e5163c-b749-4a13-8a5d-eb4dd80de5a3",
+      "name": "loop"
+    },
+    {
+      "parameters": {
+        "fromEmail": "=Stan from CityCompany <dispatch@citycompany.net>",
+        "toEmail": "={{ $json.Email }}",
+        "subject": "={{ $json.Title }}",
+        "html": "={{ $json.FContent }}",
+        "options": {
+          "appendAttribution": false,
+          "replyTo": "dispatch@citycompany.net"
+        }
+      },
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2.1,
+      "position": [
+        1216,
+        128
+      ],
+      "id": "678af574-28d0-4d33-be06-fad73a1bb415",
+      "name": "Send email",
+      "webhookId": "25e01b77-1370-458c-8c14-a4cb57e5b1c7",
+      "retryOnFail": false,
+      "credentials": {
+        "smtp": {
+          "id": "Jd45EegKRNm0g0nD",
+          "name": "dispatch@city...(sendpulse)"
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Code Node - JavaScript\n// Обработка результата отправки email\n\nconst items = $input.all();\nconst processedItems = [];\n\nfor (let item of items) {\n  const data = item.json;\n  \n  // Проверяем наличие accepted email\n  const hasAcceptedEmail = data.accepted && \n                          Array.isArray(data.accepted) && \n                          data.accepted.length > 0 &&\n                          data.accepted[0].includes('@');\n  \n  // Извлекаем Message-ID из response\n  const messageIdMatch = data.response ? data.response.match(/Message-ID:\\s*([^\\s]+)/) : null;\n  const messageId = messageIdMatch ? messageIdMatch[1] : null;\n  \n  // Определяем success\n  const success = hasAcceptedEmail && messageId !== null;\n  \n  processedItems.push({\n    json: {\n      success: success,\n      email: hasAcceptedEmail ? data.accepted[0] : null,\n      messageId: messageId,\n      originalResponse: data.response\n    }\n  });\n}\n\nreturn processedItems;"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1440,
+        128
+      ],
+      "id": "a500460b-e000-43c5-936a-9d0bf047f883",
+      "name": "parse"
+    },
+    {
+      "parameters": {
+        "amount": 0.5
+      },
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        1856,
+        128
+      ],
+      "id": "3aadd411-320f-4fb3-acb2-9450c259f58d",
+      "name": "Wait",
+      "webhookId": "cc826831-c4f0-461f-b1f5-654196fe8890"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "55d05f9c-1419-4245-9fe4-9378596e1251",
+              "name": "success",
+              "value": "={{ $json.success ?? false }}",
+              "type": "boolean"
+            },
+            {
+              "id": "8fd2ef73-891b-4310-8bbf-576c4ebc7187",
+              "name": "messageId",
+              "value": "={{ $json.messageId }}",
+              "type": "string"
+            },
+            {
+              "id": "77ffcfa8-ce8e-4b67-a1e8-9399227d5368",
+              "name": "id",
+              "value": "={{ $('loop').item.json.id }}",
+              "type": "number"
+            },
+            {
+              "id": "c00fe14a-3be2-49c3-b968-eb6d3c158312",
+              "name": "contact_id",
+              "value": "={{ $('loop').item.json.contact_id }}",
+              "type": "number"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1664,
+        128
+      ],
+      "id": "9fa5e863-c669-456f-abbc-726ac9726bee",
+      "name": "output"
+    },
+    {
+      "parameters": {
+        "authentication": "nocoDbApiToken",
+        "operation": "update",
+        "workspaceId": "wqp6q0zt",
+        "projectId": "p0a3eirwme1bmw7",
+        "table": "m6axccf0owo5kzd",
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldName": "Id",
+              "fieldValue": "={{ $json.id }}"
+            },
+            {
+              "fieldName": "Status",
+              "fieldValue": "Queue"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.nocoDb",
+      "typeVersion": 3,
+      "position": [
+        656,
+        -192
+      ],
+      "id": "ac34e8f5-8205-42ee-9fa6-12156ffdeac5",
+      "name": "to queue",
+      "credentials": {
+        "nocoDbApiToken": {
+          "id": "tg1sd8Mux2yjJLx7",
+          "name": "NocoDB"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "d2dbfea9-d14d-453f-a7c9-9e2d97916cc0",
+              "leftValue": "={{ $json.success }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        1168,
+        -352
+      ],
+      "id": "916aeb77-9556-4573-b494-941d35f26e50",
+      "name": "status email"
+    },
+    {
+      "parameters": {
+        "authentication": "nocoDbApiToken",
+        "operation": "update",
+        "workspaceId": "wqp6q0zt",
+        "projectId": "p0a3eirwme1bmw7",
+        "table": "m6axccf0owo5kzd",
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldName": "Id",
+              "fieldValue": "={{ $json.id }}"
+            },
+            {
+              "fieldName": "Status",
+              "fieldValue": "Canceled"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.nocoDb",
+      "typeVersion": 3,
+      "position": [
+        1440,
+        -256
+      ],
+      "id": "61745313-67a4-4e27-b7df-1483c47f06b1",
+      "name": "to canceled1",
+      "credentials": {
+        "nocoDbApiToken": {
+          "id": "tg1sd8Mux2yjJLx7",
+          "name": "NocoDB"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "authentication": "nocoDbApiToken",
+        "operation": "update",
+        "workspaceId": "wqp6q0zt",
+        "projectId": "p0a3eirwme1bmw7",
+        "table": "meyq439syguvqhb",
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldName": "Id",
+              "fieldValue": "={{ $json.contact_id }}"
+            },
+            {
+              "fieldName": "Campagin",
+              "fieldValue": "Done"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.nocoDb",
+      "typeVersion": 3,
+      "position": [
+        1440,
+        -64
+      ],
+      "id": "78bdb1fd-1877-4925-b99f-368c191e435b",
+      "name": "to done contact",
+      "credentials": {
+        "nocoDbApiToken": {
+          "id": "tg1sd8Mux2yjJLx7",
+          "name": "NocoDB"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "value": "t8qfTrTzuxNeZyDj",
+          "mode": "list",
+          "cachedResultUrl": "/workflow/t8qfTrTzuxNeZyDj",
+          "cachedResultName": "Delivery Control"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {}
+        },
+        "options": {
+          "waitForSubWorkflow": false
+        }
+      },
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.3,
+      "position": [
+        1440,
+        -448
+      ],
+      "id": "c4239293-4dc4-4495-9cf5-0c83bd203042",
+      "name": "Call 'Delivery Control'"
+    },
+    {
+      "parameters": {
+        "authentication": "nocoDbApiToken",
+        "operation": "update",
+        "workspaceId": "wqp6q0zt",
+        "projectId": "p0a3eirwme1bmw7",
+        "table": "m6axccf0owo5kzd",
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldName": "Id",
+              "fieldValue": "={{ $json.id }}"
+            },
+            {
+              "fieldName": "Status",
+              "fieldValue": "Done"
+            },
+            {
+              "fieldName": "Service id",
+              "fieldValue": "={{ $json.messageId }}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.nocoDb",
+      "typeVersion": 3,
+      "position": [
+        1440,
+        -624
+      ],
+      "id": "200e192e-b587-4e22-a928-c185473ab965",
+      "name": "to done",
+      "credentials": {
+        "nocoDbApiToken": {
+          "id": "tg1sd8Mux2yjJLx7",
+          "name": "NocoDB"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "value": "TzPSlJCrmIa3aftV",
+          "mode": "list",
+          "cachedResultUrl": "/workflow/TzPSlJCrmIa3aftV",
+          "cachedResultName": "Comment nocobd"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "comment": "=The mailing system has stopped - the contact is unreachable or has unsubscribed.",
+            "base_id": "=meyq439syguvqhb",
+            "row_id": "={{ $json.Id }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "comment",
+              "displayName": "comment",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "base_id",
+              "displayName": "base_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "row_id",
+              "displayName": "row_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "number"
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": true
+        },
+        "options": {
+          "waitForSubWorkflow": false
+        }
+      },
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.2,
+      "position": [
+        1648,
+        -64
+      ],
+      "id": "b3c0ae54-6ad7-4544-85dd-282979f0e8e3",
+      "name": "comment1"
+    },
+    {
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "value": "TzPSlJCrmIa3aftV",
+          "mode": "list",
+          "cachedResultUrl": "/workflow/TzPSlJCrmIa3aftV",
+          "cachedResultName": "Comment nocobd"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "comment": "=Сontact is unreachable or has unsubscribed.",
+            "base_id": "=m6axccf0owo5kzd",
+            "row_id": "={{ $json.Id }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "comment",
+              "displayName": "comment",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "base_id",
+              "displayName": "base_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "row_id",
+              "displayName": "row_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "number"
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": true
+        },
+        "options": {
+          "waitForSubWorkflow": false
+        }
+      },
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.2,
+      "position": [
+        1648,
+        -256
+      ],
+      "id": "083aeb5c-c863-49d5-91fb-4b1cffddf3b3",
+      "name": "comment"
+    }
+  ],
+  "connections": {
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "SELECT",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "SELECT": {
+      "main": [
+        [
+          {
+            "node": "dnc check",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Switch": {
+      "main": [
+        [
+          {
+            "node": "loop",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "to canceled",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "dnc check": {
+      "main": [
+        [
+          {
+            "node": "Switch",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "to queue",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "to canceled",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "loop": {
+      "main": [
+        [
+          {
+            "node": "status email",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Send email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send email": {
+      "main": [
+        [
+          {
+            "node": "parse",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "parse": {
+      "main": [
+        [
+          {
+            "node": "output",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "output": {
+      "main": [
+        [
+          {
+            "node": "Wait",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait": {
+      "main": [
+        [
+          {
+            "node": "loop",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "status email": {
+      "main": [
+        [
+          {
+            "node": "Call 'Delivery Control'",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "to done",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "to canceled1",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "to done contact",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "to done contact": {
+      "main": [
+        [
+          {
+            "node": "comment1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "to canceled1": {
+      "main": [
+        [
+          {
+            "node": "comment",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "to done": {
+      "main": [
+        []
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "callerPolicy": "workflowsFromSameOwner",
+    "executionTimeout": -1,
+    "availableInMCP": false,
+    "errorWorkflow": "EuAkMSh7w9p9TJgj",
+    "saveDataSuccessExecution": "none"
+  },
+  "triggerCount": 1,
+  "versionId": "7dddda6b-88fa-47af-85d6-bb81e84b97fb",
+  "owner": {
+    "type": "personal",
+    "projectId": "I8ZweZXokOc0zbYb",
+    "projectName": "BSU Agency <info@brilliantseedup.com>",
+    "personalEmail": "info@brilliantseedup.com"
+  },
+  "parentFolderId": "HWn7vIRYn4vaHZR5",
+  "isArchived": false
+}

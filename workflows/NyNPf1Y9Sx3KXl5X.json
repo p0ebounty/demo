@@ -1,0 +1,64 @@
+{
+  "id": "NyNPf1Y9Sx3KXl5X",
+  "name": "Company Group",
+  "nodes": [
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        0,
+        0
+      ],
+      "id": "1355b49d-689f-4e14-a1cb-0fc7a309afc3",
+      "name": "When clicking ‘Execute workflow’"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "-- Скрипт для группировки компаний по схожести названий\n-- Использует PostgreSQL расширение pg_trgm для нечёткого поиска\n-- Обрабатывает только записи без назначенной группы\n\n-- 1. Включаем расширение для работы со схожестью строк (если ещё не включено)\nCREATE EXTENSION IF NOT EXISTS pg_trgm;\n\n-- 2. Создаём временную таблицу для хранения уникальных компаний и их групп\nDROP TABLE IF EXISTS temp_company_groups;\nCREATE TEMP TABLE temp_company_groups (\n    group_id BIGINT,\n    company_name TEXT,\n    normalized_name TEXT,\n    existing_group_id BIGINT,\n    PRIMARY KEY (company_name)\n);\n\n-- 3. Создаём функцию для нормализации названий компаний\nCREATE OR REPLACE FUNCTION normalize_company_name(name TEXT) \nRETURNS TEXT AS $$\nBEGIN\n    -- Приводим к нижнему регистру и удаляем лишние пробелы\n    name := LOWER(TRIM(name));\n    \n    -- Удаляем распространённые суффиксы компаний\n    name := REGEXP_REPLACE(name, '\\s+(inc\\.?|incorporated|corp\\.?|corporation|llc|ltd\\.?|limited|gmbh|ag|sa|srl|spa|plc|pvt|pte|pty|co\\.?|company)$', '', 'gi');\n    \n    -- Удаляем специальные символы, оставляя только буквы, цифры и пробелы\n    name := REGEXP_REPLACE(name, '[^a-zа-я0-9\\s]', '', 'gi');\n    \n    -- Удаляем множественные пробелы\n    name := REGEXP_REPLACE(name, '\\s+', ' ', 'g');\n    \n    RETURN TRIM(name);\nEND;\n$$ LANGUAGE plpgsql;\n\n-- 4. Заполняем временную таблицу всеми уникальными компаниями (включая уже сгруппированные)\nINSERT INTO temp_company_groups (company_name, normalized_name, existing_group_id)\nSELECT DISTINCT \n    \"Company\",\n    normalize_company_name(\"Company\"),\n    \"CompanyGroup\"\nFROM {{ $vars.ncdbid }}.\"Contacts\"\nWHERE \"Company\" IS NOT NULL \n    AND TRIM(\"Company\") != '';\n\n-- 5. Создаём последовательность для генерации ID групп, начиная с максимального существующего + 1\nDO $$\nDECLARE\n    max_existing_group_id BIGINT;\nBEGIN\n    SELECT COALESCE(MAX(\"CompanyGroup\"), 0) INTO max_existing_group_id\n    FROM {{ $vars.ncdbid }}.\"Contacts\"\n    WHERE \"CompanyGroup\" IS NOT NULL;\n    \n    DROP SEQUENCE IF EXISTS company_group_seq;\n    EXECUTE 'CREATE SEQUENCE company_group_seq START WITH ' || (max_existing_group_id + 1);\nEND $$;\n\n-- 6. Сначала копируем существующие группы\nUPDATE temp_company_groups\nSET group_id = existing_group_id\nWHERE existing_group_id IS NOT NULL;\n\n-- 7. Присваиваем group_id для компаний без группы\nDO $$\nDECLARE\n    rec RECORD;\n    current_group_id BIGINT;\n    similarity_threshold FLOAT := 0.7; -- Порог схожести (70%)\nBEGIN\n    -- Обрабатываем только компании без назначенной группы\n    FOR rec IN \n        SELECT company_name, normalized_name \n        FROM temp_company_groups \n        WHERE group_id IS NULL\n        ORDER BY normalized_name, company_name\n    LOOP\n        -- Сначала ищем среди уже существующих групп (включая ранее назначенные)\n        SELECT group_id INTO current_group_id\n        FROM temp_company_groups\n        WHERE group_id IS NOT NULL\n            AND normalized_name IS NOT NULL\n            AND rec.normalized_name IS NOT NULL\n            AND similarity(normalized_name, rec.normalized_name) >= similarity_threshold\n        LIMIT 1;\n        \n        -- Если похожая группа не найдена, создаём новую\n        IF current_group_id IS NULL THEN\n            current_group_id := nextval('company_group_seq');\n        END IF;\n        \n        -- Обновляем group_id для текущей компании\n        UPDATE temp_company_groups\n        SET group_id = current_group_id\n        WHERE company_name = rec.company_name;\n    END LOOP;\nEND $$;\n\n-- 8. Создаём индекс для ускорения обновления основной таблицы\nCREATE INDEX IF NOT EXISTS idx_contacts_company \nON {{ $vars.ncdbid }}.\"Contacts\" (\"Company\");\n\n-- 9. Обновляем основную таблицу только для записей без группы\nUPDATE {{ $vars.ncdbid }}.\"Contacts\" c\nSET \"CompanyGroup\" = tg.group_id\nFROM temp_company_groups tg\nWHERE c.\"Company\" = tg.company_name\n    AND c.\"CompanyGroup\" IS NULL;\n\n-- 10. Обнуляем группы для пустых компаний\nUPDATE {{ $vars.ncdbid }}.\"Contacts\"\nSET \"CompanyGroup\" = NULL\nWHERE \"Company\" IS NULL \n    OR TRIM(\"Company\") = '';\n\n-- 11. Объединённый отчёт со статистикой и примерами группировки\nWITH statistics AS (\n    SELECT \n        (SELECT COUNT(DISTINCT company_name) FROM temp_company_groups) as total_companies,\n        (SELECT COUNT(DISTINCT group_id) FROM temp_company_groups) as total_groups,\n        (SELECT COUNT(*) FROM temp_company_groups WHERE existing_group_id IS NULL) as new_companies_processed,\n        (SELECT COUNT(*) FROM temp_company_groups WHERE existing_group_id IS NOT NULL) as existing_companies_skipped,\n        ROUND(AVG(cnt), 2) as avg_group_size\n    FROM (\n        SELECT group_id, COUNT(*) as cnt\n        FROM temp_company_groups\n        GROUP BY group_id\n    ) t\n),\ntop_groups AS (\n    SELECT \n        JSON_AGG(\n            JSON_BUILD_OBJECT(\n                'group_id', group_id,\n                'company_count', company_count,\n                'companies', companies_in_group,\n                'has_new_companies', has_new_companies\n            ) ORDER BY company_count DESC\n        ) as groups_data\n    FROM (\n        SELECT \n            group_id,\n            COUNT(*) as company_count,\n            STRING_AGG(company_name, ', ' ORDER BY company_name) as companies_in_group,\n            BOOL_OR(existing_group_id IS NULL) as has_new_companies\n        FROM temp_company_groups\n        GROUP BY group_id\n        HAVING COUNT(*) > 1\n        ORDER BY COUNT(*) DESC\n        LIMIT 10\n    ) grouped\n)\nSELECT \n    JSON_BUILD_OBJECT(\n        'status', 'success',\n        'message', 'Company grouping completed',\n        'statistics', JSON_BUILD_OBJECT(\n            'total_unique_companies', s.total_companies,\n            'total_groups_created', s.total_groups,\n            'new_companies_processed', s.new_companies_processed,\n            'existing_companies_skipped', s.existing_companies_skipped,\n            'average_group_size', s.avg_group_size\n        ),\n        'top_groups', COALESCE(tg.groups_data, '[]'::json)\n    ) as result\nFROM statistics s\nCROSS JOIN top_groups tg;\n\n-- 12. Очищаем временные объекты\nDROP TABLE IF EXISTS temp_company_groups;\nDROP SEQUENCE IF EXISTS company_group_seq;\nDROP FUNCTION IF EXISTS normalize_company_name(TEXT);",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        208,
+        0
+      ],
+      "id": "6f75c2a6-66ba-453d-969a-0c2e33c1162a",
+      "name": "Execute a SQL query",
+      "credentials": {
+        "postgres": {
+          "id": "oZABCHH2vjfMvXoi",
+          "name": "nocodb"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "When clicking ‘Execute workflow’": {
+      "main": [
+        [
+          {
+            "node": "Execute a SQL query",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "triggerCount": 0,
+  "versionId": "8d1a8840-7a72-48b6-923f-84c30f279bd2",
+  "owner": {
+    "type": "personal",
+    "projectId": "I8ZweZXokOc0zbYb",
+    "projectName": "BSU Agency <info@brilliantseedup.com>",
+    "personalEmail": "info@brilliantseedup.com"
+  },
+  "parentFolderId": "bF4ciYwr94o73FSy",
+  "isArchived": true
+}

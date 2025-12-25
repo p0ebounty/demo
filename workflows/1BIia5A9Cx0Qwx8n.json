@@ -1,0 +1,54 @@
+{
+  "id": "1BIia5A9Cx0Qwx8n",
+  "name": "My workflow 9",
+  "nodes": [
+    {
+      "parameters": {
+        "authentication": "nocoDbApiToken",
+        "operation": "getAll",
+        "workspaceId": "wqp6q0zt",
+        "projectId": "p0a3eirwme1bmw7",
+        "table": "m6axccf0owo5kzd",
+        "limit": 20,
+        "options": {
+          "sort": {
+            "property": [
+              {
+                "field": "=Trigger"
+              }
+            ]
+          },
+          "where": "(Status,eq,Waiting)~and(Type,eq,Email)~(Data,notblank)"
+        }
+      },
+      "type": "n8n-nodes-base.nocoDb",
+      "typeVersion": 3,
+      "position": [
+        -64,
+        -16
+      ],
+      "id": "1dace74d-3329-49ae-960e-4fb859b49366",
+      "name": "get job1",
+      "credentials": {
+        "nocoDbApiToken": {
+          "id": "tg1sd8Mux2yjJLx7",
+          "name": "NocoDB"
+        }
+      }
+    }
+  ],
+  "connections": {},
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "triggerCount": 0,
+  "versionId": "acd5b176-aa09-4f09-bed6-ac925f36f9e8",
+  "owner": {
+    "type": "personal",
+    "projectId": "I8ZweZXokOc0zbYb",
+    "projectName": "BSU Agency <info@brilliantseedup.com>",
+    "personalEmail": "info@brilliantseedup.com"
+  },
+  "parentFolderId": "6Zu0qFSBwgKnmhZs",
+  "isArchived": true
+}

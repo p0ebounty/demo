@@ -1,0 +1,67 @@
+{
+  "id": "WrKlPjYJ7s4uQdJT",
+  "name": "My workflow 7",
+  "nodes": [
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        0,
+        0
+      ],
+      "id": "da3f356e-ce9b-46e0-b051-49e857150056",
+      "name": "When clicking ‘Execute workflow’"
+    },
+    {
+      "parameters": {
+        "fromEmail": "Alex from CityCompany <dispatch@citycompany.net>",
+        "toEmail": "7481893@gmail.com",
+        "subject": "Test mail",
+        "html": "=Test mail\n<a href=\"{{unsubscribe_url}}\">Unsubscribe</a>",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2.1,
+      "position": [
+        208,
+        0
+      ],
+      "id": "e0aa1750-962a-4afe-812a-34960e956cca",
+      "name": "Send email",
+      "webhookId": "e26511e0-08e6-47fe-81d2-89d944884d5a",
+      "credentials": {
+        "smtp": {
+          "id": "Jd45EegKRNm0g0nD",
+          "name": "dispatch@city...(sendpulse)"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "When clicking ‘Execute workflow’": {
+      "main": [
+        [
+          {
+            "node": "Send email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "triggerCount": 0,
+  "versionId": "ea61aa4d-fe64-49e3-b44c-764d19203ac3",
+  "owner": {
+    "type": "personal",
+    "projectId": "I8ZweZXokOc0zbYb",
+    "projectName": "BSU Agency <info@brilliantseedup.com>",
+    "personalEmail": "info@brilliantseedup.com"
+  },
+  "parentFolderId": null,
+  "isArchived": true
+}

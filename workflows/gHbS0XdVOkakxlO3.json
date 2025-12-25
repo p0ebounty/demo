@@ -1,0 +1,532 @@
+{
+  "id": "gHbS0XdVOkakxlO3",
+  "name": "Seeker of Lost Tasks",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "triggerAtHour": 1
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        0,
+        0
+      ],
+      "id": "39fe1f6f-0ea6-40df-b84c-538df9c378c6",
+      "name": "Schedule Trigger"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "-- Поиск потеряшек в Call system\nSELECT cs.id\nFROM {{ $vars.ncdbid }}.\"Call system\" cs\nWHERE cs.\"Status\" = 'Progress'\n  AND cs.\"updated_at\" < NOW() - INTERVAL '24 hours'\n  AND NOT EXISTS (\n    SELECT 1 \n    FROM {{ $vars.ncdbid }}.\"Scheduler\" sch\n    WHERE sch.\"Call system_id\" = cs.id\n  )\nORDER BY cs.id;",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        224,
+        0
+      ],
+      "id": "cae64936-32e5-4353-aa51-a6f7e0fa8e6d",
+      "name": "seeker",
+      "credentials": {
+        "postgres": {
+          "id": "oZABCHH2vjfMvXoi",
+          "name": "nocodb"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "authentication": "nocoDbApiToken",
+        "workspaceId": "wqp6q0zt",
+        "projectId": "p0a3eirwme1bmw7",
+        "table": "mkbhjd0aqdl1r1m",
+        "id": "={{ $json.id }}"
+      },
+      "type": "n8n-nodes-base.nocoDb",
+      "typeVersion": 3,
+      "position": [
+        688,
+        48
+      ],
+      "id": "15fc4a81-05bc-4e65-b90f-d47f6fd9a703",
+      "name": "get cs",
+      "executeOnce": false,
+      "credentials": {
+        "nocoDbApiToken": {
+          "id": "tg1sd8Mux2yjJLx7",
+          "name": "NocoDB"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        432,
+        0
+      ],
+      "id": "25bc9904-138f-4c89-8c62-f42cdf12269a",
+      "name": "loop"
+    },
+    {
+      "parameters": {
+        "authentication": "nocoDbApiToken",
+        "operation": "update",
+        "workspaceId": "wqp6q0zt",
+        "projectId": "p0a3eirwme1bmw7",
+        "table": "mkbhjd0aqdl1r1m",
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldName": "=Id",
+              "fieldValue": "={{ $node[\"get cs\"].json[\"Id\"] }}"
+            },
+            {
+              "fieldName": "Status",
+              "fieldValue": "Error"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.nocoDb",
+      "typeVersion": 3,
+      "position": [
+        608,
+        288
+      ],
+      "id": "e7165f93-cf92-4603-be3c-d2351576ca86",
+      "name": "to error",
+      "credentials": {
+        "nocoDbApiToken": {
+          "id": "tg1sd8Mux2yjJLx7",
+          "name": "NocoDB"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "value": "TzPSlJCrmIa3aftV",
+          "mode": "list",
+          "cachedResultUrl": "/workflow/TzPSlJCrmIa3aftV",
+          "cachedResultName": "Comment nocobd"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "comment": "=Missing data, missing record - error",
+            "base_id": "={{ $vars.nc_base_cs }}",
+            "row_id": "={{ $node[\"get cs\"].json[\"Id\"] }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "comment",
+              "displayName": "comment",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "base_id",
+              "displayName": "base_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "row_id",
+              "displayName": "row_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "number"
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": true
+        },
+        "options": {
+          "waitForSubWorkflow": false
+        }
+      },
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.2,
+      "position": [
+        880,
+        288
+      ],
+      "id": "6a4e6d9b-1d81-4c8c-8e32-8858bd3db8a0",
+      "name": "comment1"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "429bbde6-e1ed-4f19-9d13-f061d546dfe3",
+              "leftValue": "={{ $json.Phone }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty",
+                "singleValue": true
+              }
+            },
+            {
+              "id": "31d0989e-d373-4f6b-9ee0-c97792839f6d",
+              "leftValue": "={{ $json.Name }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty",
+                "singleValue": true
+              }
+            },
+            {
+              "id": "5081fab1-f7a0-4e62-baa7-4baa03018667",
+              "leftValue": "={{ $json.Contacts_id }}",
+              "rightValue": "",
+              "operator": {
+                "type": "number",
+                "operation": "notEmpty",
+                "singleValue": true
+              }
+            },
+            {
+              "id": "407e3c6c-1c97-4dff-92bc-2441e6f85f6e",
+              "leftValue": "={{ $json.Contacts.Id }}",
+              "rightValue": "",
+              "operator": {
+                "type": "number",
+                "operation": "notEmpty",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        896,
+        48
+      ],
+      "id": "73241a44-0e56-4e1e-9001-9164572893b6",
+      "name": "valid?"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "6a970a3c-6477-466d-b32e-8963daa3ac09",
+              "leftValue": "={{ $json.Schedule }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        1120,
+        32
+      ],
+      "id": "2f691869-03ae-4fb7-b70b-bec38fd4e03c",
+      "name": "check schedule"
+    },
+    {
+      "parameters": {
+        "authentication": "nocoDbApiToken",
+        "operation": "update",
+        "workspaceId": "wqp6q0zt",
+        "projectId": "p0a3eirwme1bmw7",
+        "table": "mkbhjd0aqdl1r1m",
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldName": "=Id",
+              "fieldValue": "={{ $node[\"get cs\"].json[\"Id\"] }}"
+            },
+            {
+              "fieldName": "Schedule",
+              "fieldValue": "Default"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.nocoDb",
+      "typeVersion": 3,
+      "position": [
+        1360,
+        176
+      ],
+      "id": "2bd6e9ab-4094-403a-9214-80df21afaa0e",
+      "name": "update schedule",
+      "credentials": {
+        "nocoDbApiToken": {
+          "id": "tg1sd8Mux2yjJLx7",
+          "name": "NocoDB"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "value": "yg4qzNvM7Bv1nFyu",
+          "mode": "list",
+          "cachedResultUrl": "/workflow/yg4qzNvM7Bv1nFyu",
+          "cachedResultName": "Planner"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "type": "Default",
+            "cs_id": "={{ $node[\"get cs\"].json[\"Id\"] }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "cs_id",
+              "displayName": "cs_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "number",
+              "removed": false
+            },
+            {
+              "id": "type",
+              "displayName": "type",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": true
+        },
+        "options": {
+          "waitForSubWorkflow": false
+        }
+      },
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.3,
+      "position": [
+        1568,
+        32
+      ],
+      "id": "6ea4c1fb-7af6-4c98-b476-099bef2f59ce",
+      "name": "Call 'Planner'"
+    },
+    {
+      "parameters": {
+        "amount": 3
+      },
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        1568,
+        384
+      ],
+      "id": "581d616e-e9ce-42ad-8d69-365426d1a41a",
+      "name": "Wait",
+      "webhookId": "2c4c6264-7522-490a-b484-03ee6d3beec7"
+    }
+  ],
+  "connections": {
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "seeker",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "seeker": {
+      "main": [
+        [
+          {
+            "node": "loop",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "loop": {
+      "main": [
+        [],
+        [
+          {
+            "node": "get cs",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "get cs": {
+      "main": [
+        [
+          {
+            "node": "valid?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "to error": {
+      "main": [
+        [
+          {
+            "node": "comment1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "comment1": {
+      "main": [
+        [
+          {
+            "node": "Wait",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "valid?": {
+      "main": [
+        [
+          {
+            "node": "check schedule",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "to error",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "check schedule": {
+      "main": [
+        [
+          {
+            "node": "Call 'Planner'",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "update schedule",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "update schedule": {
+      "main": [
+        [
+          {
+            "node": "Call 'Planner'",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Call 'Planner'": {
+      "main": [
+        [
+          {
+            "node": "Wait",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait": {
+      "main": [
+        [
+          {
+            "node": "loop",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "triggerCount": 1,
+  "versionId": "08158b9b-37d2-4776-ae44-6d80529651e0",
+  "owner": {
+    "type": "personal",
+    "projectId": "I8ZweZXokOc0zbYb",
+    "projectName": "BSU Agency <info@brilliantseedup.com>",
+    "personalEmail": "info@brilliantseedup.com"
+  },
+  "parentFolderId": "mIvDkh1v9thmXFfY",
+  "isArchived": false
+}

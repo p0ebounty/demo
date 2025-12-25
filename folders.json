@@ -1,0 +1,124 @@
+{
+  "folders": [
+    {
+      "id": "pKxPYoaapRWNwU1d",
+      "name": "Activity Catcher",
+      "parentFolderId": "HWn7vIRYn4vaHZR5",
+      "homeProjectId": "I8ZweZXokOc0zbYb",
+      "createdAt": "2025-09-24T12:34:26.324Z",
+      "updatedAt": "2025-09-24T12:34:26.324Z"
+    },
+    {
+      "id": "rAakqP66NyIafoHi",
+      "name": "Run call",
+      "parentFolderId": "v1Un8AcPCflFCY9o",
+      "homeProjectId": "I8ZweZXokOc0zbYb",
+      "createdAt": "2025-09-25T13:34:00.425Z",
+      "updatedAt": "2025-09-25T13:34:00.425Z"
+    },
+    {
+      "id": "kK192fbu6GJvHsuJ",
+      "name": "Auxiliary",
+      "parentFolderId": "bF4ciYwr94o73FSy",
+      "homeProjectId": "I8ZweZXokOc0zbYb",
+      "createdAt": "2025-09-30T11:32:52.916Z",
+      "updatedAt": "2025-09-30T11:32:52.916Z"
+    },
+    {
+      "id": "ldWFZ7Y31LSfJYne",
+      "name": "End call",
+      "parentFolderId": "v1Un8AcPCflFCY9o",
+      "homeProjectId": "I8ZweZXokOc0zbYb",
+      "createdAt": "2025-10-31T14:06:58.583Z",
+      "updatedAt": "2025-10-31T14:06:58.583Z"
+    },
+    {
+      "id": "LFb2ICwgYRTdyBEb",
+      "name": "Tools",
+      "parentFolderId": "v1Un8AcPCflFCY9o",
+      "homeProjectId": "I8ZweZXokOc0zbYb",
+      "createdAt": "2025-11-01T12:04:27.691Z",
+      "updatedAt": "2025-11-01T12:04:27.691Z"
+    },
+    {
+      "id": "ZtZlVganCQMwp6yk",
+      "name": "Scheduler",
+      "parentFolderId": "v1Un8AcPCflFCY9o",
+      "homeProjectId": "I8ZweZXokOc0zbYb",
+      "createdAt": "2025-11-08T13:09:11.408Z",
+      "updatedAt": "2025-11-09T17:10:31.207Z"
+    },
+    {
+      "id": "mIvDkh1v9thmXFfY",
+      "name": "Systems",
+      "parentFolderId": "v1Un8AcPCflFCY9o",
+      "homeProjectId": "I8ZweZXokOc0zbYb",
+      "createdAt": "2025-11-09T17:33:27.271Z",
+      "updatedAt": "2025-11-09T17:33:27.271Z"
+    },
+    {
+      "id": "0KEQXy0W85PP7KZ2",
+      "name": "Noti",
+      "parentFolderId": "v1Un8AcPCflFCY9o",
+      "homeProjectId": "I8ZweZXokOc0zbYb",
+      "createdAt": "2025-11-14T15:20:16.261Z",
+      "updatedAt": "2025-11-14T20:41:38.074Z"
+    },
+    {
+      "id": "MZvrqXX7l9tZBFs4",
+      "name": "Data transfer",
+      "parentFolderId": "bF4ciYwr94o73FSy",
+      "homeProjectId": "I8ZweZXokOc0zbYb",
+      "createdAt": "2025-11-19T15:22:44.381Z",
+      "updatedAt": "2025-11-19T15:22:44.381Z"
+    },
+    {
+      "id": "bF4ciYwr94o73FSy",
+      "name": "General",
+      "parentFolderId": null,
+      "homeProjectId": "I8ZweZXokOc0zbYb",
+      "createdAt": "2025-09-25T11:19:40.871Z",
+      "updatedAt": "2025-11-23T09:55:49.692Z"
+    },
+    {
+      "id": "HWn7vIRYn4vaHZR5",
+      "name": "Campagin",
+      "parentFolderId": null,
+      "homeProjectId": "I8ZweZXokOc0zbYb",
+      "createdAt": "2025-09-23T16:01:12.547Z",
+      "updatedAt": "2025-11-23T09:55:50.931Z"
+    },
+    {
+      "id": "v1Un8AcPCflFCY9o",
+      "name": "Call system",
+      "parentFolderId": null,
+      "homeProjectId": "I8ZweZXokOc0zbYb",
+      "createdAt": "2025-09-23T12:05:01.591Z",
+      "updatedAt": "2025-11-23T09:55:52.288Z"
+    },
+    {
+      "id": "3FZ7QkXyU8MKIos8",
+      "name": "Scheduler",
+      "parentFolderId": "HWn7vIRYn4vaHZR5",
+      "homeProjectId": "I8ZweZXokOc0zbYb",
+      "createdAt": "2025-11-23T11:46:58.170Z",
+      "updatedAt": "2025-11-23T18:44:11.418Z"
+    },
+    {
+      "id": "6Zu0qFSBwgKnmhZs",
+      "name": "Emails",
+      "parentFolderId": "HWn7vIRYn4vaHZR5",
+      "homeProjectId": "I8ZweZXokOc0zbYb",
+      "createdAt": "2025-11-25T08:51:30.066Z",
+      "updatedAt": "2025-11-25T08:51:30.066Z"
+    },
+    {
+      "id": "f38emmI3bPpmxDcz",
+      "name": "Other",
+      "parentFolderId": "bF4ciYwr94o73FSy",
+      "homeProjectId": "I8ZweZXokOc0zbYb",
+      "createdAt": "2025-12-04T19:18:10.287Z",
+      "updatedAt": "2025-12-04T19:18:10.287Z"
+    }
+  ]
+}

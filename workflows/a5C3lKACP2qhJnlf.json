@@ -1,0 +1,558 @@
+{
+  "id": "a5C3lKACP2qhJnlf",
+  "name": "To heyreach",
+  "nodes": [
+    {
+      "parameters": {
+        "batchSize": 90,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        512,
+        80
+      ],
+      "id": "4441d870-e553-4ba6-a538-01e85a965eeb",
+      "name": "main loop"
+    },
+    {
+      "parameters": {
+        "amount": 1
+      },
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        1424,
+        384
+      ],
+      "id": "645a084d-b2d1-42d1-a92d-9747a52b0c26",
+      "name": "Wait",
+      "webhookId": "a65b3caf-aadb-4cf0-9a81-bdf913e1a22a"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "b228ff9a-5164-45d8-8e9a-7a28a642d575",
+              "leftValue": "={{ $json.LinkedIn }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.filter",
+      "typeVersion": 2.2,
+      "position": [
+        288,
+        80
+      ],
+      "id": "c26c04c0-973f-404b-852f-0afd9d7342ce",
+      "name": "Filter"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.heyreach.io/api/public/campaign/AddLeadsToCampaignV2",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n    \"campaignId\": {{ $('start').item.json.campagin }},\n    \"accountLeadPairs\": {{ JSON.stringify($json.accountLeadPairs) }}\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1184,
+        288
+      ],
+      "id": "54e0eae4-7649-4af2-a8c7-e8bba62f1dc2",
+      "name": "to linkedin"
+    },
+    {
+      "parameters": {
+        "fieldToSplitOut": "data",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.splitOut",
+      "typeVersion": 1,
+      "position": [
+        -16,
+        80
+      ],
+      "id": "c7fd475b-0e81-4887-b8a6-4b8c33d35ab1",
+      "name": "split"
+    },
+    {
+      "parameters": {
+        "aggregate": "aggregateAllItemData",
+        "destinationFieldName": "accountLeadPairs",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.aggregate",
+      "typeVersion": 1,
+      "position": [
+        960,
+        288
+      ],
+      "id": "5d8d599e-818f-4307-a335-29ec1b09bf39",
+      "name": "Aggregate"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "1679b1cf-7683-4803-8c07-b34de5a43af3",
+              "name": "lead",
+              "value": "={\n\"firstName\": {{ JSON.stringify($('main loop').item.json[\"Name\"]) || \"-\" }},\n\"lastName\": {{ JSON.stringify($('main loop').item.json[\"Surname\"]) || \"-\" }},\n\"location\": {{ JSON.stringify($('main loop').item.json[\"Location\"]) }},\n\"companyName\": {{ JSON.stringify($('main loop').item.json[\"Company\"]) }},\n\"summary\": {{ JSON.stringify($('main loop').item.json[\"Headline\"]) }},\n\"position\": {{ JSON.stringify($('main loop').item.json[\"Position\"]) }},\n\"emailAddress\": {{ JSON.stringify($('main loop').item.json[\"Email\"]) }},\n\"customUserFields\": [\n{\n\"name\": \"id\",\n\"value\": {{ JSON.stringify($('main loop').item.json[\"Id\"].toString()) }}\n}\n],\n\"profileUrl\": {{ JSON.stringify($('main loop').item.json[\"LinkedIn\"]) }}\n}",
+              "type": "object"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        736,
+        288
+      ],
+      "id": "eee7fb28-51de-4f48-a3f6-82d81dcb2dac",
+      "name": "to scruct"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.heyreach.io/api/public/campaign/Resume",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "campaignId",
+              "value": "={{ $('start').item.json.campagin }}"
+            }
+          ]
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Accept",
+              "value": "text/plain"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        848,
+        96
+      ],
+      "id": "a6c9812a-65bf-49eb-8f2e-34d3a0cc300c",
+      "name": "run campagin",
+      "executeOnce": true,
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.lead_id }}",
+                    "rightValue": "",
+                    "operator": {
+                      "type": "number",
+                      "operation": "notEmpty",
+                      "singleValue": true
+                    },
+                    "id": "e3d76332-3c36-428e-b409-b46d95992122"
+                  }
+                ],
+                "combinator": "and"
+              }
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "b446fe5f-f0a6-49ce-833e-b0407ee8d088",
+                    "leftValue": "={{ $json.data }}",
+                    "rightValue": "",
+                    "operator": {
+                      "type": "array",
+                      "operation": "notEmpty",
+                      "singleValue": true
+                    }
+                  }
+                ],
+                "combinator": "and"
+              }
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "3d71792a-508a-4d43-83f1-556c63deb46c",
+                    "leftValue": "={{ $json.segment }}",
+                    "rightValue": "",
+                    "operator": {
+                      "type": "number",
+                      "operation": "notEmpty",
+                      "singleValue": true
+                    }
+                  }
+                ],
+                "combinator": "and"
+              }
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.3,
+      "position": [
+        -240,
+        64
+      ],
+      "id": "ac2f1567-3ad8-41c6-972f-488ea1cf52a5",
+      "name": "Switch"
+    },
+    {
+      "parameters": {
+        "authentication": "nocoDbApiToken",
+        "workspaceId": "wqp6q0zt",
+        "projectId": "p0a3eirwme1bmw7",
+        "table": "meyq439syguvqhb",
+        "id": "={{ $json.contact_id }}"
+      },
+      "type": "n8n-nodes-base.nocoDb",
+      "typeVersion": 3,
+      "position": [
+        -16,
+        -112
+      ],
+      "id": "9f6e632c-e4d2-4f63-b725-de30d9f7741a",
+      "name": "get contact",
+      "credentials": {
+        "nocoDbApiToken": {
+          "id": "tg1sd8Mux2yjJLx7",
+          "name": "NocoDB"
+        }
+      },
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "authentication": "nocoDbApiToken",
+        "operation": "getAll",
+        "workspaceId": "wqp6q0zt",
+        "projectId": "p0a3eirwme1bmw7",
+        "table": "meyq439syguvqhb",
+        "returnAll": true,
+        "options": {
+          "where": "=(Group,eq,{{ $json.group || -1 }})~and(LinkedIn,notblank)"
+        }
+      },
+      "type": "n8n-nodes-base.nocoDb",
+      "typeVersion": 3,
+      "position": [
+        -16,
+        272
+      ],
+      "id": "ff984933-7fcf-422a-9497-63612320d6cc",
+      "name": "group",
+      "credentials": {
+        "nocoDbApiToken": {
+          "id": "tg1sd8Mux2yjJLx7",
+          "name": "NocoDB"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "authentication": "nocoDbApiToken",
+        "operation": "create",
+        "workspaceId": "wqp6q0zt",
+        "projectId": "p0a3eirwme1bmw7",
+        "table": "m3gkcorj95359wn",
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldName": "Note",
+              "fieldValue": "=Submitted to campaign no.{{ $('start').item.json.campagin }}"
+            },
+            {
+              "fieldName": "Type",
+              "fieldValue": "=LinkedIn campagin"
+            },
+            {
+              "fieldName": "Contacts_id",
+              "fieldValue": "={{ $json.Id }}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.nocoDb",
+      "typeVersion": 3,
+      "position": [
+        272,
+        400
+      ],
+      "id": "bae215d9-709c-4ca0-ba3e-2a889aa3b7a4",
+      "name": "Note Event",
+      "credentials": {
+        "nocoDbApiToken": {
+          "id": "tg1sd8Mux2yjJLx7",
+          "name": "NocoDB"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "workflowInputs": {
+          "values": [
+            {
+              "name": "campagin"
+            },
+            {
+              "name": "contact_id",
+              "type": "number"
+            },
+            {
+              "name": "group",
+              "type": "number"
+            },
+            {
+              "name": "data",
+              "type": "array"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        -448,
+        80
+      ],
+      "id": "87ca3885-8c6a-477c-b661-223558d8f15c",
+      "name": "start"
+    }
+  ],
+  "connections": {
+    "main loop": {
+      "main": [
+        [
+          {
+            "node": "run campagin",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "to scruct",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait": {
+      "main": [
+        [
+          {
+            "node": "main loop",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Filter": {
+      "main": [
+        [
+          {
+            "node": "main loop",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Note Event",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "to linkedin": {
+      "main": [
+        [
+          {
+            "node": "Wait",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "split": {
+      "main": [
+        [
+          {
+            "node": "Filter",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Aggregate": {
+      "main": [
+        [
+          {
+            "node": "to linkedin",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "to scruct": {
+      "main": [
+        [
+          {
+            "node": "Aggregate",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Switch": {
+      "main": [
+        [
+          {
+            "node": "get contact",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "split",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "group",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "get contact": {
+      "main": [
+        [
+          {
+            "node": "Filter",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "group": {
+      "main": [
+        [
+          {
+            "node": "Filter",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "start": {
+      "main": [
+        [
+          {
+            "node": "Switch",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "callerPolicy": "workflowsFromSameOwner",
+    "availableInMCP": false,
+    "errorWorkflow": "EuAkMSh7w9p9TJgj"
+  },
+  "triggerCount": 0,
+  "versionId": "050e7053-c10f-472e-992c-5b3aa2dd7724",
+  "owner": {
+    "type": "personal",
+    "projectId": "I8ZweZXokOc0zbYb",
+    "projectName": "BSU Agency <info@brilliantseedup.com>",
+    "personalEmail": "info@brilliantseedup.com"
+  },
+  "parentFolderId": "MZvrqXX7l9tZBFs4",
+  "isArchived": false
+}

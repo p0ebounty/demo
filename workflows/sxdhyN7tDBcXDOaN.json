@@ -1,0 +1,558 @@
+{
+  "id": "sxdhyN7tDBcXDOaN",
+  "name": "Not answered",
+  "nodes": [
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "cfd3f35a-8d99-4535-9a21-8af3a7341b20",
+              "leftValue": "={{ $json.Touches }}",
+              "rightValue": 7,
+              "operator": {
+                "type": "number",
+                "operation": "lt"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        592,
+        -144
+      ],
+      "id": "4ac17b74-189a-43f1-98b6-167ca05bbf62",
+      "name": "If"
+    },
+    {
+      "parameters": {
+        "authentication": "nocoDbApiToken",
+        "operation": "update",
+        "projectId": "ptmdi1uz55rzzvg",
+        "table": "mdmv1q3vfx8q9rh",
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldName": "=Id",
+              "fieldValue": "={{ $json.cal_id }}"
+            },
+            {
+              "fieldName": "Status",
+              "fieldValue": "={{ $('start').item.json.end_reason === \"voicemail\" ? \"Voicemail\" : \"Not answered\" }}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.nocoDb",
+      "typeVersion": 3,
+      "position": [
+        80,
+        208
+      ],
+      "id": "672ead54-9ede-48e0-ba92-290e9e2dfd4f",
+      "name": "status"
+    },
+    {
+      "parameters": {
+        "workflowInputs": {
+          "values": [
+            {
+              "name": "end_reason"
+            },
+            {
+              "name": "cs_id",
+              "type": "number"
+            },
+            {
+              "name": "call_id",
+              "type": "number"
+            },
+            {
+              "name": "type"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        -176,
+        -144
+      ],
+      "id": "dde1e9ec-aa09-4a5b-8cb6-64ff39f89e1e",
+      "name": "start"
+    },
+    {
+      "parameters": {
+        "authentication": "nocoDbApiToken",
+        "projectId": "ptmdi1uz55rzzvg",
+        "table": "mtpwsz22lwoci93",
+        "id": "={{ $json.lead_id }}"
+      },
+      "type": "n8n-nodes-base.nocoDb",
+      "typeVersion": 3,
+      "position": [
+        304,
+        -144
+      ],
+      "id": "f1e7d502-a0de-484a-829d-dd4b04e6d73b",
+      "name": "get lead"
+    },
+    {
+      "parameters": {
+        "jsCode": "const callCount = $('get lead').first().json.Touches;\n\nlet result;\n\nif (callCount <= 3) {\n  \tresult = 1;\n} else {\n\tresult = 3;\n}\n\nreturn [{ json: { result } }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        800,
+        -144
+      ],
+      "id": "2a54d853-316d-44d0-be5f-ab10d67f9182",
+      "name": "time"
+    },
+    {
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "value": "gLmCtAvVr7uepU6m",
+          "mode": "list",
+          "cachedResultUrl": "/workflow/gLmCtAvVr7uepU6m",
+          "cachedResultName": "Sheduler"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "next": "={{ $json.result.toString() + DateTime.now().setZone($json.timezone_used).toFormat('ZZ') }}",
+            "lead_id": "={{ $node[\"start\"].json[\"lead_id\"] }}",
+            "type": "={{ $('start').item.json.type || null }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "next",
+              "displayName": "next",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "lead_id",
+              "displayName": "lead_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "number",
+              "removed": false
+            },
+            {
+              "id": "type",
+              "displayName": "type",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": true
+        },
+        "options": {
+          "waitForSubWorkflow": false
+        }
+      },
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.2,
+      "position": [
+        1264,
+        -144
+      ],
+      "id": "a9771a13-5a6b-4152-8757-07638b374414",
+      "name": "Sheduler"
+    },
+    {
+      "parameters": {
+        "authentication": "nocoDbApiToken",
+        "operation": "update",
+        "projectId": "ptmdi1uz55rzzvg",
+        "table": "mtpwsz22lwoci93",
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldName": "=Id",
+              "fieldValue": "={{ $node[\"start\"].json[\"lead_id\"] }}"
+            },
+            {
+              "fieldName": "Status",
+              "fieldValue": "=No Answer"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.nocoDb",
+      "typeVersion": 3,
+      "position": [
+        720,
+        336
+      ],
+      "id": "d4778a22-a21f-4330-9836-b7fc8fda0d01",
+      "name": "status lead"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": false,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "569fb86f-948a-4d97-bbfd-7d67bc00ebc6",
+              "leftValue": "={{ $node[\"get lead\"].json[\"Status\"] }}",
+              "rightValue": "Hot",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            },
+            {
+              "id": "94c1fd56-6a3c-488d-9e53-bf4e8269f82a",
+              "leftValue": "={{ $node[\"get lead\"].json[\"Status\"] }}",
+              "rightValue": "Medium",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            },
+            {
+              "id": "d74ba35a-9c4c-4906-b6cf-cbc9c7b4f705",
+              "leftValue": "={{ $node[\"get lead\"].json[\"Status\"] }}",
+              "rightValue": "Low",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "or"
+        },
+        "options": {
+          "ignoreCase": true
+        }
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        496,
+        240
+      ],
+      "id": "e31d2fc1-ed85-46b1-9d54-c339ddb14754",
+      "name": "check status"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "69d74bc6-82da-4800-add3-736d1e3af5d3",
+              "leftValue": "={{ $json.cal_id }}",
+              "rightValue": "",
+              "operator": {
+                "type": "number",
+                "operation": "notEmpty",
+                "singleValue": true
+              }
+            },
+            {
+              "id": "4e23e71b-a3db-400c-868e-bba78c6abe1c",
+              "leftValue": "={{ $json.end_reason }}",
+              "rightValue": "Protect",
+              "operator": {
+                "type": "string",
+                "operation": "notEquals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -144,
+        208
+      ],
+      "id": "0a22682d-b971-4aa4-a859-0a025e2c912e",
+      "name": "call?"
+    },
+    {
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "value": "LkCPJzY5rcaqyVQk",
+          "mode": "list",
+          "cachedResultName": "Notification"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "lead_id": "={{ $node[\"get lead\"].json[\"Id\"] }}",
+            "type": "=end"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "lead_id",
+              "displayName": "lead_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "number"
+            },
+            {
+              "id": "type",
+              "displayName": "type",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "meet_id",
+              "displayName": "meet_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "number",
+              "removed": true
+            },
+            {
+              "id": "message",
+              "displayName": "message",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": true
+        },
+        "options": {
+          "waitForSubWorkflow": false
+        }
+      },
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.2,
+      "position": [
+        720,
+        144
+      ],
+      "id": "0ec3f608-2046-4b0e-8a01-6fa296f792d8",
+      "name": "Notification"
+    },
+    {
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "value": "RzfABB0rRVc2IITv",
+          "mode": "list",
+          "cachedResultName": "From calls"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "lead_id": "={{ $node[\"get lead\"].json[\"Id\"] }}"
+          },
+          "matchingColumns": [
+            "lead_id"
+          ],
+          "schema": [
+            {
+              "id": "lead_id",
+              "displayName": "lead_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "number",
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": true
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.2,
+      "position": [
+        496,
+        512
+      ],
+      "id": "cf0b5520-d5b4-4dc6-9787-3124d4d58b4e",
+      "name": "To campaign"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "WITH params AS (\n  -- Параметры из n8n\n  SELECT \n    {{ $json.result }}::integer AS day_offset,\n    '{{ $('get lead').item.json.TimeZone || $env['GENERIC_TIMEZONE'] || 'UTC' }}'::text AS time_zone\n),\nwork_hours AS (\n  -- Определяем начало и конец рабочего дня в UTC для заданной timezone\n  SELECT \n    (CURRENT_DATE + (SELECT day_offset FROM params) * INTERVAL '1 day' + TIME '10:00:00') \n      AT TIME ZONE (SELECT time_zone FROM params) AS work_start_utc,\n    (CURRENT_DATE + (SELECT day_offset FROM params) * INTERVAL '1 day' + TIME '20:00:00') \n      AT TIME ZONE (SELECT time_zone FROM params) AS work_end_utc\n),\nminute_slots AS (\n  -- Генерируем все минуты рабочего дня\n  SELECT \n    generate_series(\n      (SELECT work_start_utc FROM work_hours),\n      (SELECT work_end_utc FROM work_hours) - INTERVAL '1 minute',\n      INTERVAL '1 minute'\n    ) AS slot_time\n),\nbusy_counts AS (\n  -- Считаем занятость каждой минуты\n  SELECT \n    ms.slot_time,\n    COUNT(s.\"Trigger\") AS busy_count\n  FROM minute_slots ms\n  LEFT JOIN ptmdi1uz55rzzvg.\"Shedule\" s \n    ON DATE_TRUNC('minute', s.\"Trigger\") = ms.slot_time\n    AND s.\"Type\" != 'Outdated'\n  GROUP BY ms.slot_time\n)\n-- Находим минуту с минимальной загрузкой\nSELECT \n  TO_CHAR(slot_time AT TIME ZONE (SELECT time_zone FROM params), 'YYYY-MM-DD HH24:MI:SS') AS result,\n  (SELECT time_zone FROM params) AS timezone_used,\n  busy_count AS load\nFROM busy_counts\nORDER BY busy_count ASC, slot_time ASC\nLIMIT 1",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        1024,
+        -144
+      ],
+      "id": "7d051c65-55c5-4400-8cbb-c2b982741b20",
+      "name": "balancer"
+    }
+  ],
+  "connections": {
+    "If": {
+      "main": [
+        [
+          {
+            "node": "time",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "check status",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "To campaign",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "start": {
+      "main": [
+        [
+          {
+            "node": "get lead",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "call?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "get lead": {
+      "main": [
+        [
+          {
+            "node": "If",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "time": {
+      "main": [
+        [
+          {
+            "node": "balancer",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "check status": {
+      "main": [
+        [
+          {
+            "node": "Notification",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "status lead",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "call?": {
+      "main": [
+        [
+          {
+            "node": "status",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "balancer": {
+      "main": [
+        [
+          {
+            "node": "Sheduler",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "triggerCount": 0,
+  "versionId": "59ccf94a-64f3-4e66-afd0-4120b27813a2",
+  "owner": {
+    "type": "personal",
+    "projectId": "I8ZweZXokOc0zbYb",
+    "projectName": "BSU Agency <info@brilliantseedup.com>",
+    "personalEmail": "info@brilliantseedup.com"
+  },
+  "parentFolderId": "ldWFZ7Y31LSfJYne",
+  "isArchived": true
+}

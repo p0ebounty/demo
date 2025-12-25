@@ -1,0 +1,55 @@
+{
+  "id": "Cgmcjr76NdhdkLDk",
+  "name": "My workflow 5",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "877d062e-9d61-452d-b653-7841da390ce2",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        0,
+        0
+      ],
+      "id": "e385766c-965b-4172-9921-b87c31b633e3",
+      "name": "Webhook",
+      "webhookId": "877d062e-9d61-452d-b653-7841da390ce2"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://phone-call-websocket.aws-us-west-2-backend-production2.vapi.ai/019a988f-8088-799f-8828-f635b9f92d06/control",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"type\": \"add-message\",\n  \"message\": {\n    \"role\": \"system\",\n    \"content\": \"Last call you and David talked about Animals\"\n  },\n  \"triggerResponseEnabled\": false\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        272,
+        -64
+      ],
+      "id": "6d2d033d-f64e-475b-aa26-c05fa48ad64a",
+      "name": "to memory",
+      "onError": "continueRegularOutput"
+    }
+  ],
+  "connections": {},
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "triggerCount": 0,
+  "versionId": "bdbb5ac0-0644-489b-932f-2eae1fc4b817",
+  "owner": {
+    "type": "personal",
+    "projectId": "I8ZweZXokOc0zbYb",
+    "projectName": "BSU Agency <info@brilliantseedup.com>",
+    "personalEmail": "info@brilliantseedup.com"
+  },
+  "parentFolderId": null,
+  "isArchived": true
+}

@@ -1,0 +1,524 @@
+{
+  "id": "GQJnEfRacmaEqxCU",
+  "name": "Send Documents",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "cad62c24-60c1-4c6b-9ee6-e4ad3b142f14",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        -336,
+        -64
+      ],
+      "id": "cfb724a7-1d47-4211-8589-9fd9191870e3",
+      "name": "Webhook",
+      "webhookId": "cad62c24-60c1-4c6b-9ee6-e4ad3b142f14"
+    },
+    {
+      "parameters": {
+        "authentication": "nocoDbApiToken",
+        "operation": "getAll",
+        "workspaceId": "wqp6q0zt",
+        "projectId": "p0a3eirwme1bmw7",
+        "table": "mq8zrzuevo96lmw",
+        "limit": 1,
+        "options": {
+          "where": "=(Call ID,eq,{{ $node[\"Webhook\"].json[\"body\"][\"message\"][\"call\"][\"id\"] }})"
+        }
+      },
+      "type": "n8n-nodes-base.nocoDb",
+      "typeVersion": 3,
+      "position": [
+        -112,
+        -64
+      ],
+      "id": "4f7c23b7-0671-4e19-8143-4a4301f744a2",
+      "name": "get call",
+      "retryOnFail": false,
+      "alwaysOutputData": true,
+      "credentials": {
+        "nocoDbApiToken": {
+          "id": "tg1sd8Mux2yjJLx7",
+          "name": "NocoDB"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "f5abc434-50d0-4b00-a1e6-994ad95ec763",
+              "leftValue": "={{ $json.Id }}",
+              "rightValue": "",
+              "operator": {
+                "type": "number",
+                "operation": "notEmpty",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        112,
+        -64
+      ],
+      "id": "139561a9-dcd6-42e9-89de-574deae0928f",
+      "name": "found?"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={\n    \"results\": [\n        {\n            \"toolCallId\": \"{{ $('Webhook').item.json.body.message.toolCalls[0].id }}\",\n            \"result\": \"system error\"\n        }\n    ]\n}",
+        "options": {
+          "responseCode": 400
+        }
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.4,
+      "position": [
+        -160,
+        304
+      ],
+      "id": "2e0a95a1-e0bf-42ff-9302-4ae549b47b3c",
+      "name": "nf call"
+    },
+    {
+      "parameters": {
+        "authentication": "nocoDbApiToken",
+        "workspaceId": "wqp6q0zt",
+        "projectId": "p0a3eirwme1bmw7",
+        "table": "mkbhjd0aqdl1r1m",
+        "id": "={{ $('get call').item.json['Call system'].Id }}"
+      },
+      "type": "n8n-nodes-base.nocoDb",
+      "typeVersion": 3,
+      "position": [
+        336,
+        -64
+      ],
+      "id": "d553645b-b1ad-4d64-bdb5-be02b8897497",
+      "name": "get cs",
+      "credentials": {
+        "nocoDbApiToken": {
+          "id": "tg1sd8Mux2yjJLx7",
+          "name": "NocoDB"
+        }
+      },
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "ea8c3719-c3e3-43d9-b6c0-9901f2fd2942",
+              "name": "valid",
+              "value": "={{ $node[\"get cs\"].json[\"Email\"] ? $node[\"get cs\"].json[\"Email\"].isEmail() : false }}",
+              "type": "boolean"
+            },
+            {
+              "id": "33886cd3-454e-46e9-883c-55ab3515f960",
+              "name": "email",
+              "value": "={{ $node[\"get cs\"].json[\"Email\"] }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        560,
+        -64
+      ],
+      "id": "76f4973c-03fa-45e0-aade-d9bcb67ad2e1",
+      "name": "check"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={\n    \"results\": [\n        {\n            \"toolCallId\": \"{{ $('Webhook').item.json.body.message.toolCalls[0].id }}\",\n            \"result\": \"The client's email is missing or invalid\"\n        }\n    ]\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.4,
+      "position": [
+        1008,
+        32
+      ],
+      "id": "ce80519c-abff-4e40-a33c-d8ef535a63e5",
+      "name": "invalid check"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "8b2da18c-ed9c-4dd0-8c8d-e9c1fde56294",
+              "leftValue": "={{ $json.valid }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        784,
+        -64
+      ],
+      "id": "aef3a422-0a3f-459f-9a62-86c0f49cb125",
+      "name": "valid check email?"
+    },
+    {
+      "parameters": {
+        "sendTo": "={{ $node[\"check\"].json[\"email\"] }}",
+        "subject": "Continuation of the phone conversation",
+        "message": "=<!DOCTYPE html>\n<html lang=\"en\">\n<head>\n    <meta charset=\"UTF-8\">\n    <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">\n    <title>CityCompany - Follow-up Documents</title>\n    <style>\n        body {\n            font-family: Arial, sans-serif;\n            line-height: 1.6;\n            color: #333;\n            max-width: 600px;\n            margin: 0 auto;\n            padding: 20px;\n            background-color: #f4f4f4;\n        }\n        .email-container {\n            background-color: #ffffff;\n            padding: 20px;\n            box-shadow: 0 2px 4px rgba(0,0,0,0.1);\n        }\n        .header {\n            border-bottom: 3px solid #2c5aa0;\n            padding-bottom: 15px;\n            margin-bottom: 20px;\n        }\n        .greeting {\n            font-size: 16px;\n            margin-bottom: 15px;\n        }\n        .body-text {\n            font-size: 15px;\n            margin-bottom: 15px;\n        }\n        .documents-list {\n            background-color: #f8f9fa;\n            border-left: 4px solid #2c5aa0;\n            padding: 15px 15px;\n            margin: 20px 0;\n        }\n        .documents-list ol {\n            margin: 0;\n            padding-left: 20px;\n        }\n        .documents-list li {\n            margin-bottom: 10px;\n        }\n        .document-title {\n            font-weight: bold;\n            color: #2c5aa0;\n        }\n        .closing {\n            margin-top: 20px;\n            font-size: 15px;\n        }\n        .signature {\n            margin-top: 25px;\n            font-size: 15px;\n        }\n        .signature-name {\n            font-weight: bold;\n            margin-bottom: 3px;\n        }\n        .signature-company {\n            color: #2c5aa0;\n            font-weight: 600;\n        }\n    </style>\n</head>\n<body>\n    <div class=\"email-container\">\n        <div class=\"header\">\n            <p class=\"greeting\">Hi {{ $node[\"get cs\"].json[\"Name\"] }}, this is {{$vars.agent_name}} from CityCompany.</p>\n        </div>\n        \n        <p class=\"body-text\">\n            Thank you for taking the time to speak with me today. As promised, I'm sending over two documents:\n        </p>\n        \n        <div class=\"documents-list\">\n            <ol>\n                <li>\n                    <span class=\"document-title\">Company Brochure</span> - Overview of our transportation and logistics services, technology capabilities, and 98% on-time delivery track record\n                </li>\n                <li>\n                    <span class=\"document-title\">Customer Setup Package</span> - Everything you need to get started with us, including billing information and account setup forms\n                </li>\n            </ol>\n        </div>\n        \n        <p class=\"body-text\">\n            These will give you a comprehensive look at how we can help streamline your freight operations. If you have any questions about the materials or would like to discuss next steps, please don't hesitate to reach out.\n        </p>\n        \n        <p class=\"closing\">\n            Looking forward to working with you!\n        </p>\n        \n        <div class=\"signature\">\n            <p class=\"signature-name\">Best regards,<br>{{$vars.agent_name}}</p>\n            <p class=\"signature-company\">CityCompany</p>\n        </div>\n    </div>\n</body>\n</html>",
+        "options": {
+          "appendAttribution": false,
+          "attachmentsUi": {
+            "attachmentsBinary": [
+              {
+                "property": "={{ $json.fieldNames }}"
+              }
+            ]
+          },
+          "senderName": "={{ $vars.agent_name }} from CityCompany"
+        }
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [
+        1904,
+        -144
+      ],
+      "id": "4288e3da-27df-4618-b837-e29cbd3a8396",
+      "name": "Send a message",
+      "webhookId": "54cb0271-f8fa-4456-a584-337654345469",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "nNwwiMmgsNP43Hqh",
+          "name": "dispatch@citycompany.net"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Code Node - Run Once for All Items\nconst items = $input.all();\n\n// Создаем список названий полей через запятую\nconst fieldNames = items.map((item, index) => `file${index + 1}`).join(',');\n\n// Создаем объект с файлами под соответствующими именами\nconst filesObject = {};\nitems.forEach((item, index) => {\n  filesObject[`file${index + 1}`] = item.json;\n});\n\nreturn [{\n  json: {\n    fieldNames: fieldNames,\n    ...filesObject\n  },\n  binary: items.reduce((acc, item, index) => {\n    if (item.binary) {\n      acc[`file${index + 1}`] = item.binary.data;\n    }\n    return acc;\n  }, {})\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1696,
+        -144
+      ],
+      "id": "e9121f90-92cc-4f38-9958-54b87b58e971",
+      "name": "aggregate files"
+    },
+    {
+      "parameters": {
+        "operation": "download",
+        "fileId": {
+          "__rl": true,
+          "value": "={{ $json.id }}",
+          "mode": "id"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        1472,
+        -144
+      ],
+      "id": "b3b1d547-825e-4a12-95a2-0c87014fe052",
+      "name": "Download file",
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "dpM70buvC5aXXYq3",
+          "name": "dispatch@citycompany.net"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "fileFolder",
+        "limit": 5,
+        "filter": {
+          "folderId": {
+            "__rl": true,
+            "value": "1NpUuzAwTMJknPsQY2STVHiqEJHRJVRdF",
+            "mode": "list",
+            "cachedResultName": "Onboarding kit",
+            "cachedResultUrl": "https://drive.google.com/drive/folders/1NpUuzAwTMJknPsQY2STVHiqEJHRJVRdF"
+          }
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        1248,
+        -144
+      ],
+      "id": "a18fdafe-a476-4513-a99e-5f80915c2e22",
+      "name": "Search files and folders",
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "dpM70buvC5aXXYq3",
+          "name": "dispatch@citycompany.net"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={\n    \"results\": [\n        {\n            \"toolCallId\": \"{{ $('Webhook').item.json.body.message.toolCalls[0].id }}\",\n            \"result\": \"email sent to {{ $node[\"check\"].json[\"email\"] }}\"\n        }\n    ]\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.4,
+      "position": [
+        1008,
+        -144
+      ],
+      "id": "27d88b66-b9a8-4452-b943-1f69730af45d",
+      "name": "success"
+    },
+    {
+      "parameters": {
+        "authentication": "nocoDbApiToken",
+        "operation": "create",
+        "workspaceId": "wqp6q0zt",
+        "projectId": "p0a3eirwme1bmw7",
+        "table": "m3gkcorj95359wn",
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldName": "Note",
+              "fieldValue": "=The voice agent sent the client an onboarding email to email address {{ $node[\"check\"].json[\"email\"] }}"
+            },
+            {
+              "fieldName": "Type",
+              "fieldValue": "Email sent"
+            },
+            {
+              "fieldName": "Call system_id",
+              "fieldValue": "={{ $node[\"get cs\"].json[\"Id\"] }}"
+            },
+            {
+              "fieldName": "Link",
+              "fieldValue": "=https://mail.google.com/mail/u/3/#all/{{ $json.threadId }}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.nocoDb",
+      "typeVersion": 3,
+      "position": [
+        2112,
+        -144
+      ],
+      "id": "8c1aed08-440b-4b5b-ad3f-8fefb1d872fc",
+      "name": "create note",
+      "credentials": {
+        "nocoDbApiToken": {
+          "id": "tg1sd8Mux2yjJLx7",
+          "name": "NocoDB"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "get call",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "get call": {
+      "main": [
+        [
+          {
+            "node": "found?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "found?": {
+      "main": [
+        [
+          {
+            "node": "get cs",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "nf call",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "get cs": {
+      "main": [
+        [
+          {
+            "node": "check",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "nf call",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "check": {
+      "main": [
+        [
+          {
+            "node": "valid check email?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "valid check email?": {
+      "main": [
+        [
+          {
+            "node": "success",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "invalid check",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "aggregate files": {
+      "main": [
+        [
+          {
+            "node": "Send a message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Search files and folders": {
+      "main": [
+        [
+          {
+            "node": "Download file",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Download file": {
+      "main": [
+        [
+          {
+            "node": "aggregate files",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "success": {
+      "main": [
+        [
+          {
+            "node": "Search files and folders",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send a message": {
+      "main": [
+        [
+          {
+            "node": "create note",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "callerPolicy": "workflowsFromSameOwner",
+    "availableInMCP": false,
+    "errorWorkflow": "agw6jjdVg6yAawFi"
+  },
+  "triggerCount": 1,
+  "versionId": "674b83eb-a897-4afb-a704-d6bb5d8f57e9",
+  "owner": {
+    "type": "personal",
+    "projectId": "I8ZweZXokOc0zbYb",
+    "projectName": "BSU Agency <info@brilliantseedup.com>",
+    "personalEmail": "info@brilliantseedup.com"
+  },
+  "parentFolderId": "LFb2ICwgYRTdyBEb",
+  "isArchived": false
+}

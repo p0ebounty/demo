@@ -1,0 +1,601 @@
+{
+  "id": "kIP57q6SyXpruKvU",
+  "name": "Tender Noti",
+  "nodes": [
+    {
+      "parameters": {
+        "workflowInputs": {
+          "values": [
+            {
+              "name": "cs_id",
+              "type": "number"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        0,
+        -16
+      ],
+      "id": "b285f4b4-8794-4338-95ce-017aad527dd6",
+      "name": "start"
+    },
+    {
+      "parameters": {
+        "authentication": "nocoDbApiToken",
+        "workspaceId": "wqp6q0zt",
+        "projectId": "p0a3eirwme1bmw7",
+        "table": "mkbhjd0aqdl1r1m",
+        "id": "={{ $node[\"start\"].json[\"cs_id\"] }}"
+      },
+      "type": "n8n-nodes-base.nocoDb",
+      "typeVersion": 3,
+      "position": [
+        224,
+        -16
+      ],
+      "id": "2fec610f-cdae-42f4-935c-ec4e9254da38",
+      "name": "get cs",
+      "credentials": {
+        "nocoDbApiToken": {
+          "id": "tg1sd8Mux2yjJLx7",
+          "name": "NocoDB"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "73484819-ae93-4abf-b56c-90ae4a16749f",
+              "leftValue": "={{ $json.Tender.Id }}",
+              "rightValue": "",
+              "operator": {
+                "type": "number",
+                "operation": "notEmpty",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        448,
+        -16
+      ],
+      "id": "971a0601-4994-401e-8b78-03addb303e80",
+      "name": "tender?"
+    },
+    {
+      "parameters": {
+        "authentication": "nocoDbApiToken",
+        "workspaceId": "wqp6q0zt",
+        "projectId": "p0a3eirwme1bmw7",
+        "table": "m72mqad09x2x46l",
+        "id": "={{ $node[\"get cs\"].json[\"Tender\"][\"Id\"] }}"
+      },
+      "type": "n8n-nodes-base.nocoDb",
+      "typeVersion": 3,
+      "position": [
+        896,
+        -16
+      ],
+      "id": "a386bf28-f057-4df0-b7f7-0be4ab255633",
+      "name": "get tender",
+      "credentials": {
+        "nocoDbApiToken": {
+          "id": "tg1sd8Mux2yjJLx7",
+          "name": "NocoDB"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "6071dbf6-d961-4fc1-8934-bb3851c26cee",
+              "leftValue": "={{ $node[\"get tender\"].json[\"Start\"] }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        1312,
+        -16
+      ],
+      "id": "3b66c16b-f640-4bc6-97d1-84e412b4fcd3",
+      "name": "check start date"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "d03f3174-c6f7-4267-be3a-90a6301faac8",
+              "leftValue": "={{ $node[\"get tender\"].json[\"Start\"].toDateTime() >= $now }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        1600,
+        -16
+      ],
+      "id": "b70f7c9f-8766-464d-bd0b-536738421346",
+      "name": "actual?"
+    },
+    {
+      "parameters": {
+        "calendar": {
+          "__rl": true,
+          "value": "dispatch@citycompany.net",
+          "mode": "list",
+          "cachedResultName": "dispatch@citycompany.net"
+        },
+        "start": "={{ $node[\"get tender\"].json[\"Start\"] }}",
+        "end": "={{ $node[\"get tender\"].json[\"End\"] && $node[\"get tender\"].json[\"End\"].toDateTime() >= $node[\"get tender\"].json[\"Start\"].toDateTime() ? $node[\"get tender\"].json[\"End\"] : $node[\"get tender\"].json[\"Start\"] }}",
+        "useDefaultReminders": false,
+        "additionalFields": {
+          "allday": "yes",
+          "color": "11",
+          "description": "=Name: {{ $node[\"get cs\"].json[\"Name\"] || \"-\" }}\nPhone: {{ $node[\"get cs\"].json[\"Phone\"] || \"-\" }}\nEmail: {{ $node[\"get cs\"].json[\"Email\"] || \"-\" }}\n------\n{{ $node[\"get tender\"].json[\"Note\"] || \"-\" }}\n------\n{{ $vars.nocodb_url_ex }}#/wqp6q0zt/p0a3eirwme1bmw7/m72mqad09x2x46l?rowId={{ $node[\"get tender\"].json[\"Id\"] }}",
+          "showMeAs": "transparent",
+          "summary": "=Tender - {{ $node[\"get contact\"].json[\"Company\"] || \"company not specified\" }}"
+        },
+        "remindersUi": {
+          "remindersValues": [
+            {
+              "method": "popup",
+              "minutes": 1140
+            },
+            {
+              "method": "email",
+              "minutes": 1140
+            },
+            {
+              "method": "email",
+              "minutes": 11520
+            },
+            {
+              "method": "popup",
+              "minutes": 11520
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.googleCalendar",
+      "typeVersion": 1.3,
+      "position": [
+        1872,
+        -16
+      ],
+      "id": "c27b9191-078d-4353-88cd-a2f23e664147",
+      "name": "Create tender",
+      "credentials": {
+        "googleCalendarOAuth2Api": {
+          "id": "zMIBzQgIvqeIYt9M",
+          "name": "dispatch@citycompany.net"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "authentication": "nocoDbApiToken",
+        "workspaceId": "wqp6q0zt",
+        "projectId": "p0a3eirwme1bmw7",
+        "table": "meyq439syguvqhb",
+        "id": "={{ $node[\"get cs\"].json[\"Contacts\"][\"Id\"] }}"
+      },
+      "type": "n8n-nodes-base.nocoDb",
+      "typeVersion": 3,
+      "position": [
+        1104,
+        -16
+      ],
+      "id": "76c84a86-b641-41ed-87c3-248b183c3043",
+      "name": "get contact",
+      "credentials": {
+        "nocoDbApiToken": {
+          "id": "tg1sd8Mux2yjJLx7",
+          "name": "NocoDB"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "value": "bJE5YlhXAoMdJcvZ",
+          "mode": "list",
+          "cachedResultUrl": "/workflow/bJE5YlhXAoMdJcvZ",
+          "cachedResultName": "Assingn agent CS"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "cs_id": "={{ $node[\"get cs\"].json[\"Id\"] }}"
+          },
+          "matchingColumns": [
+            "cs_id"
+          ],
+          "schema": [
+            {
+              "id": "cs_id",
+              "displayName": "cs_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "number",
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": true
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.3,
+      "position": [
+        672,
+        -16
+      ],
+      "id": "6fdddeed-7b61-4bc0-96a5-56d4408a508f",
+      "name": "agent"
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $vars.warngroup }}",
+        "text": "=🎯 Tender Detected!\n\n🏢 Company: {{ $node[\"get contact\"].json[\"Company\"] || \"-\" }}\n\n👤 Contact\n• {{ $node[\"get cs\"].json[\"Name\"] || \"-\" }}\n• {{ $node[\"get cs\"].json[\"Phone\"] || \"-\" }}\n• {{ $node[\"get cs\"].json[\"Email\"] || \"-\" }}\n--------\n📅 Start: {{ $node[\"get tender\"].json[\"Start\"] || \"-\" }}\n📅 End: {{ $node[\"get tender\"].json[\"End\"] || \"-\" }}\n\n📋 Information:\n{{ $node[\"get tender\"].json[\"Note\"] }}\n--------\n📆 Added to Google Calendar ✓\n\n👨‍💼 Assigned: \n• {{ $node[\"agent\"].json[\"agent\"][\"Account\"][\"0\"][\"display_name\"] || \"-\" }}\n• {{ $node[\"agent\"].json[\"agent\"][\"Account\"][\"0\"][\"email\"] || \"-\" }}\n• {{ $node[\"agent\"].json[\"tg\"] || \"-\" }}",
+        "replyMarkup": "inlineKeyboard",
+        "inlineKeyboard": {
+          "rows": [
+            {
+              "row": {
+                "buttons": [
+                  {
+                    "text": "Open",
+                    "additionalFields": {
+                      "url": "={{ $vars.nocodb_url_ex }}#/wqp6q0zt/p0a3eirwme1bmw7/m72mqad09x2x46l?rowId={{ $node[\"get tender\"].json[\"Id\"] }}"
+                    }
+                  }
+                ]
+              }
+            }
+          ]
+        },
+        "additionalFields": {
+          "appendAttribution": false,
+          "message_thread_id": 10
+        }
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        1872,
+        -240
+      ],
+      "id": "8315b53d-0f91-4598-b8e9-08aa6870d26e",
+      "name": "tender full",
+      "webhookId": "b2f97887-034a-47e7-bdb4-75327f72f103",
+      "credentials": {
+        "telegramApi": {
+          "id": "yv48JNV4VmuIREaW",
+          "name": "Citycompany"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "pinChatMessage",
+        "chatId": "={{ $vars.warngroup }}",
+        "messageId": "={{ $json.result.message_id }}",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        2192,
+        368
+      ],
+      "id": "c951213d-56e0-410b-9c99-9da6eca07580",
+      "name": "pin",
+      "webhookId": "a6bd51a3-d8d0-4d8e-8ca0-d2bd05ffaad7",
+      "credentials": {
+        "telegramApi": {
+          "id": "yv48JNV4VmuIREaW",
+          "name": "Citycompany"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $vars.warngroup }}",
+        "text": "=🎯 Tender Detected!\n\n🏢 Company: {{ $node[\"get contact\"].json[\"Company\"] || \"-\" }}\n\n👤 Contact\n• {{ $node[\"get cs\"].json[\"Name\"] || \"-\" }}\n• {{ $node[\"get cs\"].json[\"Phone\"] || \"-\" }}\n• {{ $node[\"get cs\"].json[\"Email\"] || \"-\" }}\n--------\n⚠️The tender start date is out of date; there may be an error. Please check the details!\n\n📋 Information:\n{{ $node[\"get tender\"].json[\"Note\"] }}\n--------\n👨‍💼 Assigned: \n• {{ $node[\"agent\"].json[\"agent\"][\"Account\"][\"0\"][\"display_name\"] || \"-\" }}\n• {{ $node[\"agent\"].json[\"agent\"][\"Account\"][\"0\"][\"email\"] || \"-\" }}\n• {{ $node[\"agent\"].json[\"tg\"] || \"-\" }}",
+        "replyMarkup": "inlineKeyboard",
+        "inlineKeyboard": {
+          "rows": [
+            {
+              "row": {
+                "buttons": [
+                  {
+                    "text": "Open",
+                    "additionalFields": {
+                      "url": "={{ $vars.nocodb_url_ex }}#/wqp6q0zt/p0a3eirwme1bmw7/m72mqad09x2x46l?rowId={{ $node[\"get tender\"].json[\"Id\"] }}"
+                    }
+                  }
+                ]
+              }
+            }
+          ]
+        },
+        "additionalFields": {
+          "appendAttribution": false,
+          "message_thread_id": 10
+        }
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        1872,
+        224
+      ],
+      "id": "2f4fd969-cea5-43ac-8e10-1c36448abac7",
+      "name": "tender outdated",
+      "webhookId": "b2f97887-034a-47e7-bdb4-75327f72f103",
+      "credentials": {
+        "telegramApi": {
+          "id": "yv48JNV4VmuIREaW",
+          "name": "Citycompany"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $vars.warngroup }}",
+        "text": "=🎯 Tender Detected!\n\n🏢 Company: {{ $node[\"get contact\"].json[\"Company\"] || \"-\" }}\n\n👤 Contact\n• {{ $node[\"get cs\"].json[\"Name\"] || \"-\" }}\n• {{ $node[\"get cs\"].json[\"Phone\"] || \"-\" }}\n• {{ $node[\"get cs\"].json[\"Email\"] || \"-\" }}\n--------\n⚠️The tender start date has not been determined. Please check the details!\n\n📋 Information:\n{{ $node[\"get tender\"].json[\"Note\"] }}\n--------\n👨‍💼 Assigned: \n• {{ $node[\"agent\"].json[\"agent\"][\"Account\"][\"0\"][\"display_name\"] || \"-\" }}\n• {{ $node[\"agent\"].json[\"agent\"][\"Account\"][\"0\"][\"email\"] || \"-\" }}\n• {{ $node[\"agent\"].json[\"tg\"] || \"-\" }}",
+        "replyMarkup": "inlineKeyboard",
+        "inlineKeyboard": {
+          "rows": [
+            {
+              "row": {
+                "buttons": [
+                  {
+                    "text": "Open",
+                    "additionalFields": {
+                      "url": "={{ $vars.nocodb_url_ex }}#/wqp6q0zt/p0a3eirwme1bmw7/m72mqad09x2x46l?rowId={{ $node[\"get tender\"].json[\"Id\"] }}"
+                    }
+                  }
+                ]
+              }
+            }
+          ]
+        },
+        "additionalFields": {
+          "appendAttribution": false,
+          "message_thread_id": 10
+        }
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        1312,
+        368
+      ],
+      "id": "9220370e-85dc-47dc-9928-a0def10fe8c2",
+      "name": "tender wa start date",
+      "webhookId": "b2f97887-034a-47e7-bdb4-75327f72f103",
+      "credentials": {
+        "telegramApi": {
+          "id": "yv48JNV4VmuIREaW",
+          "name": "Citycompany"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "start": {
+      "main": [
+        [
+          {
+            "node": "get cs",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "get cs": {
+      "main": [
+        [
+          {
+            "node": "tender?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "tender?": {
+      "main": [
+        [
+          {
+            "node": "agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "get tender": {
+      "main": [
+        [
+          {
+            "node": "get contact",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "check start date": {
+      "main": [
+        [
+          {
+            "node": "actual?",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "tender wa start date",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "actual?": {
+      "main": [
+        [
+          {
+            "node": "Create tender",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "tender full",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "tender outdated",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "get contact": {
+      "main": [
+        [
+          {
+            "node": "check start date",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "agent": {
+      "main": [
+        [
+          {
+            "node": "get tender",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "tender full": {
+      "main": [
+        [
+          {
+            "node": "pin",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "tender outdated": {
+      "main": [
+        [
+          {
+            "node": "pin",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "tender wa start date": {
+      "main": [
+        [
+          {
+            "node": "pin",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "callerPolicy": "workflowsFromSameOwner",
+    "availableInMCP": false,
+    "errorWorkflow": "agw6jjdVg6yAawFi"
+  },
+  "triggerCount": 0,
+  "versionId": "1415392d-56fc-4f91-99eb-c6a172e5e79a",
+  "owner": {
+    "type": "personal",
+    "projectId": "I8ZweZXokOc0zbYb",
+    "projectName": "BSU Agency <info@brilliantseedup.com>",
+    "personalEmail": "info@brilliantseedup.com"
+  },
+  "parentFolderId": "0KEQXy0W85PP7KZ2",
+  "isArchived": false
+}

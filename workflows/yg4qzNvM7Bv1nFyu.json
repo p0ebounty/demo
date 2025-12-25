@@ -1,0 +1,1114 @@
+{
+  "id": "yg4qzNvM7Bv1nFyu",
+  "name": "Planner",
+  "nodes": [
+    {
+      "parameters": {
+        "workflowInputs": {
+          "values": [
+            {
+              "name": "cs_id",
+              "type": "number"
+            },
+            {
+              "name": "type"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        -400,
+        304
+      ],
+      "id": "b2ad58a1-2dfb-44ac-bdcb-a49dfac8b1df",
+      "name": "start"
+    },
+    {
+      "parameters": {
+        "authentication": "nocoDbApiToken",
+        "workspaceId": "wqp6q0zt",
+        "projectId": "p0a3eirwme1bmw7",
+        "table": "mkbhjd0aqdl1r1m",
+        "id": "={{ $node[\"start\"].json[\"cs_id\"] }}"
+      },
+      "type": "n8n-nodes-base.nocoDb",
+      "typeVersion": 3,
+      "position": [
+        -176,
+        304
+      ],
+      "id": "ccc4ca6c-94e5-47f1-a3d2-c28a1c9eeab0",
+      "name": "get cs",
+      "credentials": {
+        "nocoDbApiToken": {
+          "id": "tg1sd8Mux2yjJLx7",
+          "name": "NocoDB"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "get",
+        "dataTableId": {
+          "__rl": true,
+          "value": "h5VyLRYdTqANq405",
+          "mode": "list",
+          "cachedResultName": "Sheduler settings",
+          "cachedResultUrl": "/projects/Lz2EaMLn9ckxxJx0/datatables/h5VyLRYdTqANq405"
+        },
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "Type",
+              "keyValue": "={{ $node[\"get cs\"].json[\"Schedule\"] }}"
+            },
+            {
+              "keyName": "Type",
+              "keyValue": "Default"
+            }
+          ]
+        },
+        "limit": 2
+      },
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "position": [
+        576,
+        -16
+      ],
+      "id": "9ec66011-98aa-4605-9d14-8208cd63ed5f",
+      "name": "get schedule"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Получаем все входящие айтемы\nconst items = $input.all();\n\n// Преобразуем в массив объектов json\nconst dataArray = items.map(item => item.json);\n\n// Ищем элемент с Type отличным от \"Default\"\nconst nonDefaultItem = dataArray.find(item => item.Type !== \"Default\");\n\n// Если есть не-Default, берем его, иначе берем Default\nconst selectedItem = nonDefaultItem || dataArray.find(item => item.Type === \"Default\");\n\nreturn {\n  json: {\n    touches: selectedItem.Touches,\n    interval: selectedItem.Interval,\n    selectedType: selectedItem.Type\n  }\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        800,
+        80
+      ],
+      "id": "a5e3740a-41f6-4cab-b695-7a42b24432e1",
+      "name": "set schedule"
+    },
+    {
+      "parameters": {
+        "operation": "get",
+        "dataTableId": {
+          "__rl": true,
+          "value": "h5VyLRYdTqANq405",
+          "mode": "list",
+          "cachedResultName": "Sheduler settings",
+          "cachedResultUrl": "/projects/Lz2EaMLn9ckxxJx0/datatables/h5VyLRYdTqANq405"
+        },
+        "matchType": "allConditions",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "Type",
+              "keyValue": "Default"
+            }
+          ]
+        },
+        "limit": 2
+      },
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "position": [
+        576,
+        176
+      ],
+      "id": "65ab1aec-309d-4207-984c-031b81aa4f54",
+      "name": "get default"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "66228d29-734a-478f-8ffb-7fa800b0caf8",
+              "leftValue": "={{ $('start').item.json.type }}",
+              "rightValue": "Scenario",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            }
+          ],
+          "combinator": "or"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        352,
+        80
+      ],
+      "id": "6150b311-61a6-4ff5-8ba9-bd9f28b9efed",
+      "name": "shedule type"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "be7aa9fb-e115-4b51-a7dc-5ad2b26957c9",
+              "leftValue": "={{ $('get cs').first().json.Touches?.hasField($('set schedule').first().json.selectedType || \"Default\") || false }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        1056,
+        80
+      ],
+      "id": "9e67df8e-ba7e-4f1a-9789-d2e705e9c2ea",
+      "name": "check tag touches"
+    },
+    {
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "value": "tVRcohteAfz5Awae",
+          "mode": "list",
+          "cachedResultUrl": "/workflow/tVRcohteAfz5Awae",
+          "cachedResultName": "Touches controller"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "cs_id": "={{ $node[\"get cs\"].json[\"Id\"] }}",
+            "value": 0,
+            "tag": "={{ $('set schedule').item.json.selectedType }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "cs_id",
+              "displayName": "cs_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "number",
+              "removed": false
+            },
+            {
+              "id": "tag",
+              "displayName": "tag",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "value",
+              "displayName": "value",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "number",
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": true
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.3,
+      "position": [
+        1072,
+        384
+      ],
+      "id": "2ac13e21-a978-46e5-9db9-456d2eedb52c",
+      "name": "Touches controller"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "99608c88-c2f3-4654-a037-3b4fc4335e8b",
+              "name": "value",
+              "value": "={{ $json.Touches }}",
+              "type": "object"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1296,
+        384
+      ],
+      "id": "78532412-8a50-4afa-bd72-00a1ff5c7dbe",
+      "name": "output tc"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "99608c88-c2f3-4654-a037-3b4fc4335e8b",
+              "name": "value",
+              "value": "={{ $node[\"get cs\"].json[\"Touches\"] }}",
+              "type": "object"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1296,
+        80
+      ],
+      "id": "6fb6a9fc-3410-451c-8dba-61f079672db0",
+      "name": "output def"
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        1552,
+        192
+      ],
+      "id": "2883cfcc-496c-4d08-b1fa-5b39b8b21052",
+      "name": "Touches"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Get data from nodes using correct n8n syntax\nconst scheduleData = $(\"set schedule\").first().json;\nconst touchesData = $(\"Touches\").first().json;\n\n// Extract needed values\nconst selectedType = scheduleData.selectedType;\nconst touchesLimit = scheduleData.touches;\n\n// Get value object from Touches\nconst touchesValue = touchesData?.value;\n\n// Check if selectedType exists in value object\nif (!touchesValue || !touchesValue.hasOwnProperty(selectedType)) {\n  // Failed to match\n  return {\n    json: {\n      result: false,\n      code: 2,\n      message: `Tag ${selectedType} not found in Touches`\n    }\n  };\n}\n\n// Get current counter value\nconst currentTouches = touchesValue[selectedType];\n\n// Check if limit exceeded\nif (currentTouches >= touchesLimit) {\n  // Limit exceeded\n  return {\n    json: {\n      result: false,\n      code: 1,\n      message: `Limit exceeded: ${currentTouches} >= ${touchesLimit}`\n    }\n  };\n}\n\n// Limit not exceeded\nreturn {\n  json: {\n    result: true,\n    code: 0,\n    message: `Limit OK: ${currentTouches} < ${touchesLimit}`\n  }\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1760,
+        192
+      ],
+      "id": "f131955c-b050-4dab-87e2-8b6adf272510",
+      "name": "decider"
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.result }}",
+                    "rightValue": "",
+                    "operator": {
+                      "type": "boolean",
+                      "operation": "true",
+                      "singleValue": true
+                    },
+                    "id": "fab1b35f-596c-4c98-a400-ad3c143ddf6e"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "continue"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "0553a7e5-a8ca-4ab4-896e-cf6175f78a7d",
+                    "leftValue": "={{ $json.code }}",
+                    "rightValue": 2,
+                    "operator": {
+                      "type": "number",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "error"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "da885ef3-0247-4508-b434-243ef5039151",
+                    "leftValue": "={{ $json.result }}",
+                    "rightValue": "",
+                    "operator": {
+                      "type": "boolean",
+                      "operation": "false",
+                      "singleValue": true
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "end"
+            }
+          ]
+        },
+        "options": {
+          "allMatchingOutputs": true
+        }
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.3,
+      "position": [
+        1968,
+        176
+      ],
+      "id": "328e6fe1-d738-4416-adff-2db48c39b188",
+      "name": "Switch"
+    },
+    {
+      "parameters": {
+        "errorMessage": "={{ $json.message }}"
+      },
+      "type": "n8n-nodes-base.stopAndError",
+      "typeVersion": 1,
+      "position": [
+        1568,
+        1136
+      ],
+      "id": "11bb9c2f-eab4-40e9-a0c3-c4f28601d9f4",
+      "name": "Stop and Error"
+    },
+    {
+      "parameters": {
+        "url": "={{$vars.nocodb_url}}api/v2/tables/mkbhjd0aqdl1r1m/links/czlo0oqp4jes3k4/records/{{ $node[\"get cs\"].json[\"Id\"] }}",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "nocoDbApiToken",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "fields",
+              "value": "Status,Created"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1680,
+        720
+      ],
+      "id": "29dc79a5-0687-4feb-a5af-b481d90e8d69",
+      "name": "get calls",
+      "credentials": {
+        "nocoDbApiToken": {
+          "id": "tg1sd8Mux2yjJLx7",
+          "name": "NocoDB"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const list = $input.first().json.list || [];\nif (list.length === 0) {\n  return { json: { result: \"Error\" } };\n}\n\nconst sorted = list.sort((a, b) => new Date(a.Created) - new Date(b.Created));\nconst lastStatus = sorted[sorted.length - 1].Status;\n\nif (lastStatus === \"Answered\") {\n  return { json: { result: \"Done\" } };\n}\n\nconst answered = sorted.filter(x => x.Status === \"Answered\").length;\nconst errors = sorted.filter(x => x.Status === \"Error\").length;\nconst others = sorted.length - answered - errors;\n\n// Если ошибок больше всего\nif (errors > answered && errors > others) {\n  return { json: { result: \"Error\" } };\n}\n\n// Если ответов больше остальных\nif (answered > errors && answered > others) {\n  return { json: { result: \"Done\" } };\n}\n\nreturn { json: { result: \"No answer\" } };"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1904,
+        720
+      ],
+      "id": "36a88c51-ab89-4ddd-8856-1cfdeb2069c9",
+      "name": "selecting status"
+    },
+    {
+      "parameters": {
+        "authentication": "nocoDbApiToken",
+        "operation": "update",
+        "workspaceId": "wqp6q0zt",
+        "projectId": "p0a3eirwme1bmw7",
+        "table": "mkbhjd0aqdl1r1m",
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldName": "Id",
+              "fieldValue": "={{ $node[\"get cs\"].json[\"Id\"] }}"
+            },
+            {
+              "fieldName": "Status",
+              "fieldValue": "={{ $node[\"selecting status\"].json[\"result\"] }}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.nocoDb",
+      "typeVersion": 3,
+      "position": [
+        2128,
+        720
+      ],
+      "id": "508d0e7d-68c5-4a11-9723-7af8c4ce1c6a",
+      "name": "end cs",
+      "credentials": {
+        "nocoDbApiToken": {
+          "id": "tg1sd8Mux2yjJLx7",
+          "name": "NocoDB"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "url": "={{$vars.nocodb_url}}api/v2/tables/mkbhjd0aqdl1r1m/links/cni7insi31m2uih/records/{{ $node[\"get cs\"].json[\"Id\"] }}",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "nocoDbApiToken",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "fields",
+              "value": "Id"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1680,
+        496
+      ],
+      "id": "7d06a248-5cc0-4215-a56a-9a675d214944",
+      "name": "get shedules",
+      "credentials": {
+        "nocoDbApiToken": {
+          "id": "tg1sd8Mux2yjJLx7",
+          "name": "NocoDB"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "fieldToSplitOut": "list",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.splitOut",
+      "typeVersion": 1,
+      "position": [
+        1904,
+        496
+      ],
+      "id": "7735faa9-81fc-4565-83f1-9ab5a98f5987",
+      "name": "split shedules"
+    },
+    {
+      "parameters": {
+        "authentication": "nocoDbApiToken",
+        "operation": "delete",
+        "workspaceId": "wqp6q0zt",
+        "projectId": "p0a3eirwme1bmw7",
+        "table": "my3mge2lsx8utvk",
+        "id": "={{ $json.Id }}"
+      },
+      "type": "n8n-nodes-base.nocoDb",
+      "typeVersion": 3,
+      "position": [
+        2128,
+        496
+      ],
+      "id": "24846cdf-7df6-4b5e-ab0d-ddca16de5a9f",
+      "name": "del shedules",
+      "credentials": {
+        "nocoDbApiToken": {
+          "id": "tg1sd8Mux2yjJLx7",
+          "name": "NocoDB"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "4bd1f4e9-403e-4ba6-a044-e7622f935425",
+              "leftValue": "={{ $node[\"get cs\"].json[\"Contacts\"][\"Id\"] }}",
+              "rightValue": "",
+              "operator": {
+                "type": "number",
+                "operation": "notEmpty",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        1680,
+        944
+      ],
+      "id": "fbe2708c-4cb9-4978-8d6b-49e11b49fde6",
+      "name": "contact?"
+    },
+    {
+      "parameters": {
+        "authentication": "nocoDbApiToken",
+        "operation": "update",
+        "workspaceId": "wqp6q0zt",
+        "projectId": "p0a3eirwme1bmw7",
+        "table": "meyq439syguvqhb",
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldName": "Id",
+              "fieldValue": "={{ $node[\"get cs\"].json[\"Contacts\"][\"Id\"] }}"
+            },
+            {
+              "fieldName": "CSS",
+              "fieldValue": "Done"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.nocoDb",
+      "typeVersion": 3,
+      "position": [
+        1904,
+        944
+      ],
+      "id": "b8bfdc71-3bc0-43a6-b845-5d9c5c810ab0",
+      "name": "end contact",
+      "credentials": {
+        "nocoDbApiToken": {
+          "id": "tg1sd8Mux2yjJLx7",
+          "name": "NocoDB"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "value": "r8iFGyQZgNDdeazO",
+          "mode": "list",
+          "cachedResultUrl": "/workflow/r8iFGyQZgNDdeazO",
+          "cachedResultName": "Setter"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "cs_id": "={{ $node[\"get cs\"].json[\"Id\"] }}",
+            "next": "={{ $json.result.toString() + DateTime.now().setZone($json.timezone_used).toFormat('ZZ') }}",
+            "type": "={{ $node[\"start\"].json[\"type\"] }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "next",
+              "displayName": "next",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "cs_id",
+              "displayName": "cs_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "number",
+              "removed": false
+            },
+            {
+              "id": "type",
+              "displayName": "type",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": true
+        },
+        "options": {
+          "waitForSubWorkflow": false
+        }
+      },
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.3,
+      "position": [
+        2480,
+        192
+      ],
+      "id": "0c278748-37b4-4ad4-a721-0978c0c459d0",
+      "name": "Call 'Setter'"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "WITH params AS (\n  -- Параметры из n8n\n  SELECT \n    {{ $node[\"set schedule\"].json[\"interval\"] }}::integer AS day_offset,\n    '{{ $(\"get cs\").first().json.TimeZone || $env.GENERIC_TIMEZONE || \"UTC\" }}'::text AS time_zone,\n    -- Настройки\n    {{ $vars.wh_start }}::int      AS start_hour, \n    {{ $vars.wh_end }}::int      AS end_hour, \n    {{ $vars.check_weekend }}::bool  AS check_weekend,\n    5::int       AS overload_threshold\n),\nadjusted_target AS (\n  SELECT \n    CASE \n      WHEN (SELECT check_weekend FROM params) = true THEN\n        CASE \n          WHEN EXTRACT(DOW FROM (CURRENT_TIMESTAMP AT TIME ZONE (SELECT time_zone FROM params))::date + (SELECT day_offset FROM params) * INTERVAL '1 day') = 0 THEN\n            (CURRENT_TIMESTAMP AT TIME ZONE (SELECT time_zone FROM params))::date + ((SELECT day_offset FROM params) + 1) * INTERVAL '1 day'\n          WHEN EXTRACT(DOW FROM (CURRENT_TIMESTAMP AT TIME ZONE (SELECT time_zone FROM params))::date + (SELECT day_offset FROM params) * INTERVAL '1 day') = 6 THEN\n            (CURRENT_TIMESTAMP AT TIME ZONE (SELECT time_zone FROM params))::date + ((SELECT day_offset FROM params) + 2) * INTERVAL '1 day'\n          ELSE\n            (CURRENT_TIMESTAMP AT TIME ZONE (SELECT time_zone FROM params))::date + (SELECT day_offset FROM params) * INTERVAL '1 day'\n        END\n      ELSE\n        (CURRENT_TIMESTAMP AT TIME ZONE (SELECT time_zone FROM params))::date + (SELECT day_offset FROM params) * INTERVAL '1 day'\n    END AS target_date\n),\nbusiness_days AS (\n  -- Генерируем 5 рабочих дней начиная с целевой даты\n  SELECT \n    day_date,\n    ROW_NUMBER() OVER (ORDER BY day_date) - 1 AS day_index\n  FROM (\n    SELECT \n      generate_series(\n        (SELECT target_date FROM adjusted_target),\n        (SELECT target_date FROM adjusted_target) + INTERVAL '14 days',  -- запас для пропуска выходных\n        INTERVAL '1 day'\n      )::date AS day_date\n  ) dates\n  WHERE \n    -- Если check_weekend включен, пропускаем субботу и воскресенье\n    CASE \n      WHEN (SELECT check_weekend FROM params) = true THEN\n        EXTRACT(DOW FROM day_date) NOT IN (0, 6)\n      ELSE\n        true\n    END\n  LIMIT 5  -- максимум 5 рабочих дней\n),\nminute_slots AS (\n  -- Генерируем минуты для каждого рабочего дня\n  SELECT \n    bd.day_date,\n    bd.day_index,\n    generate_series(\n      bd.day_date::timestamp + (SELECT start_hour FROM params) * INTERVAL '1 hour',\n      bd.day_date::timestamp + (SELECT end_hour FROM params) * INTERVAL '1 hour' - INTERVAL '1 minute',\n      INTERVAL '1 minute'\n    ) AT TIME ZONE (SELECT time_zone FROM params) AS slot_time_utc\n  FROM business_days bd\n),\nbusy_counts AS (\n  -- Считаем загрузку каждой минуты\n  SELECT \n    ms.day_date,\n    ms.day_index,\n    ms.slot_time_utc,\n    COUNT(s.\"Trigger\") AS busy_count\n  FROM minute_slots ms\n  LEFT JOIN {{ $vars.ncdbid }}.\"Scheduler\" s \n    ON DATE_TRUNC('minute', s.\"Trigger\") = DATE_TRUNC('minute', ms.slot_time_utc)\n  GROUP BY ms.day_date, ms.day_index, ms.slot_time_utc\n),\nday_analysis AS (\n  -- Анализируем минимальную загрузку каждого дня\n  SELECT \n    day_index,\n    day_date,\n    MIN(busy_count) AS min_load_in_day\n  FROM busy_counts\n  GROUP BY day_index, day_date\n  ORDER BY day_index\n),\nbest_day AS (\n  -- Находим первый день с загрузкой <= threshold\n  SELECT \n    day_index,\n    day_date,\n    min_load_in_day\n  FROM day_analysis\n  WHERE min_load_in_day <= (SELECT overload_threshold FROM params)\n  ORDER BY day_index\n  LIMIT 1\n),\nfinal_slot AS (\n  -- Если нашли подходящий день - берём его, иначе fallback на минимум\n  SELECT \n    bc.slot_time_utc,\n    bc.day_date,\n    bc.day_index,\n    bc.busy_count\n  FROM busy_counts bc\n  WHERE \n    CASE \n      WHEN EXISTS (SELECT 1 FROM best_day) THEN\n        -- Нашли день с нагрузкой <= threshold\n        bc.day_index = (SELECT day_index FROM best_day LIMIT 1)\n      ELSE\n        -- Fallback: ищем во всём диапазоне\n        true\n    END\n  ORDER BY bc.busy_count ASC, bc.slot_time_utc ASC\n  LIMIT 1\n)\n-- Финальный результат\nSELECT \n  TO_CHAR(fs.slot_time_utc AT TIME ZONE (SELECT time_zone FROM params), 'YYYY-MM-DD HH24:MI:SS') AS result,\n  (SELECT time_zone FROM params) AS timezone_used,\n  fs.busy_count AS load,\n  fs.day_index AS actual_day_offset,\n  TO_CHAR(fs.day_date, 'YYYY-MM-DD') AS scheduled_date,\n  CASE \n    WHEN fs.busy_count <= (SELECT overload_threshold FROM params) THEN 'optimal'\n    ELSE 'fallback'\n  END AS selection_type\nFROM final_slot fs;",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        2240,
+        192
+      ],
+      "id": "503671ee-4f3e-4aed-a140-db53bb099237",
+      "name": "calculate dt",
+      "credentials": {
+        "postgres": {
+          "id": "oZABCHH2vjfMvXoi",
+          "name": "nocodb"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "26b28dd1-4418-47ab-9031-d6d8a84286e9",
+              "leftValue": "={{ $node[\"get cs\"].json[\"Schedule\"] }}",
+              "rightValue": "Stop",
+              "operator": {
+                "type": "string",
+                "operation": "notEquals"
+              }
+            },
+            {
+              "id": "5db34238-3f8f-41ab-be90-6928f26d7477",
+              "leftValue": "={{ $json.DNC }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "notEquals"
+              }
+            },
+            {
+              "id": "be22b280-d9ac-4260-a25a-a845b3f4638f",
+              "leftValue": "={{ $json.Contacts.Id }}",
+              "rightValue": "",
+              "operator": {
+                "type": "number",
+                "operation": "notEmpty",
+                "singleValue": true
+              }
+            },
+            {
+              "id": "b697cf61-b0ba-4c3f-8f16-22c20fc69e5e",
+              "leftValue": "={{ $json.Status }}",
+              "rightValue": "Progress",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        48,
+        304
+      ],
+      "id": "6267872f-cf64-47dc-8d8c-05e4b4dedc97",
+      "name": "none stop?"
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [
+        1248,
+        720
+      ],
+      "id": "cbfd70c0-27fc-4614-81b0-c6f642cb70f6",
+      "name": "to stop"
+    }
+  ],
+  "connections": {
+    "start": {
+      "main": [
+        [
+          {
+            "node": "get cs",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "get cs": {
+      "main": [
+        [
+          {
+            "node": "none stop?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "get schedule": {
+      "main": [
+        [
+          {
+            "node": "set schedule",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "set schedule": {
+      "main": [
+        [
+          {
+            "node": "check tag touches",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "get default": {
+      "main": [
+        [
+          {
+            "node": "set schedule",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "shedule type": {
+      "main": [
+        [
+          {
+            "node": "get schedule",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "get default",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "check tag touches": {
+      "main": [
+        [
+          {
+            "node": "output def",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Touches controller",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Touches controller": {
+      "main": [
+        [
+          {
+            "node": "output tc",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "output def": {
+      "main": [
+        [
+          {
+            "node": "Touches",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "output tc": {
+      "main": [
+        [
+          {
+            "node": "Touches",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Touches": {
+      "main": [
+        [
+          {
+            "node": "decider",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "decider": {
+      "main": [
+        [
+          {
+            "node": "Switch",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Switch": {
+      "main": [
+        [
+          {
+            "node": "calculate dt",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Stop and Error",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "get calls",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "get shedules",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "contact?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "get calls": {
+      "main": [
+        [
+          {
+            "node": "selecting status",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "selecting status": {
+      "main": [
+        [
+          {
+            "node": "end cs",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "get shedules": {
+      "main": [
+        [
+          {
+            "node": "split shedules",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "split shedules": {
+      "main": [
+        [
+          {
+            "node": "del shedules",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "contact?": {
+      "main": [
+        [
+          {
+            "node": "end contact",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "calculate dt": {
+      "main": [
+        [
+          {
+            "node": "Call 'Setter'",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "none stop?": {
+      "main": [
+        [
+          {
+            "node": "shedule type",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "to stop",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "to stop": {
+      "main": [
+        [
+          {
+            "node": "get shedules",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "get calls",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "contact?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "callerPolicy": "workflowsFromSameOwner",
+    "availableInMCP": false,
+    "errorWorkflow": "agw6jjdVg6yAawFi"
+  },
+  "triggerCount": 0,
+  "versionId": "87cda90a-cd06-4f5e-ba55-353669c9958d",
+  "owner": {
+    "type": "personal",
+    "projectId": "I8ZweZXokOc0zbYb",
+    "projectName": "BSU Agency <info@brilliantseedup.com>",
+    "personalEmail": "info@brilliantseedup.com"
+  },
+  "parentFolderId": "ZtZlVganCQMwp6yk",
+  "isArchived": false
+}

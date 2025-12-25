@@ -1,0 +1,15 @@
+{
+  "id": "895vd8bC2qxU4JL4",
+  "name": "OpenAi",
+  "type": "openAiApi",
+  "data": {
+    "apiKey": ""
+  },
+  "ownedBy": {
+    "type": "personal",
+    "projectId": "I8ZweZXokOc0zbYb",
+    "projectName": "BSU Agency <info@brilliantseedup.com>",
+    "personalEmail": "info@brilliantseedup.com"
+  },
+  "isGlobal": false
+}

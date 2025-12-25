@@ -1,0 +1,221 @@
+{
+  "id": "oHxaM4NpOa215dXT",
+  "name": "Check paralelizm",
+  "nodes": [
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT COUNT(*)::integer AS count\nFROM public.calls\nWHERE status = 'ringing';",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        -640,
+        16
+      ],
+      "id": "88a9a602-e22f-4ab9-bf2a-0f8c0963726d",
+      "name": "count Ringing",
+      "credentials": {
+        "postgres": {
+          "id": "oZABCHH2vjfMvXoi",
+          "name": "directus"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "6079aaf0-152f-4822-a696-0bb408233695",
+              "leftValue": "={{ $node[\"count Ringing\"].json[\"count\"] }}",
+              "rightValue": "={{ $json[\"concurrency_limit\"] || 10 }}",
+              "operator": {
+                "type": "number",
+                "operation": "lt"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -192,
+        16
+      ],
+      "id": "b24fae15-c226-4b34-a6d9-76c7461e5025",
+      "name": "MAXIMUM PARALLELISM"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "f883426e-621c-4a15-84d3-bcda4947c2b2",
+              "name": "success",
+              "value": true,
+              "type": "boolean"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        32,
+        -80
+      ],
+      "id": "59c4a18c-7f64-4494-83d5-ec45e5ff7dab",
+      "name": "ok"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "f883426e-621c-4a15-84d3-bcda4947c2b2",
+              "name": "success",
+              "value": false,
+              "type": "boolean"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        32,
+        112
+      ],
+      "id": "0996b083-9a6b-4b93-a628-19c36b7f24ed",
+      "name": "bad"
+    },
+    {
+      "parameters": {
+        "inputSource": "passthrough"
+      },
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        -864,
+        16
+      ],
+      "id": "41baa2e4-a200-4d2f-8a0f-5ffff1ad390c",
+      "name": "start"
+    },
+    {
+      "parameters": {
+        "operation": "select",
+        "schema": {
+          "__rl": true,
+          "mode": "list",
+          "value": "public"
+        },
+        "table": {
+          "__rl": true,
+          "value": "settings",
+          "mode": "list",
+          "cachedResultName": "settings"
+        },
+        "limit": 1,
+        "options": {
+          "outputColumns": [
+            "concurrency_limit"
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        -416,
+        16
+      ],
+      "id": "76d78a9c-f0eb-4cfb-9f2c-a59f1cf2cd67",
+      "name": "get settings",
+      "credentials": {
+        "postgres": {
+          "id": "oZABCHH2vjfMvXoi",
+          "name": "directus"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "count Ringing": {
+      "main": [
+        [
+          {
+            "node": "get settings",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "MAXIMUM PARALLELISM": {
+      "main": [
+        [
+          {
+            "node": "ok",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "bad",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "start": {
+      "main": [
+        [
+          {
+            "node": "count Ringing",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "get settings": {
+      "main": [
+        [
+          {
+            "node": "MAXIMUM PARALLELISM",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "triggerCount": 0,
+  "versionId": "df13cc89-08ec-4c42-a123-be5dbf68dd3c",
+  "owner": {
+    "type": "personal",
+    "projectId": "I8ZweZXokOc0zbYb",
+    "projectName": "BSU Agency <info@brilliantseedup.com>",
+    "personalEmail": "info@brilliantseedup.com"
+  },
+  "parentFolderId": "rAakqP66NyIafoHi",
+  "isArchived": false
+}

@@ -1,0 +1,807 @@
+{
+  "id": "GvhU9dmBTSW1wNjh",
+  "name": "Email Manager",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "cfd4e1bc-05fb-4714-8f9d-30dec645585e",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        -336,
+        0
+      ],
+      "id": "a288ea24-cf88-4d83-a12c-c81f7dcbcf8e",
+      "name": "Webhook",
+      "webhookId": "cfd4e1bc-05fb-4714-8f9d-30dec645585e"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={\n    \"results\": [\n        {\n            \"toolCallId\": \"{{ $('Webhook').item.json.body.message.toolCalls[0].id }}\",\n            \"result\": \"Invalid action parameter. Only (check) and (change)\"\n        }\n    ]\n}",
+        "options": {
+          "responseCode": 400
+        }
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.4,
+      "position": [
+        96,
+        304
+      ],
+      "id": "94958e8c-a429-429d-b43e-93776c32da9e",
+      "name": "invalid action"
+    },
+    {
+      "parameters": {
+        "authentication": "nocoDbApiToken",
+        "operation": "getAll",
+        "workspaceId": "wqp6q0zt",
+        "projectId": "p0a3eirwme1bmw7",
+        "table": "mq8zrzuevo96lmw",
+        "limit": 1,
+        "options": {
+          "where": "=(Call ID,eq,{{ $node[\"Webhook\"].json[\"body\"][\"message\"][\"call\"][\"id\"] }})"
+        }
+      },
+      "type": "n8n-nodes-base.nocoDb",
+      "typeVersion": 3,
+      "position": [
+        -112,
+        0
+      ],
+      "id": "90a1bf44-8d8b-48a8-abb6-3af3d251d548",
+      "name": "get call",
+      "retryOnFail": false,
+      "alwaysOutputData": true,
+      "credentials": {
+        "nocoDbApiToken": {
+          "id": "tg1sd8Mux2yjJLx7",
+          "name": "NocoDB"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "f5abc434-50d0-4b00-a1e6-994ad95ec763",
+              "leftValue": "={{ $json.Id }}",
+              "rightValue": "",
+              "operator": {
+                "type": "number",
+                "operation": "notEmpty",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        112,
+        0
+      ],
+      "id": "370cbb38-0ca1-484d-b813-30242f709696",
+      "name": "found?"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={\n    \"results\": [\n        {\n            \"toolCallId\": \"{{ $('Webhook').item.json.body.message.toolCalls[0].id }}\",\n            \"result\": \"system error\"\n        }\n    ]\n}",
+        "options": {
+          "responseCode": 400
+        }
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.4,
+      "position": [
+        -160,
+        304
+      ],
+      "id": "f047edfa-e83a-4b86-8872-492118b4c905",
+      "name": "nf call"
+    },
+    {
+      "parameters": {
+        "authentication": "nocoDbApiToken",
+        "workspaceId": "wqp6q0zt",
+        "projectId": "p0a3eirwme1bmw7",
+        "table": "mkbhjd0aqdl1r1m",
+        "id": "={{ $('get call').item.json['Call system'].Id }}"
+      },
+      "type": "n8n-nodes-base.nocoDb",
+      "typeVersion": 3,
+      "position": [
+        336,
+        0
+      ],
+      "id": "c041481e-b3bf-4129-86a3-b218e951bb62",
+      "name": "get cs",
+      "credentials": {
+        "nocoDbApiToken": {
+          "id": "tg1sd8Mux2yjJLx7",
+          "name": "NocoDB"
+        }
+      },
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $node[\"Webhook\"].json[\"body\"][\"message\"][\"toolCalls\"][\"0\"][\"function\"][\"arguments\"][\"action\"] }}",
+                    "rightValue": "check",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "id": "c8628a78-8237-483a-a1d6-9206f623f7a7"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "check"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "36c80b29-412c-44a6-8a32-04b06791c853",
+                    "leftValue": "={{ $node[\"Webhook\"].json[\"body\"][\"message\"][\"toolCalls\"][\"0\"][\"function\"][\"arguments\"][\"action\"] }}",
+                    "rightValue": "change",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "change"
+            }
+          ]
+        },
+        "options": {
+          "fallbackOutput": "extra"
+        }
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.3,
+      "position": [
+        576,
+        -32
+      ],
+      "id": "e48b4ecb-bd24-4beb-9991-daf868eca67c",
+      "name": "Switch"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "8b2da18c-ed9c-4dd0-8c8d-e9c1fde56294",
+              "leftValue": "={{ $json.valid }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        1024,
+        -208
+      ],
+      "id": "4edd4e73-d993-400e-b0c7-f424b4af4bd6",
+      "name": "valid check email?"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={\n    \"results\": [\n        {\n            \"toolCallId\": \"{{ $('Webhook').item.json.body.message.toolCalls[0].id }}\",\n            \"result\": \"Client's email: '{{ $json.email }}'. Ask the client - is this relevant?\"\n        }\n    ]\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.4,
+      "position": [
+        1248,
+        -304
+      ],
+      "id": "4528e79a-f36f-42e4-b1d2-424b22786ab0",
+      "name": "valid check"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={\n    \"results\": [\n        {\n            \"toolCallId\": \"{{ $('Webhook').item.json.body.message.toolCalls[0].id }}\",\n            \"result\": \"The client's email is missing or invalid\"\n        }\n    ]\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.4,
+      "position": [
+        1248,
+        -112
+      ],
+      "id": "517b009d-f76d-4873-bb89-9bad94f5a5d7",
+      "name": "invalid check"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "8b2da18c-ed9c-4dd0-8c8d-e9c1fde56294",
+              "leftValue": "={{ $json.valid }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        1024,
+        176
+      ],
+      "id": "c1b6d47f-8a55-4d75-9f7c-9d35f4cd7be3",
+      "name": "valid change email?"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "ea8c3719-c3e3-43d9-b6c0-9901f2fd2942",
+              "name": "valid",
+              "value": "={{ $node[\"get cs\"].json[\"Email\"] ? $node[\"get cs\"].json[\"Email\"].isEmail() : false }}",
+              "type": "boolean"
+            },
+            {
+              "id": "33886cd3-454e-46e9-883c-55ab3515f960",
+              "name": "email",
+              "value": "={{ $node[\"get cs\"].json[\"Email\"] }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        800,
+        -208
+      ],
+      "id": "1cc6960e-d24c-4310-ada0-d5f4443e1e6d",
+      "name": "check"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={\n    \"results\": [\n        {\n            \"toolCallId\": \"{{ $('Webhook').item.json.body.message.toolCalls[0].id }}\",\n            \"result\": \"email has been successfully changed to {{ $node[\"check change\"].json[\"email\"] }}\"\n        }\n    ]\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.4,
+      "position": [
+        1248,
+        80
+      ],
+      "id": "b729708c-3f88-4791-9c4a-356f412d6862",
+      "name": "success change"
+    },
+    {
+      "parameters": {
+        "authentication": "nocoDbApiToken",
+        "operation": "update",
+        "workspaceId": "wqp6q0zt",
+        "projectId": "p0a3eirwme1bmw7",
+        "table": "mkbhjd0aqdl1r1m",
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldName": "Id",
+              "fieldValue": "={{ $node[\"get cs\"].json[\"Id\"] }}"
+            },
+            {
+              "fieldName": "Email",
+              "fieldValue": "={{ $node[\"check change\"].json[\"email\"] }}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.nocoDb",
+      "typeVersion": 3,
+      "position": [
+        1472,
+        80
+      ],
+      "id": "2b59a18a-4ab2-4d0a-97e4-29a7d1bdbb3a",
+      "name": "update email cs",
+      "credentials": {
+        "nocoDbApiToken": {
+          "id": "tg1sd8Mux2yjJLx7",
+          "name": "NocoDB"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "authentication": "nocoDbApiToken",
+        "operation": "update",
+        "workspaceId": "wqp6q0zt",
+        "projectId": "p0a3eirwme1bmw7",
+        "table": "meyq439syguvqhb",
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldName": "Id",
+              "fieldValue": "={{ $node[\"get cs\"].json[\"Contacts\"][\"Id\"] }}"
+            },
+            {
+              "fieldName": "Email",
+              "fieldValue": "={{ $node[\"check change\"].json[\"email\"] }}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.nocoDb",
+      "typeVersion": 3,
+      "position": [
+        1696,
+        176
+      ],
+      "id": "888b6029-3c80-4ae9-8da8-ed1f26c8edc7",
+      "name": "update email contact",
+      "credentials": {
+        "nocoDbApiToken": {
+          "id": "tg1sd8Mux2yjJLx7",
+          "name": "NocoDB"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "value": "TzPSlJCrmIa3aftV",
+          "mode": "list",
+          "cachedResultUrl": "/workflow/TzPSlJCrmIa3aftV",
+          "cachedResultName": "Comment nocobd"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "row_id": "={{ $node[\"get cs\"].json[\"Id\"] }}",
+            "base_id": "mkbhjd0aqdl1r1m",
+            "comment": "=[AI ​​agent changed the email to {{ $node[\"check change\"].json[\"email\"] }}](https://{{ $env[\"N8N_HOST\"] }}/workflow/{{ $workflow.id }}/executions/{{ $execution.id }})"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "comment",
+              "displayName": "comment",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "base_id",
+              "displayName": "base_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "row_id",
+              "displayName": "row_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "number",
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": true
+        },
+        "options": {
+          "waitForSubWorkflow": false
+        }
+      },
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.3,
+      "position": [
+        1696,
+        -16
+      ],
+      "id": "b9ae669d-a658-4031-ab99-2ec0052e075e",
+      "name": "comment"
+    },
+    {
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "value": "TzPSlJCrmIa3aftV",
+          "mode": "list",
+          "cachedResultUrl": "/workflow/TzPSlJCrmIa3aftV",
+          "cachedResultName": "Comment nocobd"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "row_id": "={{ $node[\"get cs\"].json[\"Contacts\"][\"Id\"] }}",
+            "base_id": "meyq439syguvqhb",
+            "comment": "=[AI ​​agent changed the email to {{ $node[\"check change\"].json[\"email\"] }}](https://{{ $env[\"N8N_HOST\"] }}/workflow/{{ $workflow.id }}/executions/{{ $execution.id }})"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "comment",
+              "displayName": "comment",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "base_id",
+              "displayName": "base_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "row_id",
+              "displayName": "row_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "number",
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": true
+        },
+        "options": {
+          "waitForSubWorkflow": false
+        }
+      },
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.3,
+      "position": [
+        1920,
+        176
+      ],
+      "id": "9ced6f78-238f-4517-bc2c-119d7dd2d5be",
+      "name": "comment1"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={\n    \"results\": [\n        {\n            \"toolCallId\": \"{{ $('Webhook').item.json.body.message.toolCalls[0].id }}\",\n            \"result\": \"specified email '{{ $node[\"check change\"].json[\"email\"] }}' is incorrect\"\n        }\n    ]\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.4,
+      "position": [
+        1248,
+        272
+      ],
+      "id": "f9c03135-567b-41b1-a61c-55b089a14617",
+      "name": "invalid change"
+    },
+    {
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "value": "Cku90vL3pHc7251v",
+          "mode": "list",
+          "cachedResultUrl": "/workflow/Cku90vL3pHc7251v",
+          "cachedResultName": "Email validator"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "email": "={{ $node[\"Webhook\"].json[\"body\"][\"message\"][\"toolCalls\"][\"0\"][\"function\"][\"arguments\"][\"email\"] }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "email",
+              "displayName": "email",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": true
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.3,
+      "position": [
+        816,
+        176
+      ],
+      "id": "87608c64-b562-4a41-9027-c102dd26b83c",
+      "name": "check email"
+    }
+  ],
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "get call",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "get call": {
+      "main": [
+        [
+          {
+            "node": "found?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "found?": {
+      "main": [
+        [
+          {
+            "node": "get cs",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "nf call",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "get cs": {
+      "main": [
+        [
+          {
+            "node": "Switch",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "nf call",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Switch": {
+      "main": [
+        [
+          {
+            "node": "check",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "check email",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "invalid action",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "valid check email?": {
+      "main": [
+        [
+          {
+            "node": "valid check",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "invalid check",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "check": {
+      "main": [
+        [
+          {
+            "node": "valid check email?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "valid change email?": {
+      "main": [
+        [
+          {
+            "node": "success change",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "invalid change",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "success change": {
+      "main": [
+        [
+          {
+            "node": "update email cs",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "update email cs": {
+      "main": [
+        [
+          {
+            "node": "update email contact",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "comment",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "update email contact": {
+      "main": [
+        [
+          {
+            "node": "comment1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "check email": {
+      "main": [
+        [
+          {
+            "node": "valid change email?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "callerPolicy": "workflowsFromSameOwner",
+    "availableInMCP": false,
+    "errorWorkflow": "agw6jjdVg6yAawFi"
+  },
+  "triggerCount": 1,
+  "versionId": "1e2c273a-0f65-402c-895c-90f24f48db81",
+  "owner": {
+    "type": "personal",
+    "projectId": "I8ZweZXokOc0zbYb",
+    "projectName": "BSU Agency <info@brilliantseedup.com>",
+    "personalEmail": "info@brilliantseedup.com"
+  },
+  "parentFolderId": "LFb2ICwgYRTdyBEb",
+  "isArchived": false
+}

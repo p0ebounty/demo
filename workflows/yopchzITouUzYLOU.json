@@ -1,0 +1,184 @@
+{
+  "id": "yopchzITouUzYLOU",
+  "name": "Mark CallBack",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "7ef2c5e3-a647-4b51-aa22-0cc452b43304",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        -224,
+        -64
+      ],
+      "id": "3da20f41-bd1c-47c5-8007-5db1bc0a788d",
+      "name": "Webhook",
+      "webhookId": "7ef2c5e3-a647-4b51-aa22-0cc452b43304"
+    },
+    {
+      "parameters": {
+        "authentication": "nocoDbApiToken",
+        "operation": "getAll",
+        "workspaceId": "wqp6q0zt",
+        "projectId": "p0a3eirwme1bmw7",
+        "table": "mq8zrzuevo96lmw",
+        "limit": 1,
+        "options": {
+          "fields": [],
+          "where": "=(Call ID,eq,{{ $('Webhook').item.json.body.message.call.id }})"
+        }
+      },
+      "type": "n8n-nodes-base.nocoDb",
+      "typeVersion": 3,
+      "position": [
+        224,
+        -64
+      ],
+      "id": "2438330b-2ca7-43a9-987b-6c72740aac68",
+      "name": "find call",
+      "alwaysOutputData": false,
+      "credentials": {
+        "nocoDbApiToken": {
+          "id": "tg1sd8Mux2yjJLx7",
+          "name": "NocoDB"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "authentication": "nocoDbApiToken",
+        "operation": "update",
+        "workspaceId": "wqp6q0zt",
+        "projectId": "p0a3eirwme1bmw7",
+        "table": "mq8zrzuevo96lmw",
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldName": "Id",
+              "fieldValue": "={{ $('find call').item.json.Id }}"
+            },
+            {
+              "fieldName": "Callback",
+              "fieldValue": "={{ $node[\"Webhook\"].json[\"body\"][\"message\"][\"toolCalls\"][\"0\"][\"function\"][\"arguments\"][\"callback\"] }}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.nocoDb",
+      "typeVersion": 3,
+      "position": [
+        448,
+        -64
+      ],
+      "id": "e0412894-eac9-409f-8885-499a2c20825b",
+      "name": "put callback",
+      "credentials": {
+        "nocoDbApiToken": {
+          "id": "tg1sd8Mux2yjJLx7",
+          "name": "NocoDB"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={\n    \"results\": [\n        {\n            \"toolCallId\": \"{{ $('Webhook').item.json.body.message.toolCalls[0].id }}\",\n            \"result\": \"callback accepted\"\n        }\n    ]\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.4,
+      "position": [
+        0,
+        -64
+      ],
+      "id": "05310b82-1575-4495-b243-2dcad367d303",
+      "name": "success"
+    },
+    {
+      "parameters": {
+        "resource": "server",
+        "operation": "systemInfo"
+      },
+      "type": "@stumpworks/n8n-nodes-directus.directus",
+      "typeVersion": 1,
+      "position": [
+        176,
+        -336
+      ],
+      "id": "590093cf-c88e-41e8-92c0-2f13d65a39e5",
+      "name": "SystemInfo server",
+      "credentials": {
+        "directusApi": {
+          "id": "kIJhRDZv2PR5UO1f",
+          "name": "Directus"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "success",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "find call": {
+      "main": [
+        [
+          {
+            "node": "put callback",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "success": {
+      "main": [
+        [
+          {
+            "node": "find call",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "SystemInfo server": {
+      "main": [
+        [
+          {
+            "node": "SystemInfo server",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "callerPolicy": "workflowsFromSameOwner",
+    "availableInMCP": false,
+    "errorWorkflow": "agw6jjdVg6yAawFi"
+  },
+  "triggerCount": 1,
+  "versionId": "9cdd10af-7053-4592-b98c-92764dca13fa",
+  "owner": {
+    "type": "personal",
+    "projectId": "I8ZweZXokOc0zbYb",
+    "projectName": "BSU Agency <info@brilliantseedup.com>",
+    "personalEmail": "info@brilliantseedup.com"
+  },
+  "parentFolderId": "LFb2ICwgYRTdyBEb",
+  "isArchived": false
+}

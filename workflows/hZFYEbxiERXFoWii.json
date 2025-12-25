@@ -1,0 +1,1398 @@
+{
+  "id": "hZFYEbxiERXFoWii",
+  "name": "Log contact info",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "08e2b3f3-c841-49cb-a562-9f2131a5d400",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        -2144,
+        -80
+      ],
+      "id": "53d55435-0b86-411c-a790-0296e37ed6fd",
+      "name": "Webhook",
+      "webhookId": "08e2b3f3-c841-49cb-a562-9f2131a5d400"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "f24972bf-bba7-4210-8285-0dc0d1caf118",
+              "leftValue": "={{ $node[\"check phone\"].json[\"valid\"] }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            },
+            {
+              "id": "943a0cb7-8cea-4188-8d33-a970d031d37d",
+              "leftValue": "={{ $node[\"check email\"].json[\"valid\"] === false && ($node[\"Webhook\"].json[\"body\"][\"message\"][\"toolCalls\"][\"0\"][\"function\"][\"arguments\"][\"email\"] == null || $node[\"Webhook\"].json[\"body\"][\"message\"][\"toolCalls\"][\"0\"][\"function\"][\"arguments\"][\"email\"] === '') ? true : $node[\"check email\"].json[\"valid\"] }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -576,
+        -80
+      ],
+      "id": "c63ff783-c002-4dd4-87a5-bebaf79e5bcf",
+      "name": "valid?"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={\n    \"results\": [\n        {\n            \"toolCallId\": \"{{ $('Webhook').item.json.body.message.toolCalls[0].id }}\",\n            \"result\": \"{{ $json.message }}. Contact not saved!\"\n        }\n    ]\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.4,
+      "position": [
+        -592,
+        176
+      ],
+      "id": "9459d3f2-be69-4606-93f8-280624f6a4e9",
+      "name": "invalid response"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Code Node (JavaScript)\n\n// Получаем результаты валидации\nconst emailValid = $node[\"check email\"].json[\"valid\"];\nconst phoneValid = $node[\"check phone\"].json[\"valid\"];\n\n// Формируем сообщение\nlet message = \"\";\n\nif (!emailValid && !phoneValid) {\n  message = \"Both email and phone are invalid\";\n} else if (!emailValid) {\n  message = \"Email is invalid\";\n} else if (!phoneValid) {\n  message = \"Phone is invalid\";\n} else {\n  message = \"All contacts are valid\";\n}\n\n// Возвращаем результат\nreturn [{\n  json: {\n    message: message,\n    emailValid: emailValid,\n    phoneValid: phoneValid\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -848,
+        176
+      ],
+      "id": "a8d3ac99-4f7a-4344-8536-f0685ce36855",
+      "name": "invalid text"
+    },
+    {
+      "parameters": {
+        "authentication": "nocoDbApiToken",
+        "operation": "getAll",
+        "workspaceId": "wqp6q0zt",
+        "projectId": "p0a3eirwme1bmw7",
+        "table": "mq8zrzuevo96lmw",
+        "limit": 1,
+        "options": {
+          "where": "=(Call ID,eq,{{ $node[\"Webhook\"].json[\"body\"][\"message\"][\"call\"][\"id\"] }})"
+        }
+      },
+      "type": "n8n-nodes-base.nocoDb",
+      "typeVersion": 3,
+      "position": [
+        -1920,
+        -80
+      ],
+      "id": "9914f8d9-ee0e-42f7-953d-69ca4178bff2",
+      "name": "get call",
+      "retryOnFail": false,
+      "alwaysOutputData": true,
+      "credentials": {
+        "nocoDbApiToken": {
+          "id": "tg1sd8Mux2yjJLx7",
+          "name": "NocoDB"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "f5abc434-50d0-4b00-a1e6-994ad95ec763",
+              "leftValue": "={{ $json.Id }}",
+              "rightValue": "",
+              "operator": {
+                "type": "number",
+                "operation": "notEmpty",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -1696,
+        -80
+      ],
+      "id": "a64aecc3-e580-48fd-82a6-3bb6c92f205a",
+      "name": "found?"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={\n    \"results\": [\n        {\n            \"toolCallId\": \"{{ $('Webhook').item.json.body.message.toolCalls[0].id }}\",\n            \"result\": \"system error\"\n        }\n    ]\n}",
+        "options": {
+          "responseCode": 400
+        }
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.4,
+      "position": [
+        -1760,
+        176
+      ],
+      "id": "cbe9f4e8-1b08-4216-b9ac-4298c2f6c1e7",
+      "name": "nf call"
+    },
+    {
+      "parameters": {
+        "authentication": "nocoDbApiToken",
+        "workspaceId": "wqp6q0zt",
+        "projectId": "p0a3eirwme1bmw7",
+        "table": "mkbhjd0aqdl1r1m",
+        "id": "={{ $('get call').item.json['Call system'].Id }}"
+      },
+      "type": "n8n-nodes-base.nocoDb",
+      "typeVersion": 3,
+      "position": [
+        -1472,
+        -80
+      ],
+      "id": "eb4ff5e6-cb02-457b-9ec2-2abb388ba186",
+      "name": "get cs",
+      "credentials": {
+        "nocoDbApiToken": {
+          "id": "tg1sd8Mux2yjJLx7",
+          "name": "NocoDB"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "0f0ffd4e-c5c5-4469-a0a3-027110133a98",
+              "leftValue": "={{ $json.Status }}",
+              "rightValue": "Progress",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -1248,
+        -80
+      ],
+      "id": "0a3871fc-8c8c-428c-9f41-4efd186e7f41",
+      "name": "progress?"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={\n    \"results\": [\n        {\n            \"toolCallId\": \"{{ $('Webhook').item.json.body.message.toolCalls[0].id }}\",\n            \"result\": \"the tool is no longer usable\"\n        }\n    ]\n}",
+        "options": {
+          "responseCode": 400
+        }
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.4,
+      "position": [
+        -1312,
+        192
+      ],
+      "id": "bae8d32d-869b-47fe-8b1e-783d7c741d6e",
+      "name": "unsable tool"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={\n    \"results\": [\n        {\n            \"toolCallId\": \"{{ $('Webhook').item.json.body.message.toolCalls[0].id }}\",\n            \"result\": \"contact saved. Current subscriber is now useless. Thank them politely and end the call\"\n        }\n    ]\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.4,
+      "position": [
+        -288,
+        -96
+      ],
+      "id": "cc86af12-743d-4afa-9842-8efbca609b9a",
+      "name": "success"
+    },
+    {
+      "parameters": {
+        "authentication": "nocoDbApiToken",
+        "operation": "update",
+        "workspaceId": "wqp6q0zt",
+        "projectId": "p0a3eirwme1bmw7",
+        "table": "mkbhjd0aqdl1r1m",
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldName": "Id",
+              "fieldValue": "={{ $node[\"get cs\"].json[\"Id\"] }}"
+            },
+            {
+              "fieldName": "Status",
+              "fieldValue": "Transferred"
+            },
+            {
+              "fieldName": "Schedule",
+              "fieldValue": "Stop"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.nocoDb",
+      "typeVersion": 3,
+      "position": [
+        -2112,
+        560
+      ],
+      "id": "2f2c43ad-fc2f-4eba-b4e3-7c95d81a39f3",
+      "name": "update cs",
+      "credentials": {
+        "nocoDbApiToken": {
+          "id": "tg1sd8Mux2yjJLx7",
+          "name": "NocoDB"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "value": "TzPSlJCrmIa3aftV",
+          "mode": "list",
+          "cachedResultUrl": "/workflow/TzPSlJCrmIa3aftV",
+          "cachedResultName": "Comment nocobd"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "row_id": "={{ $node[\"get cs\"].json[\"Id\"] }}",
+            "base_id": "mkbhjd0aqdl1r1m",
+            "comment": "=[Lid gave another contact]({{ $vars.nocodb_url_ex }}#/wqp6q0zt/p0a3eirwme1bmw7/meyq439syguvqhb?rowId={{ $node[\"create contact\"].json[\"Id\"] }})"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "comment",
+              "displayName": "comment",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "base_id",
+              "displayName": "base_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "row_id",
+              "displayName": "row_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "number",
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": true
+        },
+        "options": {
+          "waitForSubWorkflow": false
+        }
+      },
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.3,
+      "position": [
+        -272,
+        784
+      ],
+      "id": "b9b29c5a-90f7-4f4a-9588-d460824f75e6",
+      "name": "comment"
+    },
+    {
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "value": "3ndz1IHNPI181pc8",
+          "mode": "list",
+          "cachedResultUrl": "/workflow/3ndz1IHNPI181pc8",
+          "cachedResultName": "Phone validator"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "phone": "={{ $node[\"Webhook\"].json[\"body\"][\"message\"][\"toolCallList\"][\"0\"][\"function\"][\"arguments\"][\"phone\"] }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "contact_id",
+              "displayName": "contact_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "number",
+              "removed": true
+            },
+            {
+              "id": "phone",
+              "displayName": "phone",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": true,
+          "convertFieldsToString": true
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.3,
+      "position": [
+        -1024,
+        -80
+      ],
+      "id": "c71783ea-98a6-4376-9124-47162cedac7f",
+      "name": "check phone"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT \n    *\nFROM \n    \"{{ $vars.ncdbid }}\".\"Contacts\"\nWHERE \n    REGEXP_REPLACE(\"Phone\", '[^0-9]', '', 'g') = \n    REGEXP_REPLACE('{{ $node[\"check phone\"].json[\"phone\"] }}', '[^0-9]', '', 'g')\nLIMIT 1;",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        -1232,
+        560
+      ],
+      "id": "4d2a58f5-43d7-41d2-94dd-d73d7b0ccf85",
+      "name": "search contact",
+      "alwaysOutputData": true,
+      "credentials": {
+        "postgres": {
+          "id": "oZABCHH2vjfMvXoi",
+          "name": "nocodb"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "value": "TzPSlJCrmIa3aftV",
+          "mode": "list",
+          "cachedResultUrl": "/workflow/TzPSlJCrmIa3aftV",
+          "cachedResultName": "Comment nocobd"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "row_id": "={{ $node[\"search contact\"].json[\"id\"] }}",
+            "base_id": "meyq439syguvqhb",
+            "comment": "=[AI ​​agent has transferred responsibility for this contact]({{ $vars.nocodb_url_ex }}#/wqp6q0zt/p0a3eirwme1bmw7/mkbhjd0aqdl1r1m?rowId={{ $node[\"get cs\"].json[\"Id\"] }})"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "comment",
+              "displayName": "comment",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "base_id",
+              "displayName": "base_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "row_id",
+              "displayName": "row_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "number",
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": true
+        },
+        "options": {
+          "waitForSubWorkflow": false
+        }
+      },
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.3,
+      "position": [
+        -496,
+        560
+      ],
+      "id": "d62bf0ae-89a1-4382-846d-498166cde91d",
+      "name": "comment1"
+    },
+    {
+      "parameters": {
+        "authentication": "nocoDbApiToken",
+        "workspaceId": "wqp6q0zt",
+        "projectId": "p0a3eirwme1bmw7",
+        "table": "meyq439syguvqhb",
+        "id": "={{ $node[\"get cs\"].json[\"Contacts\"][\"Id\"] }}"
+      },
+      "type": "n8n-nodes-base.nocoDb",
+      "typeVersion": 3,
+      "position": [
+        -1472,
+        560
+      ],
+      "id": "13a2f4d5-78eb-4042-9321-98b9c030b694",
+      "name": "parent contact",
+      "credentials": {
+        "nocoDbApiToken": {
+          "id": "tg1sd8Mux2yjJLx7",
+          "name": "NocoDB"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "authentication": "nocoDbApiToken",
+        "operation": "update",
+        "workspaceId": "wqp6q0zt",
+        "projectId": "p0a3eirwme1bmw7",
+        "table": "meyq439syguvqhb",
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldName": "Id",
+              "fieldValue": "={{ $node[\"search contact\"].json[\"id\"] }}"
+            },
+            {
+              "fieldName": "Email",
+              "fieldValue": "={{ \n  (() => {\n    const email1 = $node[\"search contact\"].json[\"Email\"];\n    const email2 = $node[\"check email\"].json[\"email\"];\n    if (email1 && typeof email1 === 'string' && email1.isEmail()) {\n      return email1;\n    }\n    if (email2 && typeof email2 === 'string' && email2.isEmail()) {\n      return email2;\n    }\n    return null;\n  })()\n}}"
+            },
+            {
+              "fieldName": "Stage",
+              "fieldValue": "Queue"
+            },
+            {
+              "fieldName": "Company",
+              "fieldValue": "={{ $node[\"parent contact\"].json[\"Company\"] }}"
+            },
+            {
+              "fieldName": "CompanyGroup",
+              "fieldValue": "={{ $node[\"parent contact\"].json[\"CompanyGroup\"] }}"
+            },
+            {
+              "fieldName": "Main",
+              "fieldValue": "true"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.nocoDb",
+      "typeVersion": 3,
+      "position": [
+        -720,
+        560
+      ],
+      "id": "b021b00d-5c44-403f-b1ad-d97fd2e25c95",
+      "name": "update target",
+      "credentials": {
+        "nocoDbApiToken": {
+          "id": "tg1sd8Mux2yjJLx7",
+          "name": "NocoDB"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ \n  (() => {\n    const phone1 = ($node[\"parent contact\"].json[\"Phone\"] || '').toString();\n    const phone2 = ($node[\"search contact\"].json[\"Phone\"] || '').toString();\n    const digits1 = phone1.replace(/\\D/g, '');\n    const digits2 = phone2.replace(/\\D/g, '');\n    if (!digits1 || !digits2) return false;\n    return digits1 === digits2;\n  })()\n}}",
+                    "rightValue": "",
+                    "operator": {
+                      "type": "boolean",
+                      "operation": "true",
+                      "singleValue": true
+                    },
+                    "id": "407bc9e0-a0c8-4cb6-b789-f8253ee22a52"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "duble"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "7d0861ba-8594-4924-b07b-1179408efc3e",
+                    "leftValue": "={{ $node[\"search contact\"].json[\"id\"] }}",
+                    "rightValue": "",
+                    "operator": {
+                      "type": "number",
+                      "operation": "notEmpty",
+                      "singleValue": true
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "found"
+            }
+          ]
+        },
+        "options": {
+          "fallbackOutput": "extra"
+        }
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.3,
+      "position": [
+        -1024,
+        544
+      ],
+      "id": "fdb39185-968e-4f08-8669-84889f9c9425",
+      "name": "switch"
+    },
+    {
+      "parameters": {
+        "authentication": "nocoDbApiToken",
+        "operation": "create",
+        "workspaceId": "wqp6q0zt",
+        "projectId": "p0a3eirwme1bmw7",
+        "table": "meyq439syguvqhb",
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldName": "Name",
+              "fieldValue": "={{ $node[\"Webhook\"].json[\"body\"][\"message\"][\"toolCalls\"][\"0\"][\"function\"][\"arguments\"][\"name\"] }}"
+            },
+            {
+              "fieldName": "Phone",
+              "fieldValue": "={{ $node[\"check phone\"].json[\"phone\"] }}"
+            },
+            {
+              "fieldName": "Email",
+              "fieldValue": "={{ $node[\"check email\"].json[\"email\"] }}"
+            },
+            {
+              "fieldName": "Source",
+              "fieldValue": "from AI calls"
+            },
+            {
+              "fieldName": "Company",
+              "fieldValue": "={{ $node[\"parent contact\"].json[\"Company\"] }}"
+            },
+            {
+              "fieldName": "CompanyGroup",
+              "fieldValue": "={{ $node[\"parent contact\"].json[\"CompanyGroup\"] }}"
+            },
+            {
+              "fieldName": "Group",
+              "fieldValue": "={{ $node[\"parent contact\"].json[\"Group\"] }}"
+            },
+            {
+              "fieldName": "CSS",
+              "fieldValue": "Queue"
+            },
+            {
+              "fieldName": "Main",
+              "fieldValue": "true"
+            },
+            {
+              "fieldName": "Human",
+              "fieldValue": "={{ $node[\"Webhook\"].json[\"body\"][\"message\"][\"toolCalls\"][\"0\"][\"function\"][\"arguments\"][\"human\"] ?? true }}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.nocoDb",
+      "typeVersion": 3,
+      "position": [
+        -720,
+        784
+      ],
+      "id": "836771e6-1c16-4bbb-965a-b6e8b184711a",
+      "name": "create contact",
+      "credentials": {
+        "nocoDbApiToken": {
+          "id": "tg1sd8Mux2yjJLx7",
+          "name": "NocoDB"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "value": "TzPSlJCrmIa3aftV",
+          "mode": "list",
+          "cachedResultUrl": "/workflow/TzPSlJCrmIa3aftV",
+          "cachedResultName": "Comment nocobd"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "row_id": "={{ $node[\"create contact\"].json[\"Id\"] }}",
+            "base_id": "meyq439syguvqhb",
+            "comment": "=[New contact has been created from calls.]({{ $vars.nocodb_url_ex }}#/wqp6q0zt/p0a3eirwme1bmw7/mkbhjd0aqdl1r1m?rowId={{ $node[\"get cs\"].json[\"Id\"] }})"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "comment",
+              "displayName": "comment",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "base_id",
+              "displayName": "base_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "row_id",
+              "displayName": "row_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "number",
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": true
+        },
+        "options": {
+          "waitForSubWorkflow": false
+        }
+      },
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.3,
+      "position": [
+        -496,
+        784
+      ],
+      "id": "60760ec2-c403-4e92-b1eb-9849cfaae8ea",
+      "name": "comment2"
+    },
+    {
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "value": "dtcMXfwfFTXKGFHq",
+          "mode": "list",
+          "cachedResultUrl": "/workflow/dtcMXfwfFTXKGFHq",
+          "cachedResultName": "Single normalization"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "contact_id": "={{ $json.Id }}"
+          },
+          "matchingColumns": [
+            "contact_id"
+          ],
+          "schema": [
+            {
+              "id": "contact_id",
+              "displayName": "contact_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "number",
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": true
+        },
+        "options": {
+          "waitForSubWorkflow": false
+        }
+      },
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.3,
+      "position": [
+        -704,
+        1008
+      ],
+      "id": "28bf704d-2ec1-487f-8af5-a0b217f0e3c7",
+      "name": "Call 'Single normalization'"
+    },
+    {
+      "parameters": {
+        "authentication": "nocoDbApiToken",
+        "operation": "update",
+        "workspaceId": "wqp6q0zt",
+        "projectId": "p0a3eirwme1bmw7",
+        "table": "meyq439syguvqhb",
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldName": "Id",
+              "fieldValue": "={{ $node[\"parent contact\"].json[\"Id\"] }}"
+            },
+            {
+              "fieldName": "Stage",
+              "fieldValue": "Calls done"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.nocoDb",
+      "typeVersion": 3,
+      "position": [
+        -1232,
+        384
+      ],
+      "id": "dd111ea1-a784-4f9f-8b90-99b90cd5d01e",
+      "name": "update contact",
+      "credentials": {
+        "nocoDbApiToken": {
+          "id": "tg1sd8Mux2yjJLx7",
+          "name": "NocoDB"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "url": "={{ $('Webhook').item.json.body.message.call.monitor.controlUrl }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "content-type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "type",
+              "value": "end-call"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -1888,
+        1056
+      ],
+      "id": "26654a28-be1e-4f60-b196-4987aaa98c15",
+      "name": "end call",
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        -2096,
+        1056
+      ],
+      "id": "12253f1f-eb9f-470a-9fe3-77f6b9fdde27",
+      "name": "Wait",
+      "webhookId": "a07f728a-225c-4e46-9af1-328419647ecb"
+    },
+    {
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "value": "Cku90vL3pHc7251v",
+          "mode": "list",
+          "cachedResultUrl": "/workflow/Cku90vL3pHc7251v",
+          "cachedResultName": "Email validator"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "email": "={{ $node[\"Webhook\"].json[\"body\"][\"message\"][\"toolCalls\"][\"0\"][\"function\"][\"arguments\"][\"email\"] }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "email",
+              "displayName": "email",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": true
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.3,
+      "position": [
+        -800,
+        -80
+      ],
+      "id": "2eba9cc8-a051-4b08-9125-79b5eb40b29b",
+      "name": "check email"
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $vars.warngroup }}",
+        "text": "=🤖 Contact from AI Agent\n\n👤 Name: {{ $node[\"create contact\"].json[\"Name\"] }}\n📱 Phone: {{ $node[\"create contact\"].json[\"Phone\"] }}\n📧 Email: {{ $node[\"create contact\"].json[\"Email\"] || \"-\" }}\n\n✅ Contact created successfully",
+        "replyMarkup": "inlineKeyboard",
+        "inlineKeyboard": {
+          "rows": [
+            {
+              "row": {
+                "buttons": [
+                  {
+                    "text": "Open",
+                    "additionalFields": {
+                      "url": "={{ $vars.nocodb_url_ex }}#/wqp6q0zt/p0a3eirwme1bmw7/meyq439syguvqhb?rowId={{ $node[\"create contact\"].json[\"Id\"] }}"
+                    }
+                  }
+                ]
+              }
+            }
+          ]
+        },
+        "additionalFields": {
+          "appendAttribution": false,
+          "parse_mode": "HTML",
+          "message_thread_id": 10
+        }
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        -48,
+        784
+      ],
+      "id": "bc04be45-f59e-4604-8f82-fece8bc68b95",
+      "name": "new contact log",
+      "webhookId": "a0693655-8ef8-4e46-85f9-cba4493a910b",
+      "credentials": {
+        "telegramApi": {
+          "id": "yv48JNV4VmuIREaW",
+          "name": "Citycompany"
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $vars.warngroup }}",
+        "text": "=🤖 Contact from AI Agent\n\n👤 Name: {{ $node[\"Webhook\"].json[\"body\"][\"message\"][\"toolCalls\"][\"0\"][\"function\"][\"arguments\"][\"name\"] }}\n📱 Phone: {{ $node[\"check phone\"].json[\"phone\"] }}\n📧 Email: {{ $node[\"Webhook\"].json[\"body\"][\"message\"][\"toolCalls\"][\"0\"][\"function\"][\"arguments\"][\"email\"] || \"-\" }}\n\n🔗 Merged with Existing Contact\nThis contact already exists in the database and has been updated.",
+        "replyMarkup": "inlineKeyboard",
+        "inlineKeyboard": {
+          "rows": [
+            {
+              "row": {
+                "buttons": [
+                  {
+                    "text": "Open",
+                    "additionalFields": {
+                      "url": "={{ $vars.nocodb_url_ex }}#/wqp6q0zt/p0a3eirwme1bmw7/meyq439syguvqhb?rowId={{ $node[\"update target\"].json[\"Id\"] }}"
+                    }
+                  }
+                ]
+              }
+            }
+          ]
+        },
+        "additionalFields": {
+          "appendAttribution": false,
+          "parse_mode": "HTML",
+          "message_thread_id": 10
+        }
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        -48,
+        560
+      ],
+      "id": "58897add-3e3b-480b-82c5-17c0c2edd203",
+      "name": "merge contact log",
+      "webhookId": "a0693655-8ef8-4e46-85f9-cba4493a910b",
+      "credentials": {
+        "telegramApi": {
+          "id": "yv48JNV4VmuIREaW",
+          "name": "Citycompany"
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "value": "TzPSlJCrmIa3aftV",
+          "mode": "list",
+          "cachedResultUrl": "/workflow/TzPSlJCrmIa3aftV",
+          "cachedResultName": "Comment nocobd"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "row_id": "={{ $node[\"get cs\"].json[\"Id\"] }}",
+            "base_id": "mkbhjd0aqdl1r1m",
+            "comment": "=[Lid gave another contact]({{ $vars.nocodb_url_ex }}#/wqp6q0zt/p0a3eirwme1bmw7/meyq439syguvqhb?rowId={{ $node[\"update target\"].json[\"Id\"] }})"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "comment",
+              "displayName": "comment",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "base_id",
+              "displayName": "base_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "row_id",
+              "displayName": "row_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "number",
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": true
+        },
+        "options": {
+          "waitForSubWorkflow": false
+        }
+      },
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.3,
+      "position": [
+        -272,
+        560
+      ],
+      "id": "5d55bcd8-9a9e-4994-ad38-97eaab5f005b",
+      "name": "comment3"
+    }
+  ],
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "get call",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "valid?": {
+      "main": [
+        [
+          {
+            "node": "success",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "invalid text",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "invalid text": {
+      "main": [
+        [
+          {
+            "node": "invalid response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "get call": {
+      "main": [
+        [
+          {
+            "node": "found?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "found?": {
+      "main": [
+        [
+          {
+            "node": "get cs",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "nf call",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "get cs": {
+      "main": [
+        [
+          {
+            "node": "progress?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "progress?": {
+      "main": [
+        [
+          {
+            "node": "check phone",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "unsable tool",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "success": {
+      "main": [
+        [
+          {
+            "node": "update cs",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "update cs": {
+      "main": [
+        [
+          {
+            "node": "Wait",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "parent contact",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "check phone": {
+      "main": [
+        [
+          {
+            "node": "check email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "comment": {
+      "main": [
+        [
+          {
+            "node": "new contact log",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "search contact": {
+      "main": [
+        [
+          {
+            "node": "switch",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "comment1": {
+      "main": [
+        [
+          {
+            "node": "comment3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "parent contact": {
+      "main": [
+        [
+          {
+            "node": "search contact",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "update contact",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "switch": {
+      "main": [
+        [],
+        [
+          {
+            "node": "update target",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "create contact",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "update target": {
+      "main": [
+        [
+          {
+            "node": "comment1",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Call 'Single normalization'",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "create contact": {
+      "main": [
+        [
+          {
+            "node": "comment2",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Call 'Single normalization'",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "comment2": {
+      "main": [
+        [
+          {
+            "node": "comment",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait": {
+      "main": [
+        [
+          {
+            "node": "end call",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "check email": {
+      "main": [
+        [
+          {
+            "node": "valid?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "comment3": {
+      "main": [
+        [
+          {
+            "node": "merge contact log",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "callerPolicy": "workflowsFromSameOwner",
+    "availableInMCP": false,
+    "errorWorkflow": "agw6jjdVg6yAawFi"
+  },
+  "triggerCount": 1,
+  "versionId": "ade1f41a-c99e-41b3-bba1-59de2648fb43",
+  "owner": {
+    "type": "personal",
+    "projectId": "I8ZweZXokOc0zbYb",
+    "projectName": "BSU Agency <info@brilliantseedup.com>",
+    "personalEmail": "info@brilliantseedup.com"
+  },
+  "parentFolderId": "LFb2ICwgYRTdyBEb",
+  "isArchived": false
+}

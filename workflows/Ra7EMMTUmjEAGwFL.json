@@ -1,0 +1,144 @@
+{
+  "id": "Ra7EMMTUmjEAGwFL",
+  "name": "My workflow 8",
+  "nodes": [
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "80128857-5b3d-412b-973e-3a9861850f89",
+              "name": "data",
+              "value": "=<!DOCTYPE html>\n<html lang=\"en\">\n<head>\n    <meta charset=\"UTF-8\">\n    <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">\n    <meta http-equiv=\"X-UA-Compatible\" content=\"IE=edge\">\n    <title>Email</title>\n    <!--[if mso]>\n    <style type=\"text/css\">\n        body, table, td {font-family: Arial, sans-serif !important;}\n    </style>\n    <![endif]-->\n</head>\n<body style=\"margin: 0; padding: 0; background-color: #ffffff; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;\">\n    <table border=\"0\" cellpadding=\"0\" cellspacing=\"0\" width=\"100%\" style=\"background-color: #ffffff;\">\n        <tr>\n            <td align=\"center\" style=\"padding: 20px 0px;\">\n                <!-- Main Container -->\n                <table border=\"0\" cellpadding=\"0\" cellspacing=\"0\" width=\"800\" style=\"max-width: 800px; background-color: #FFFFFF; border-radius: 8px; border: 1px solid #e5e5e5;\">\n                    \n                    <!-- Main Content -->\n                    <tr>\n                        <td style=\"padding: 40px 20px 20px 20px;\">\n                            <table border=\"0\" cellpadding=\"0\" cellspacing=\"0\" width=\"100%\">\n                                <tr>\n                                    <td style=\"color: #1a1a1a; font-size: 16px; line-height: 1.6; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;\">\n                                        {{ $node[\"html agent1\"].json[\"output\"][\"0\"][\"content\"][\"0\"][\"text\"] }}\n                                    </td>\n                                </tr>\n                            </table>\n                        </td>\n                    </tr>\n                    \n                    <!-- Footer -->\n                    <tr>\n                        <td style=\"padding: 30px 15px; border-top: 1px solid #e5e5e5;\">\n                            <table border=\"0\" cellpadding=\"0\" cellspacing=\"0\" width=\"100%\">\n                                <tr>\n                                    <td align=\"center\" style=\"color: #999999; font-size: 13px; line-height: 1.5; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;\">\n                                        If you don't want to receive emails, you can <a href=\"{{ String.fromCharCode(123) + String.fromCharCode(123) + 'unsubscribe_url' + String.fromCharCode(125) + String.fromCharCode(125) }}\" style=\"color: #666666; text-decoration: underline;\">unsubscribe</a>\n                                    </td>\n                                </tr>\n                            </table>\n                        </td>\n                    </tr>\n                    \n                </table>\n            </td>\n        </tr>\n    </table>\n</body>\n</html>",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        448,
+        -128
+      ],
+      "id": "5983a530-c001-43d6-87b8-1818be0bb103",
+      "name": "build html1"
+    },
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "value": "gpt-4.1",
+          "mode": "list",
+          "cachedResultName": "GPT-4.1"
+        },
+        "responses": {
+          "values": [
+            {
+              "role": "system",
+              "content": "=You are an email HTML formatter. Convert the provided text into clean, minimal HTML suitable for email clients.\n\nCONTENT STRUCTURE:\n1. Analyze the text carefully - preserve its original structure and intent\n2. Create a heading (h2) ONLY if the original email has an explicit subject line or title at the top\n3. Do NOT invent headings that weren't in the original text\n4. Use subheadings (18px bold) sparingly - only for standout statements that were already emphasized\n5. NEVER put dividers before buttons\n6. Create buttons ONLY when there's an actual URL/link provided\n\nTEXT EMPHASIS - TWO TYPES:\n\nTYPE 1: BOLD TEXT (use frequently for important words/terms)\n   <strong style=\"font-weight: 600;\">important term</strong>\n   \n   When to use:\n   - Important terms, product names, company names\n   - Key numbers, dates, metrics\n   - Feature names in lists\n   - Any word that naturally deserves emphasis\n   \n   Examples:\n   - \"TurboScribe offers <strong style=\"font-weight: 600;\">unlimited transcriptions</strong> for just $10/month\"\n   - \"Our <strong style=\"font-weight: 600;\">Black Friday sale</strong> ends soon\"\n   - \"We support <strong style=\"font-weight: 600;\">134+ languages</strong>\"\n\nTYPE 2: HIGHLIGHTED TEXT with background (use selectively for key phrases)\n   <span style=\"background-color: #e8f4ff; color: #0066cc; padding: 1px 5px; border-radius: 4px; font-weight: 500;\">key phrase</span>\n   \n   When to use (5-6 times per email maximum):\n   - Critical statistics or unique achievements (\"300% growth in Q4\")\n   - Important quotes or testimonials\n   - Key offers/benefits that stand out\n   - Genuinely unique information that must catch attention\n   - Important value propositions\n   - Compelling data points\n   \n   When NOT to use:\n   ❌ Regular product/company names\n   ❌ CTA phrases (use buttons or regular text instead)\n   ❌ Every feature in a list\n   ❌ Repeating the same phrase multiple times\n   \n   Examples of CORRECT usage:\n   - \"We helped companies save <span style=\"background-color: #e8f4ff; color: #0066cc; padding: 1px 5px; border-radius: 4px; font-weight: 500;\">over $2M in logistics costs</span> last year\"\n   - \"As one client said: <span style=\"background-color: #e8f4ff; color: #0066cc; padding: 1px 5px; border-radius: 4px; font-weight: 500;\">'This changed our entire workflow'</span>\"\n\nCRITICAL: Use emphasis INSIDE paragraphs, not as separate blocks!\n✅ GOOD: <p>Get <strong>50% off</strong> yearly plans during our <span style=\"...\">Black Friday sale</span>!</p>\n❌ BAD:  <p><span style=\"...\">Save 50% with Yearly Billing</span></p> (separate paragraph)\n\nFORMATTING RULES:\n\n1. GREETING (Hi/Hello + Name):\n   Make it bold: <p style=\"margin: 0 0 16px 0; color: #1a1a1a; font-size: 16px; line-height: 1.6; font-weight: 600;\">Hi Keith,</p>\n\n2. MAIN HEADING (use ONLY if original has explicit title/subject at top):\n   <h2 style=\"margin: 0 0 20px 0; color: #1a1a1a; font-size: 24px; font-weight: 600; line-height: 1.3;\">Main Topic/Title</h2>\n\n3. PARAGRAPHS (regular text with emphasis inside when needed):\n   <p style=\"margin: 0 0 16px 0; color: #1a1a1a; font-size: 16px; line-height: 1.6;\">Regular text with <strong style=\"font-weight: 600;\">bold terms</strong> or <span style=\"background-color: #e8f4ff; color: #0066cc; padding: 1px 5px; border-radius: 4px; font-weight: 500;\">highlighted key phrases</span> embedded inside when appropriate.</p>\n\n4. SUBHEADINGS (for important mid-content statements - use RARELY):\n   <p style=\"margin: 0 0 16px 0; color: #1a1a1a; font-size: 18px; line-height: 1.5; font-weight: 600;\">Subheading text</p>\n\n5. LINKS (only when URL is provided):\n   <a href=\"URL\" style=\"background-color: #f0f9ff; color: #0066cc; padding: 1px 5px; border-radius: 4px; border: 1px solid #99ccff; text-decoration: none; font-weight: 500;\">link text</a>\n\n6. LISTS (unordered) - use bold for item names:\n   <ul style=\"margin: 0 0 16px 0; padding-left: 20px;\">\n       <li style=\"margin-bottom: 8px; color: #1a1a1a; font-size: 16px; line-height: 1.6;\"><strong style=\"font-weight: 600;\">Feature Name</strong>: Description of the feature.</li>\n   </ul>\n\n7. LISTS (ordered):\n   <ol style=\"margin: 0 0 16px 0; padding-left: 20px;\">\n       <li style=\"margin-bottom: 8px; color: #1a1a1a; font-size: 16px; line-height: 1.6;\">Item with <strong style=\"font-weight: 600;\">bold terms</strong> inside.</li>\n   </ol>\n\n8. DIVIDERS (use only to separate major sections - NOT before buttons):\n   <div style=\"height: 1px; background-color: #e5e5e5; margin: 24px 0;\"></div>\n\n9. BUTTONS (create ONLY if there's an actual URL provided):\n   <table border=\"0\" cellpadding=\"0\" cellspacing=\"0\" width=\"100%\" style=\"margin: 24px 0;\">\n       <tr>\n           <td align=\"center\">\n               <table border=\"0\" cellpadding=\"0\" cellspacing=\"0\">\n                   <tr>\n                       <td align=\"center\" style=\"border-radius: 6px; background-color: #0066cc;\">\n                           <a href=\"URL\" style=\"display: inline-block; padding: 14px 32px; font-size: 16px; color: #ffffff; text-decoration: none; font-weight: 600; border-radius: 6px;\">Button Text</a>\n                       </td>\n                   </tr>\n               </table>\n           </td>\n       </tr>\n   </table>\n\n10. SIGNATURE BLOCK (for \"Kind regards\" / \"Best\" / etc. at the end):\n    Separate signature with a divider, then format with smaller gray text:\n    <div style=\"height: 1px; background-color: #e5e5e5; margin: 24px 0;\"></div>\n    <p style=\"margin: 0 0 8px 0; color: #666666; font-size: 14px; line-height: 1.5;\">Kind regards,</p>\n    <p style=\"margin: 0 0 4px 0; color: #1a1a1a; font-size: 14px; line-height: 1.5; font-weight: 600;\">Stan Miller</p>\n    <p style=\"margin: 0 0 4px 0; color: #666666; font-size: 14px; line-height: 1.5;\">City Company</p>\n    <p style=\"margin: 0 0 4px 0; color: #999999; font-size: 13px; line-height: 1.5;\">Additional info line 1</p>\n    <p style=\"margin: 0; color: #999999; font-size: 13px; line-height: 1.5;\">Additional info line 2</p>\n\nCRITICAL RULES:\n- DO NOT invent headings - use h2 ONLY if original text has explicit title at top\n- Make greetings bold (Hi/Hello + Name)\n- Use BOLD TEXT frequently for important terms - embed inside paragraphs\n- Use HIGHLIGHTED TEXT selectively (5-6 times max per email) - for key phrases and important info\n- Embed emphasis INSIDE paragraphs, not as separate blocks\n- Create buttons ONLY when there's an actual URL/link provided\n- If text mentions \"call this week?\" or similar WITHOUT a link - keep it as regular text, don't create a button\n- Format signatures as separate blocks with divider and smaller/gray text\n- Use ONLY inline styles\n- Do NOT include DOCTYPE, html, head, or body tags\n- Do NOT wrap output in ```html blocks\n- Return ONLY the formatted HTML content\n- Preserve the original tone and structure of the email\n- Think strategically about what to emphasize - use highlights 5-6 times for maximum impact\n\nEXAMPLE OUTPUT:\n<p style=\"margin: 0 0 16px 0; color: #1a1a1a; font-size: 16px; line-height: 1.6; font-weight: 600;\">Hi Keith,</p>\n<p style=\"margin: 0 0 16px 0; color: #1a1a1a; font-size: 16px; line-height: 1.6;\">We're excited to announce our <strong style=\"font-weight: 600;\">Black Friday sale</strong> - get <strong style=\"font-weight: 600;\">50% off</strong> all yearly plans!</p>\n<p style=\"margin: 0 0 16px 0; color: #1a1a1a; font-size: 16px; line-height: 1.6;\"><strong style=\"font-weight: 600;\">TurboScribe</strong> offers unlimited transcription for just <strong style=\"font-weight: 600;\">$10/month</strong> when billed annually.</p>\n<p style=\"margin: 0 0 16px 0; color: #1a1a1a; font-size: 16px; line-height: 1.6;\">All plans include:</p>\n<ul style=\"margin: 0 0 16px 0; padding-left: 20px;\">\n    <li style=\"margin-bottom: 8px; color: #1a1a1a; font-size: 16px; line-height: 1.6;\"><strong style=\"font-weight: 600;\">Unlimited transcriptions</strong>: No limits on files or minutes</li>\n    <li style=\"margin-bottom: 8px; color: #1a1a1a; font-size: 16px; line-height: 1.6;\"><strong style=\"font-weight: 600;\">10 hour uploads</strong>: Files up to 10 hours long</li>\n</ul>\n<div style=\"height: 1px; background-color: #e5e5e5; margin: 24px 0;\"></div>\n<p style=\"margin: 0 0 8px 0; color: #666666; font-size: 14px; line-height: 1.5;\">Best,</p>\n<p style=\"margin: 0; color: #1a1a1a; font-size: 14px; line-height: 1.5; font-weight: 600;\">John Smith</p>"
+            },
+            {
+              "content": "=Hi Robert,\n\nTexas just saw the highest rate of logistics bankruptcies in over a decade—hundreds of local carriers are shutting down mid-contract. That classic \"You can't fight in here, this is the war room!\" moment when everyone's staying calm while logistics infrastructure crumbles.\n\nFor your test segment operations in Texas, this volatility means you could face sudden shipping disruptions and increased costs. I know our last call got cut short, so we couldn't dive into specific needs or logistics.\n\nWe have a vetted network of financially stable Texas carriers who can step in within 24 hours if your current provider falters, ensuring uninterrupted freight movement and fixed-rate contracts through Q1 2026. Our reliability is ensured through a 4-step carrier verification process, only allowing top-rated carriers for critical shipments.\n\nLet's reconnect—our last call got cut short, but given these Texas developments, now's the perfect time to discuss securing your logistics. Quick 15-minute call this week?\n\nKind regards,\nStan Miller\nCity Company\nDomestic US & Canadian freight • Mexico cross-border • International shipments\nAuthorized Agent — Norfleet Transportation & Logistics LLC"
+            }
+          ]
+        },
+        "builtInTools": {},
+        "options": {
+          "temperature": 0.6
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 2,
+      "position": [
+        96,
+        -128
+      ],
+      "id": "db9d4d6e-42d4-4213-9b28-52d9b6dd6e3d",
+      "name": "html agent1",
+      "retryOnFail": true,
+      "maxTries": 5,
+      "waitBetweenTries": 5000,
+      "credentials": {
+        "openAiApi": {
+          "id": "895vd8bC2qxU4JL4",
+          "name": "OpenAi"
+        }
+      },
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        -96,
+        -128
+      ],
+      "id": "2d05c79d-9a98-4636-bd30-42a4d8eeb019",
+      "name": "When clicking ‘Execute workflow’"
+    },
+    {
+      "parameters": {
+        "fromEmail": "dispatch@citycompany.net",
+        "toEmail": "7481893@gmail.com",
+        "subject": "test2",
+        "html": "<!DOCTYPE html>\n<html lang=\"en\">\n<head>\n    <meta charset=\"UTF-8\">\n    <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">\n    <meta http-equiv=\"X-UA-Compatible\" content=\"IE=edge\">\n    <title>Email</title>\n    <!--[if mso]>\n    <style type=\"text/css\">\n        body, table, td {font-family: Arial, sans-serif !important;}\n    </style>\n    <![endif]-->\n</head>\n<body style=\"margin: 0; padding: 0; background-color: #ffffff; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;\">\n    <table border=\"0\" cellpadding=\"0\" cellspacing=\"0\" width=\"100%\" style=\"background-color: #ffffff;\">\n        <tr>\n            <td align=\"center\" style=\"padding: 20px 0px;\">\n                <!-- Main Container -->\n                <table border=\"0\" cellpadding=\"0\" cellspacing=\"0\" width=\"800\" style=\"max-width: 800px; background-color: #FFFFFF; border-radius: 8px; border: 1px solid #e5e5e5;\">\n                    \n                    <!-- Main Content -->\n                    <tr>\n                        <td style=\"padding: 40px 20px 20px 20px;\">\n                            <table border=\"0\" cellpadding=\"0\" cellspacing=\"0\" width=\"100%\">\n                                <tr>\n                                    <td style=\"color: #1a1a1a; font-size: 16px; line-height: 1.6; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;\">\n                                        <p style=\"margin: 0 0 16px 0; color: #1a1a1a; font-size: 16px; line-height: 1.6; font-weight: 600;\">Hi Robert,</p>\n<p style=\"margin: 0 0 16px 0; color: #1a1a1a; font-size: 16px; line-height: 1.6;\">Texas just saw the <strong style=\"font-weight: 600;\">highest rate of logistics bankruptcies</strong> in over a decade—hundreds of local carriers are shutting down mid-contract. That classic \"You can't fight in here, this is the war room!\" moment when everyone's staying calm while <span style=\"background-color: #e8f4ff; color: #0066cc; padding: 1px 5px; border-radius: 4px; font-weight: 500;\">logistics infrastructure crumbles</span>.</p>\n<p style=\"margin: 0 0 16px 0; color: #1a1a1a; font-size: 16px; line-height: 1.6;\">For your <strong style=\"font-weight: 600;\">test segment operations in Texas</strong>, this volatility means you could face <strong style=\"font-weight: 600;\">sudden shipping disruptions</strong> and <strong style=\"font-weight: 600;\">increased costs</strong>. I know our last call got cut short, so we couldn't dive into specific needs or logistics.</p>\n<p style=\"margin: 0 0 16px 0; color: #1a1a1a; font-size: 16px; line-height: 1.6;\">We have a <span style=\"background-color: #e8f4ff; color: #0066cc; padding: 1px 5px; border-radius: 4px; font-weight: 500;\">vetted network of financially stable Texas carriers</span> who can step in within <strong style=\"font-weight: 600;\">24 hours</strong> if your current provider falters, ensuring <span style=\"background-color: #e8f4ff; color: #0066cc; padding: 1px 5px; border-radius: 4px; font-weight: 500;\">uninterrupted freight movement</span> and <strong style=\"font-weight: 600;\">fixed-rate contracts</strong> through <strong style=\"font-weight: 600;\">Q1 2026</strong>. Our reliability is ensured through a <span style=\"background-color: #e8f4ff; color: #0066cc; padding: 1px 5px; border-radius: 4px; font-weight: 500;\">4-step carrier verification process</span>, only allowing <strong style=\"font-weight: 600;\">top-rated carriers</strong> for critical shipments.</p>\n<p style=\"margin: 0 0 16px 0; color: #1a1a1a; font-size: 16px; line-height: 1.6;\">Let's reconnect—our last call got cut short, but given these <span style=\"background-color: #e8f4ff; color: #0066cc; padding: 1px 5px; border-radius: 4px; font-weight: 500;\">Texas developments</span>, now's the perfect time to discuss securing your logistics. Quick <strong style=\"font-weight: 600;\">15-minute call</strong> this week?</p>\n<div style=\"height: 1px; background-color: #e5e5e5; margin: 24px 0;\"></div>\n<p style=\"margin: 0 0 8px 0; color: #666666; font-size: 14px; line-height: 1.5;\">Kind regards,</p>\n<p style=\"margin: 0 0 4px 0; color: #1a1a1a; font-size: 14px; line-height: 1.5; font-weight: 600;\">Stan Miller</p>\n<p style=\"margin: 0 0 4px 0; color: #666666; font-size: 14px; line-height: 1.5;\">City Company</p>\n<p style=\"margin: 0 0 4px 0; color: #999999; font-size: 13px; line-height: 1.5;\">Domestic US &amp; Canadian freight • Mexico cross-border • International shipments</p>\n<p style=\"margin: 0; color: #999999; font-size: 13px; line-height: 1.5;\">Authorized Agent — Norfleet Transportation &amp; Logistics LLC</p>\n                                    </td>\n                                </tr>\n                            </table>\n                        </td>\n                    </tr>\n                    \n                    <!-- Footer -->\n                    <tr>\n                        <td style=\"padding: 30px 15px; border-top: 1px solid #e5e5e5;\">\n                            <table border=\"0\" cellpadding=\"0\" cellspacing=\"0\" width=\"100%\">\n                                <tr>\n                                    <td align=\"center\" style=\"color: #999999; font-size: 13px; line-height: 1.5; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;\">\n                                        If you don't want to receive emails, you can <a href=\"{{unsubscribe_url}}\" style=\"color: #666666; text-decoration: underline;\">unsubscribe</a>\n                                    </td>\n                                </tr>\n                            </table>\n                        </td>\n                    </tr>\n                    \n                </table>\n            </td>\n        </tr>\n    </table>\n</body>\n</html>",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2.1,
+      "position": [
+        112,
+        -272
+      ],
+      "id": "66838f1b-ed33-48bd-af6e-3f49348dcbaf",
+      "name": "Send email",
+      "webhookId": "a9cb0584-936a-4dd2-84a6-c0527c5967d1",
+      "credentials": {
+        "smtp": {
+          "id": "Jd45EegKRNm0g0nD",
+          "name": "dispatch@city...(sendpulse)"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "html agent1": {
+      "main": [
+        [
+          {
+            "node": "build html1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "When clicking ‘Execute workflow’": {
+      "main": [
+        [
+          {
+            "node": "html agent1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "triggerCount": 0,
+  "versionId": "c7f76bf5-8e24-4ddd-b498-b05fbea811f1",
+  "owner": {
+    "type": "personal",
+    "projectId": "I8ZweZXokOc0zbYb",
+    "projectName": "BSU Agency <info@brilliantseedup.com>",
+    "personalEmail": "info@brilliantseedup.com"
+  },
+  "parentFolderId": null,
+  "isArchived": true
+}

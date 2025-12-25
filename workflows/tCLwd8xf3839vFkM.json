@@ -1,0 +1,2812 @@
+{
+  "id": "tCLwd8xf3839vFkM",
+  "name": "Feedback processing",
+  "nodes": [
+    {
+      "parameters": {
+        "workflowInputs": {
+          "values": [
+            {
+              "name": "contact_id",
+              "type": "number"
+            },
+            {
+              "name": "cs_id",
+              "type": "number"
+            },
+            {
+              "name": "type"
+            },
+            {
+              "name": "message"
+            },
+            {
+              "name": "data",
+              "type": "object"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        -1072,
+        192
+      ],
+      "id": "b6ce9358-25e8-459c-9b1e-bea9c89bdfc2",
+      "name": "start"
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.type }}",
+                    "rightValue": "email",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "id": "858fe829-c07a-4f6d-9f53-f8ed4db4e532"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "email"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "c1bbcb6e-7a33-4f9f-a95b-d5592b03d9ff",
+                    "leftValue": "={{ $json.type }}",
+                    "rightValue": "linkedin",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "linkedin"
+            }
+          ]
+        },
+        "options": {
+          "fallbackOutput": "none"
+        }
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.2,
+      "position": [
+        -848,
+        192
+      ],
+      "id": "2c6c38f8-9f93-4319-85ec-dc468751d0bb",
+      "name": "limiter"
+    },
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "value": "gpt-4.1",
+          "mode": "list",
+          "cachedResultName": "GPT-4.1"
+        },
+        "messages": {
+          "values": [
+            {
+              "content": "=You are an AI agent specialized in analyzing responses from social media marketing campaigns. Your task is to categorize incoming messages from LinkedIn, email, and WhatsApp campaigns and determine the appropriate action.\n\n## Your Role\nYou receive messages from clients who respond to marketing campaigns and need to classify their responses into specific categories to trigger appropriate follow-up actions.\n\n## Response Categories\nAnalyze each message and assign ONE of the following statuses:\n\n\"none\" - Empty messages, incomprehensible content, strange symbols, incoherent text, simple greetings without substance, or profanity. Examples:\n- Empty or gibberish messages\n- Simple greetings: \"Hello\", \"Hi\", \"Привет\", \"Hey\" (without additional context)\n- Messages containing profanity or obscene language\n- Incomprehensible symbols or spam\n\n\"activity\" - Positive engagement where the client shows genuine interest, agreement, or asks substantive questions. The client must demonstrate clear intent to engage. Examples:\n- \"Yes, I'm interested, tell me more details\"\n- \"How much does it cost?\"\n- Specific questions about services/products\n- \"Send me information\"\n- \"I agree, let's discuss\"\n- Any form of constructive engagement with clear interest\n\n\"bad\" - Clear negative responses, excuses, or rejection where the client explicitly indicates disinterest and further dialogue is not viable. Examples:\n- \"Not interested\"\n- \"Don't contact me again\"\n- \"Remove me from your list\"\n- \"I'm busy\", \"Not now\", \"Maybe later\"\n- Excuses without commitment\n- Clear rejection messages\n\n\"call\" - Client specifically requests a phone call. This requires additional parameters (see JSON structure below).\n\n## Output Format\nAlways respond with valid JSON in one of these formats:\n\n### For statuses: none, activity, bad\n{\n  \"status\": \"string\"\n}\n\n### For status: call\n{\n  \"status\": \"call\",\n  \"type\": \"string\",\n  \"datetime\": \"string\", \n  \"phone\": \"string\"\n}\n\n## Call Status Parameters\n\n\"type:\"\n- \"now\" - Client requests immediate call or asks to be called without specifying time\n- \"scheduled\" - Client requests call at specific date/time\n\n\"datetime:\"\n- Required only for \"scheduled\" type\n- Format: Use natural human language format like \"September 9, 2025 at 2:00 PM\" or \"Tomorrow at 3 PM\" or \"Monday at 10:30 AM\"\n- Be conversational and clear in expressing date and time\n\n\"phone:\"\n- Include only if client provides phone number\n- Format: E164 (e.g., \"+1234567890\")\n\n## Important Rules\n\n1. Only include parameters that are explicitly provided or required\n2. If a parameter doesn't apply, omit it from the JSON (don't create empty fields)\n3. Be strict with \"activity\" status - only use when client shows clear agreement, interest, or asks substantive questions\n4. Simple greetings without additional context should be classified as \"none\"\n5. Messages with profanity or obscene language should be classified as \"none\"\n6. Excuses like \"I'm busy\", \"Not now\", \"Maybe later\" should be classified as \"bad\"\n7. Parse dates and times carefully for scheduled calls and express them in natural language\n8. Always return valid JSON format\n9. Analyze the entire message context, not just keywords\n10. Current date and time: {{ \n  \"[\" + \n  ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'][$now.setZone('UTC').weekday % 7] + \n  \"] \" + \n  $now.setZone('UTC').toFormat(\"yyyy-MM-dd HH:mm:00\") \n}}\n\n## Examples\n\nMessage: \"Yes, I'm interested. Tell me more about your services\"\nResponse: {\"status\": \"activity\"}\n\nMessage: \"Hello\"\nResponse: {\"status\": \"none\"}\n\nMessage: \"Привет\"\nResponse: {\"status\": \"none\"}\n\nMessage: \"How much does it cost?\"\nResponse: {\"status\": \"activity\"}\n\nMessage: \"Not interested, please remove me\"\nResponse: {\"status\": \"bad\"}\n\nMessage: \"I'm busy right now\"\nResponse: {\"status\": \"bad\"}\n\nMessage: \"Maybe later\"\nResponse: {\"status\": \"bad\"}\n\nMessage: \"F*** off\"\nResponse: {\"status\": \"none\"}\n\nMessage: \"Can you call me now?\"\nResponse: {\"status\": \"call\", \"type\": \"now\"}\n\nMessage: \"Please call me tomorrow at 2 PM, my number is +1234567890\"\nResponse: {\"status\": \"call\", \"type\": \"scheduled\", \"datetime\": \"Tuesday, September 9, 2025 at 2:00 PM\", \"phone\": \"+1234567890\"}",
+              "role": "system"
+            },
+            {
+              "content": "={{ $node[\"start\"].json[\"message\"] || \"-\" }}"
+            }
+          ]
+        },
+        "jsonOutput": true,
+        "options": {
+          "temperature": 0
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 1.8,
+      "position": [
+        48,
+        192
+      ],
+      "id": "189d648f-d4f9-489d-b231-d1d6708e8f9d",
+      "name": "Activity Agent",
+      "credentials": {
+        "openAiApi": {
+          "id": "895vd8bC2qxU4JL4",
+          "name": "OpenAi"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.message.content.status }}",
+                    "rightValue": "none",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "id": "3b5edb94-3565-4e92-9ee1-b17eae332995"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "none"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "4162929d-5920-490d-9f1b-c23acf258951",
+                    "leftValue": "={{ $json.message.content.status }}",
+                    "rightValue": "activity",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "activity"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "c85636b3-fdd3-4430-9cd3-d55d7e8d0092",
+                    "leftValue": "={{ $json.message.content.status }}",
+                    "rightValue": "bad",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "bad"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "8db41767-a9c3-43fb-94dc-9278b94b22ae",
+                    "leftValue": "={{ $json.message.content.status }}",
+                    "rightValue": "call",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "call"
+            }
+          ]
+        },
+        "options": {
+          "fallbackOutput": 0
+        }
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.2,
+      "position": [
+        400,
+        160
+      ],
+      "id": "a67eb52e-443e-4f67-a6ee-249121fc2cd9",
+      "name": "branch"
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $('start').item.json.type }}",
+                    "rightValue": "linkedin",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "id": "3418a3a5-0da2-4e80-a2d2-d5b5ccd7da67"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "linkedin"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "e40e1fd7-9cd5-43af-9c1f-859cba350a2b",
+                    "leftValue": "={{ $('start').item.json.type }}",
+                    "rightValue": "email",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "email"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.2,
+      "position": [
+        960,
+        240
+      ],
+      "id": "e04449ee-d523-4995-a5c5-6ca02dfbba2a",
+      "name": "channel"
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $node[\"Activity Agent\"].json[\"message\"][\"content\"][\"status\"] }}",
+                    "rightValue": "call",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "id": "2abb8911-dcdb-4a4e-9480-454988ecd143"
+                  }
+                ],
+                "combinator": "and"
+              }
+            }
+          ]
+        },
+        "options": {
+          "fallbackOutput": "extra"
+        }
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.2,
+      "position": [
+        1984,
+        800
+      ],
+      "id": "54396573-3eb2-4bcf-b406-dc2032cbf82e",
+      "name": "call?"
+    },
+    {
+      "parameters": {
+        "jsCode": "const { parsePhoneNumber } = require('libphonenumber-js');\n\n// Две переменные с номерами\nconst phone1 = $node[\"Activity Agent\"].json[\"message\"]?.[\"content\"]?.[\"phone\"];\nconst phone2 = $node[\"get lead\"].json[\"Phone\"];\n\n// Функция очистки и проверки номера\nfunction validatePhone(rawPhone) {\n  try {\n    let cleanNum = String(rawPhone || '').replace(/[^\\d]/g, '');\n    if (!cleanNum) return null;\n\n    let num = '+' + cleanNum;\n    const phone = parsePhoneNumber(num);\n\n    if (phone?.isValid()) {\n      return phone.format('E.164');\n    }\n  } catch (e) {\n    // просто игнорируем ошибку\n  }\n  return null;\n}\n\n// Пробуем первый номер\nlet result = validatePhone(phone1);\n\n// Если первый невалиден — пробуем второй\nif (!result) {\n  result = validatePhone(phone2);\n}\n\n// Возвращаем итог\nif (result) {\n  return {\n    json: {\n      valid: true,\n      value: result\n    }\n  };\n} else {\n  return {\n    json: {\n      valid: false\n    }\n  };\n}"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1040,
+        1040
+      ],
+      "id": "06a24a7b-b4e1-44b7-b7fb-c57d75486a6e",
+      "name": "libphonenumber"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "9c3075aa-615a-4289-872a-f075f321ba34",
+              "leftValue": "={{ $json.valid }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -752,
+        1040
+      ],
+      "id": "688c6f3d-6b79-40cc-bcf7-090f93c9b38d",
+      "name": "valid phone?"
+    },
+    {
+      "parameters": {
+        "authentication": "nocoDbApiToken",
+        "operation": "update",
+        "projectId": "pb8fl81i22wlwf1",
+        "table": "m1rkh0aatxhrnt3",
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldName": "Id",
+              "fieldValue": "={{ $('start').item.json.lead_id }}"
+            },
+            {
+              "fieldName": "Phone",
+              "fieldValue": "={{ $json.cleanNumber }}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.nocoDb",
+      "typeVersion": 3,
+      "position": [
+        -528,
+        1040
+      ],
+      "id": "765fe75c-f730-411c-8f3a-93d1bd2bb971",
+      "name": "update phone",
+      "credentials": {
+        "nocoDbApiToken": {
+          "id": "tg1sd8Mux2yjJLx7",
+          "name": "NocoDB"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "value": "2JTEb7oseqpOf9QT",
+          "mode": "list",
+          "cachedResultName": "Notification C"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "lead_id": "={{ $('start').item.json.lead_id }}",
+            "type": "={{ $('start').item.json.type }}",
+            "message": "={{ $('start').item.json.message }}",
+            "note": "=The client asked for a call but the phone number is incorrect or not specified.",
+            "data": "={{ $('start').item.json.data }}",
+            "event_id": "={{ $node[\"merge event\"].json[\"Id\"] }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "lead_id",
+              "displayName": "lead_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "number",
+              "removed": false
+            },
+            {
+              "id": "type",
+              "displayName": "type",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "message",
+              "displayName": "message",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "note",
+              "displayName": "note",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "event_id",
+              "displayName": "event_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "number",
+              "removed": false
+            },
+            {
+              "id": "data",
+              "displayName": "data",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "object",
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": true
+        },
+        "options": {
+          "waitForSubWorkflow": false
+        }
+      },
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.2,
+      "position": [
+        -736,
+        1296
+      ],
+      "id": "b858d7a1-46fe-4bec-8c05-7273fcbadad3",
+      "name": "Notification invalid phone"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "4126ce8f-4fc7-4d83-808a-8fa2d4c8e3a8",
+              "leftValue": "={{ $('Activity Agent').item.json.message.content.type }}",
+              "rightValue": "scheduled",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        1520,
+        1040
+      ],
+      "id": "7587a5bc-27e1-4ccd-aa06-713ec597f80c",
+      "name": "sheduled?"
+    },
+    {
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "value": "2JTEb7oseqpOf9QT",
+          "mode": "list",
+          "cachedResultName": "Notification C"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "lead_id": "={{ $('start').item.json.lead_id }}",
+            "type": "={{ $('start').item.json.type }}",
+            "message": "={{ $('start').item.json.message }}",
+            "note": "=The client asked for a call, but the recording is already in the calling system.",
+            "data": "={{ $('start').item.json.data }}",
+            "event_id": "={{ $node[\"merge event\"].json[\"Id\"] }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "lead_id",
+              "displayName": "lead_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "number",
+              "removed": false
+            },
+            {
+              "id": "type",
+              "displayName": "type",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "message",
+              "displayName": "message",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "note",
+              "displayName": "note",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "event_id",
+              "displayName": "event_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "number",
+              "removed": false
+            },
+            {
+              "id": "data",
+              "displayName": "data",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "object",
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": true
+        },
+        "options": {
+          "waitForSubWorkflow": false
+        }
+      },
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.2,
+      "position": [
+        -144,
+        1328
+      ],
+      "id": "ddf3ca80-f251-414c-8a88-359d09a812c7",
+      "name": "Notification already in calls"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "7728d75b-152f-446c-8407-a27f15d21e9a",
+              "leftValue": "={{ $json.message.content.success }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        864,
+        1040
+      ],
+      "id": "142cb28d-8a26-49f6-bf9e-34bd1fafe47b",
+      "name": "valid name"
+    },
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "value": "gpt-4.1",
+          "mode": "list",
+          "cachedResultName": "GPT-4.1"
+        },
+        "messages": {
+          "values": [
+            {
+              "content": "=# Client Name Cleaner Agent\n\nYou are a specialized agent for cleaning and extracting client names from potentially messy input data.\n\n## Your Task\nYou will receive input in this format:\n\nName: <value>\nSurname: <value>\n\n\nYour job is to:\n1. Validate if the provided name and surname are clean and proper\n2. Extract the real client name and surname from messy data if needed\n3. Clean and format the names professionally\n\n## Common Issues to Handle\n- Professional titles and prefixes: Dr, Prof, Mr, Mrs, Ms, Lord, Sir, etc.\n- Multiple names in wrong fields\n- Organizational names mixed with personal names\n- Extra descriptive text\n- Inconsistent capitalization\n\n## Examples of Messy Data:\n- Name: Dr Renuka Thakore, Surname: Representing Global Communities\n- Name: Dr. Lord Arash, Surname: Nassouri Nason\n- Name: Prof. John Smith Jr., Surname: University Department\n\n## Output Format\nAlways respond with valid JSON in this exact format:\n\n{\n  \"name\": \"value\",\n  \"surname\": \"value\", \n  \"success\": true/false\n}\n\n\n## Rules:\n1. Name field: Must contain exactly ONE word, properly capitalized (e.g., \"John\", \"Maria\")\n2. Surname field: Must contain exactly ONE word, properly capitalized (e.g., \"Smith\", \"Johnson\")\n3. Success = true only when you successfully extract a real, addressable client name\n4. If surname cannot be determined, use \"-\" but this doesn't affect success if name is found\n5. Remove all titles, prefixes, suffixes, and organizational references\n6. Focus on extracting the actual person's name they would be addressed by\n\n## Process:\n1. First, THINK: Analyze if there's actually a real personal name present in the data\n2. Identify and remove professional titles and prefixes\n3. Separate personal names from organizational/descriptive text  \n4. Extract the most likely first name and surname\n5. Format with proper capitalization\n6. Final validation: Double-check that the extracted name represents a real, addressable person\n\n## Critical Thinking Required:\nBefore setting success: true, ask yourself:\n- Is there actually a real human name in the provided data?\n- Or is it just organizational names, job titles, or complete nonsense?\n- Can I confidently identify a personal name that a person would be addressed by?\n- Would this name make sense in a professional greeting like \"Hello [Name]\"?\n- Does the extracted name sound like a real human first name? (not objects, food, random words)\n- Look across BOTH fields - sometimes the real name is in the \"wrong\" field\n\n## Examples of when to set success: false:\n- Only company/organization names present\n- Only job titles without personal names\n- Gibberish or random text\n- Cannot identify any real personal name component\n- Extracted \"name\" is clearly not a human first name (like \"Milk\", \"Car\", \"Building\", etc.)\n\n## Smart Extraction Strategy:\n- Scan both Name and Surname fields for actual human names\n- The real first name might be in the \"Surname\" field and vice versa\n- Prioritize finding a believable human first name over field positioning\n- If you find \"Dr Milk\" and \"Alex 2 Tompson\", recognize that \"Alex\" is the real name, not \"Milk\"\n\nRemember: Your primary goal is to extract clean, professional, addressable client names that can be used for personal communication. Be conservative - only set success=true when you're confident there's a real personal name present.",
+              "role": "system"
+            },
+            {
+              "content": "=Name: {{ $node[\"get lead\"].json[\"Name\"] || \"-\" }}\nSurname: {{ $node[\"get lead\"].json[\"Surname\"] || \"-\" }}"
+            }
+          ]
+        },
+        "jsonOutput": true,
+        "options": {
+          "temperature": 0.2
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 1.8,
+      "position": [
+        480,
+        1040
+      ],
+      "id": "51eb8f6f-3ca0-4c2b-acce-b7055b2909a1",
+      "name": "check name",
+      "credentials": {
+        "openAiApi": {
+          "id": "895vd8bC2qxU4JL4",
+          "name": "OpenAi"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "authentication": "nocoDbApiToken",
+        "projectId": "pb8fl81i22wlwf1",
+        "table": "m1rkh0aatxhrnt3",
+        "id": "={{ $('start').item.json.lead_id }}"
+      },
+      "type": "n8n-nodes-base.nocoDb",
+      "typeVersion": 3,
+      "position": [
+        -1280,
+        1040
+      ],
+      "id": "faec89da-344b-47c1-9856-20c4bdbb8255",
+      "name": "get lead",
+      "credentials": {
+        "nocoDbApiToken": {
+          "id": "tg1sd8Mux2yjJLx7",
+          "name": "NocoDB"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "value": "2JTEb7oseqpOf9QT",
+          "mode": "list",
+          "cachedResultName": "Notification C"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "lead_id": "={{ $('start').item.json.lead_id }}",
+            "type": "={{ $('start').item.json.type }}",
+            "message": "={{ $('start').item.json.message }}",
+            "note": "=The client requested a call but the name did not pass validation.",
+            "data": "={{ $('start').item.json.data }}",
+            "event_id": "={{ $node[\"merge event\"].json[\"Id\"] }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "lead_id",
+              "displayName": "lead_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "number",
+              "removed": false
+            },
+            {
+              "id": "type",
+              "displayName": "type",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "message",
+              "displayName": "message",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "note",
+              "displayName": "note",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "event_id",
+              "displayName": "event_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "number",
+              "removed": false
+            },
+            {
+              "id": "data",
+              "displayName": "data",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "object",
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": true
+        },
+        "options": {
+          "waitForSubWorkflow": false
+        }
+      },
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.2,
+      "position": [
+        864,
+        1312
+      ],
+      "id": "40c31d43-2334-4651-abc9-d04d0a597e1e",
+      "name": "Notification invalid name"
+    },
+    {
+      "parameters": {
+        "authentication": "nocoDbApiToken",
+        "operation": "create",
+        "projectId": "ptmdi1uz55rzzvg",
+        "table": "mtpwsz22lwoci93",
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldName": "Name",
+              "fieldValue": "={{ $('check name').item.json.message.content.name }}"
+            },
+            {
+              "fieldName": "Surname",
+              "fieldValue": "={{ $('check name').item.json.message.content.surname }}"
+            },
+            {
+              "fieldName": "Phone",
+              "fieldValue": "={{ $node[\"libphonenumber\"].json[\"value\"] }}"
+            },
+            {
+              "fieldName": "Email",
+              "fieldValue": "={{ $('get lead').item.json.Email }}"
+            },
+            {
+              "fieldName": "Source",
+              "fieldValue": "={{ $node[\"get lead\"].json[\"Segment\"] }}"
+            },
+            {
+              "fieldName": "Status",
+              "fieldValue": "Progress"
+            },
+            {
+              "fieldName": "TimeZone",
+              "fieldValue": "={{ $node[\"get lead\"].json[\"TimeZone\"] }}"
+            },
+            {
+              "fieldName": "Campagin",
+              "fieldValue": "={{ $('start').item.json.lead_id }}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.nocoDb",
+      "typeVersion": 3,
+      "position": [
+        1088,
+        1040
+      ],
+      "id": "8fe173b8-6fe1-405b-bc2f-59a6cf260cc6",
+      "name": "to call system",
+      "credentials": {
+        "nocoDbApiToken": {
+          "id": "tg1sd8Mux2yjJLx7",
+          "name": "NocoDB"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "value": "2JTEb7oseqpOf9QT",
+          "mode": "list",
+          "cachedResultName": "Notification C"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "lead_id": "={{ $('start').item.json.lead_id }}",
+            "type": "={{ $('start').item.json.type }}",
+            "message": "={{ $('start').item.json.message }}",
+            "note": "=The client has been sent a call to the system, the call has started now.",
+            "data": "={{ $('start').item.json.data }}",
+            "event_id": "={{ $node[\"merge event\"].json[\"Id\"] }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "lead_id",
+              "displayName": "lead_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "number",
+              "removed": false
+            },
+            {
+              "id": "type",
+              "displayName": "type",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "message",
+              "displayName": "message",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "note",
+              "displayName": "note",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "event_id",
+              "displayName": "event_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "number",
+              "removed": false
+            },
+            {
+              "id": "data",
+              "displayName": "data",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "object",
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": true
+        },
+        "options": {
+          "waitForSubWorkflow": false
+        }
+      },
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.2,
+      "position": [
+        1632,
+        1312
+      ],
+      "id": "d30a4980-8673-40b6-96af-a5e04ef58ca4",
+      "name": "Notification call now"
+    },
+    {
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "value": "5roAmi9HtHGlKhhC",
+          "mode": "list",
+          "cachedResultName": "Set TimeZone"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "lead_id": "={{ $node[\"to call system\"].json[\"Id\"] }}"
+          },
+          "matchingColumns": [
+            "number"
+          ],
+          "schema": [
+            {
+              "id": "lead_id",
+              "displayName": "lead_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "number",
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": true
+        },
+        "options": {
+          "waitForSubWorkflow": true
+        }
+      },
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.2,
+      "position": [
+        1744,
+        1040
+      ],
+      "id": "092f714d-72c6-4cae-9113-77ddc22713a7",
+      "name": "timeZone",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "value": "ZODKc8kcFrzt6Iwe",
+          "mode": "list",
+          "cachedResultName": "Callback Bot"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "next_call": "={{ $node[\"Activity Agent\"].json[\"message\"][\"content\"][\"datetime\"] }}",
+            "lead_id": "={{ $node[\"to call system\"].json[\"Id\"] }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "next_call",
+              "displayName": "next_call",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "lead_id",
+              "displayName": "lead_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "number",
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": true
+        },
+        "options": {
+          "waitForSubWorkflow": false
+        }
+      },
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.2,
+      "position": [
+        1968,
+        1040
+      ],
+      "id": "975e870d-59d2-4506-bad5-a6d2ebb3046d",
+      "name": "Callback Plan"
+    },
+    {
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "value": "0tr4WZkON2T6bPwn",
+          "mode": "list",
+          "cachedResultName": "Run call"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Id": "={{ $node[\"to call system\"].json[\"Id\"] }}"
+          },
+          "matchingColumns": [
+            "Id"
+          ],
+          "schema": [
+            {
+              "id": "Id",
+              "displayName": "Id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "number",
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": true
+        },
+        "options": {
+          "waitForSubWorkflow": false
+        }
+      },
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.2,
+      "position": [
+        1392,
+        1312
+      ],
+      "id": "d4dd65c3-ce58-4c8d-ace5-424a791de409",
+      "name": "RUN Call"
+    },
+    {
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "value": "2JTEb7oseqpOf9QT",
+          "mode": "list",
+          "cachedResultName": "Notification C"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "lead_id": "={{ $('start').item.json.lead_id }}",
+            "type": "={{ $('start').item.json.type }}",
+            "message": "={{ $('start').item.json.message }}",
+            "note": "=The client requested a call, the schedule is set for {{ $('Activity Agent').item.json.message.content.datetime }}",
+            "data": "={{ $('start').item.json.data }}",
+            "event_id": "={{ $node[\"merge event\"].json[\"Id\"] }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "lead_id",
+              "displayName": "lead_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "number",
+              "removed": false
+            },
+            {
+              "id": "type",
+              "displayName": "type",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "message",
+              "displayName": "message",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "note",
+              "displayName": "note",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "event_id",
+              "displayName": "event_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "number",
+              "removed": false
+            },
+            {
+              "id": "data",
+              "displayName": "data",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "object",
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": true
+        },
+        "options": {
+          "waitForSubWorkflow": false
+        }
+      },
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.2,
+      "position": [
+        2192,
+        1040
+      ],
+      "id": "158e20f7-8a23-4544-b857-62c6be9f6789",
+      "name": "Notification call sheduled"
+    },
+    {
+      "parameters": {
+        "authentication": "nocoDbApiToken",
+        "operation": "create",
+        "projectId": "pb8fl81i22wlwf1",
+        "table": "m5qiwotpjdk4cs6",
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldName": "Description",
+              "fieldValue": "=The lead has been sent to the call system."
+            },
+            {
+              "fieldName": "Event",
+              "fieldValue": "=Start Calls"
+            },
+            {
+              "fieldName": "Leads_id",
+              "fieldValue": "={{ $('start').item.json.lead_id }}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.nocoDb",
+      "typeVersion": 3,
+      "position": [
+        1312,
+        1040
+      ],
+      "id": "28a09a0a-bb0f-42cd-bdab-d78198b6f259",
+      "name": "create call event",
+      "credentials": {
+        "nocoDbApiToken": {
+          "id": "tg1sd8Mux2yjJLx7",
+          "name": "NocoDB"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "64615c8f-300d-44b5-951d-0208098bd622",
+              "leftValue": "={{ !$node[\"get lead\"].json[\"Tags\"].includes(\"DNC\") }}",
+              "rightValue": "DNC",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        192,
+        1040
+      ],
+      "id": "7739ae96-9cfe-46c6-ae09-7f77956e2248",
+      "name": "DNC"
+    },
+    {
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "value": "2JTEb7oseqpOf9QT",
+          "mode": "list",
+          "cachedResultName": "Notification C"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "lead_id": "={{ $('start').item.json.lead_id }}",
+            "type": "={{ $('start').item.json.type }}",
+            "message": "={{ $('start').item.json.message }}",
+            "note": "=The client asked for a call, but calls are prohibited.",
+            "data": "={{ $('start').item.json.data }}",
+            "event_id": "={{ $node[\"merge event\"].json[\"Id\"] }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "lead_id",
+              "displayName": "lead_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "number",
+              "removed": false
+            },
+            {
+              "id": "type",
+              "displayName": "type",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "message",
+              "displayName": "message",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "note",
+              "displayName": "note",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "event_id",
+              "displayName": "event_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "number",
+              "removed": false
+            },
+            {
+              "id": "data",
+              "displayName": "data",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "object",
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": true
+        },
+        "options": {
+          "waitForSubWorkflow": false
+        }
+      },
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.2,
+      "position": [
+        192,
+        1328
+      ],
+      "id": "ce544d8f-3239-49ea-aa23-c37c89ae5212",
+      "name": "Notification calls are prohibited"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "0512c15b-ad0a-4390-a6d5-7956d3cb09dd",
+              "leftValue": "={{ $json.result }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -48,
+        1040
+      ],
+      "id": "7dfda2ee-86f8-4457-bb3d-ff7b5f22add0",
+      "name": "result check?"
+    },
+    {
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "value": "1AltGNcKe0a0HshQ",
+          "mode": "list",
+          "cachedResultName": "Check call system"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "phone": "={{ $node[\"libphonenumber\"].json[\"value\"] }}",
+            "email": "={{ $('get lead').item.json.Email }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "phone",
+              "displayName": "phone",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "email",
+              "displayName": "email",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": true
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.2,
+      "position": [
+        -272,
+        1040
+      ],
+      "id": "cdb2c771-7e9e-4460-975c-94e1330ed723",
+      "name": "chekc CS"
+    },
+    {
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "value": "2JTEb7oseqpOf9QT",
+          "mode": "list",
+          "cachedResultName": "Notification C"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "lead_id": "={{ $('start').item.json.lead_id }}",
+            "type": "={{ $('start').item.json.type }}",
+            "message": "={{ $('start').item.json.message }}",
+            "note": "=The client was active on {{ $('start').item.json.type }}.",
+            "data": "={{ $('start').item.json.data }}",
+            "event_id": "={{ $node[\"merge event\"].json[\"Id\"] }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "lead_id",
+              "displayName": "lead_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "number",
+              "removed": false
+            },
+            {
+              "id": "type",
+              "displayName": "type",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "message",
+              "displayName": "message",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "note",
+              "displayName": "note",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "event_id",
+              "displayName": "event_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "number",
+              "removed": false
+            },
+            {
+              "id": "data",
+              "displayName": "data",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "object",
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": true
+        },
+        "options": {
+          "waitForSubWorkflow": false
+        }
+      },
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.2,
+      "position": [
+        2272,
+        816
+      ],
+      "id": "a90644e9-7c7b-4d3e-9aab-230f4152ad6b",
+      "name": "Notification activity"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "WITH \nparams AS (\n    SELECT \n        NULLIF(TRIM('{{ $node[\"start\"].json[\"contact_id\"] || \"\" }}'), '')::integer AS contact_id,\n        NULLIF(TRIM('{{ $node[\"start\"].json[\"cs_id\"] || \"\" }}'), '')::integer AS cs_id,\n        '{{ $json[\"type\"] }}' AS event_type,\n        24 AS hours_limit  -- Измени здесь количество часов\n),\nrecent_contact_event AS (\n    SELECT created_at\n    FROM p0a3eirwme1bmw7.\"Events\"\n    WHERE \"Contacts_id\" = (SELECT contact_id FROM params)\n      AND \"Type\" = (SELECT event_type FROM params)\n      AND (SELECT contact_id FROM params) IS NOT NULL\n    ORDER BY created_at DESC\n    LIMIT 1\n),\nrecent_cs_event AS (\n    SELECT created_at\n    FROM p0a3eirwme1bmw7.\"Events\"\n    WHERE \"Call system_id\" = (SELECT cs_id FROM params)\n      AND \"Type\" = (SELECT event_type FROM params)\n      AND (SELECT cs_id FROM params) IS NOT NULL\n    ORDER BY created_at DESC\n    LIMIT 1\n)\nSELECT \n    CASE \n        WHEN EXISTS (SELECT 1 FROM recent_contact_event WHERE created_at > NOW() - MAKE_INTERVAL(hours => (SELECT hours_limit FROM params)))\n          OR EXISTS (SELECT 1 FROM recent_cs_event WHERE created_at > NOW() - MAKE_INTERVAL(hours => (SELECT hours_limit FROM params)))\n        THEN false\n        ELSE true\n    END AS allowed;",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        -400,
+        192
+      ],
+      "id": "ee362851-23ff-46d0-8ed2-97b63e98b660",
+      "name": "check activity",
+      "credentials": {
+        "postgres": {
+          "id": "oZABCHH2vjfMvXoi",
+          "name": "nocodb"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "97bc5a49-b75c-4897-934d-6688d8176fa2",
+              "name": "type",
+              "value": "Activity linkedin",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -624,
+        288
+      ],
+      "id": "f3cbcf2a-e7bb-41f4-bb11-1e134d0fce9f",
+      "name": "linkedin"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "97bc5a49-b75c-4897-934d-6688d8176fa2",
+              "name": "type",
+              "value": "Activity emails",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -624,
+        96
+      ],
+      "id": "ca982c7a-d363-44a1-ba68-aecf4144adc7",
+      "name": "email"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "e5d55133-e07d-4cb6-a80b-1d71d5f8106e",
+              "leftValue": "={{ $json.allowed }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -176,
+        192
+      ],
+      "id": "f7d78b01-83da-4674-b35b-cb183ea7309b",
+      "name": "allow?"
+    },
+    {
+      "parameters": {
+        "authentication": "nocoDbApiToken",
+        "operation": "create",
+        "workspaceId": "wqp6q0zt",
+        "projectId": "p0a3eirwme1bmw7",
+        "table": "m3gkcorj95359wn",
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldName": "Note",
+              "fieldValue": "=Client replied:\n{{ $('start').item.json.message }}"
+            },
+            {
+              "fieldName": "Type",
+              "fieldValue": "=Activity linkedin"
+            },
+            {
+              "fieldName": "Contacts_id",
+              "fieldValue": "={{ $node[\"start\"].json[\"contact_id\"] }}"
+            },
+            {
+              "fieldName": "Link",
+              "fieldValue": "=https://app.heyreach.io/app/inbox/{{ $node[\"start\"].json[\"data\"][\"sender_id\"] }}/{{ encodeURIComponent($node[\"start\"].json[\"data\"][\"conversation_id\"]) }}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.nocoDb",
+      "typeVersion": 3,
+      "position": [
+        1376,
+        112
+      ],
+      "id": "0a1bc6d0-5192-4aea-9ed6-745f1088f616",
+      "name": "acivity LD",
+      "credentials": {
+        "nocoDbApiToken": {
+          "id": "tg1sd8Mux2yjJLx7",
+          "name": "NocoDB"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "bb870b95-7450-4ef5-bc18-94263c8e2d97",
+              "leftValue": "={{ $node[\"start\"].json[\"contact_id\"] }}",
+              "rightValue": "",
+              "operator": {
+                "type": "number",
+                "operation": "notEmpty",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.filter",
+      "typeVersion": 2.2,
+      "position": [
+        1152,
+        112
+      ],
+      "id": "3a229fee-82ae-4623-8022-1d4978dc6271",
+      "name": "contact?"
+    },
+    {
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "value": "CXJ9Odd8ClnMb375",
+          "mode": "list",
+          "cachedResultUrl": "/workflow/CXJ9Odd8ClnMb375",
+          "cachedResultName": "Agent Contact"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "contact_id": "={{ $node[\"start\"].json[\"contact_id\"] }}"
+          },
+          "matchingColumns": [
+            "contact_id"
+          ],
+          "schema": [
+            {
+              "id": "contact_id",
+              "displayName": "contact_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "number"
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": true
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.3,
+      "position": [
+        1360,
+        624
+      ],
+      "id": "cdfc484d-e8e0-496b-a45f-4493fed52d99",
+      "name": "get agent"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "WITH \nparams AS (\n    SELECT \n        NULLIF(TRIM('{{ $node[\"start\"].json[\"cs_id\"] || \"\" }}'), '')::integer AS cs_id\n),\nlast_email_sent AS (\n    SELECT created_at\n    FROM p0a3eirwme1bmw7.\"Events\"\n    WHERE \"Call system_id\" = (SELECT cs_id FROM params)\n      AND \"Type\" = 'Email sent'\n      AND (SELECT cs_id FROM params) IS NOT NULL\n    ORDER BY created_at DESC\n    LIMIT 1\n),\nactivity_after AS (\n    SELECT 1\n    FROM p0a3eirwme1bmw7.\"Events\"\n    WHERE \"Call system_id\" = (SELECT cs_id FROM params)\n      AND \"Type\" = 'Activity emails'\n      AND created_at > (SELECT created_at FROM last_email_sent)\n    LIMIT 1\n)\nSELECT \n    CASE \n        WHEN (SELECT cs_id FROM params) IS NULL THEN false\n        WHEN NOT EXISTS (SELECT 1 FROM last_email_sent) THEN false\n        WHEN EXISTS (SELECT 1 FROM activity_after) THEN false\n        ELSE true\n    END AS open_email;",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        1152,
+        368
+      ],
+      "id": "7c9c77da-5718-4651-8881-aa73a26e1977",
+      "name": "check call email",
+      "credentials": {
+        "postgres": {
+          "id": "oZABCHH2vjfMvXoi",
+          "name": "nocodb"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "bfe26b77-4297-453a-8508-1a76ad7ca2e7",
+              "leftValue": "={{ $node[\"check call email\"].json[\"open_email\"] }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        1600,
+        368
+      ],
+      "id": "1997ac79-0ba1-4a19-8226-7ebda1a7e021",
+      "name": "from calls?"
+    },
+    {
+      "parameters": {
+        "authentication": "nocoDbApiToken",
+        "operation": "create",
+        "workspaceId": "wqp6q0zt",
+        "projectId": "p0a3eirwme1bmw7",
+        "table": "m3gkcorj95359wn",
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldName": "Note",
+              "fieldValue": "=Client replied:\n{{ $('start').item.json.message }}"
+            },
+            {
+              "fieldName": "Type",
+              "fieldValue": "=Activity emails"
+            },
+            {
+              "fieldName": "Contacts_id",
+              "fieldValue": "={{ $node[\"start\"].json[\"contact_id\"] }}"
+            },
+            {
+              "fieldName": "Link",
+              "fieldValue": "=https://mail.google.com/mail/u/3/#all/{{ $node[\"start\"].json[\"data\"][\"mail_uid\"] }}"
+            },
+            {
+              "fieldName": "Call system_id",
+              "fieldValue": "={{ $node[\"start\"].json[\"cs_id\"] }}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.nocoDb",
+      "typeVersion": 3,
+      "position": [
+        1376,
+        368
+      ],
+      "id": "b8669220-3696-4fbb-ae6c-84dc2e16b7b3",
+      "name": "acivity Email",
+      "credentials": {
+        "nocoDbApiToken": {
+          "id": "tg1sd8Mux2yjJLx7",
+          "name": "NocoDB"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "value": "bJE5YlhXAoMdJcvZ",
+          "mode": "list",
+          "cachedResultUrl": "/workflow/bJE5YlhXAoMdJcvZ",
+          "cachedResultName": "Agent CS"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "cs_id": "={{ $node[\"start\"].json[\"cs_id\"] }}"
+          },
+          "matchingColumns": [
+            "cs_id"
+          ],
+          "schema": [
+            {
+              "id": "cs_id",
+              "displayName": "cs_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "number"
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": true
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.3,
+      "position": [
+        1824,
+        368
+      ],
+      "id": "53044e0e-1aad-437b-a14f-a8f61b863fe9",
+      "name": "get agent CS"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "f52a1264-d804-43d3-abca-d65510d36ad3",
+              "leftValue": "={{ $json.success }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        2048,
+        368
+      ],
+      "id": "546af3b1-b9d3-49c5-9637-8aba513bc929",
+      "name": "ok agents cs?"
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $vars.warngroup }}",
+        "text": "=📧 Reply Received(from Call System)\n\n👤 Contact: {{ $node[\"get cs\"].json[\"Name\"] }}\n📧 Email: {{ $node[\"get cs\"].json[\"Email\"] }}\n📱 Phone: {{ $node[\"get cs\"].json[\"Phone\"] }}\n\n📣 Channel: {{ $node[\"start\"].json[\"type\"].toTitleCase() }}\n💬 Message:\n{{ $node[\"start\"].json[\"message\"].replace(/[\\\\`*_{}[\\]()#+\\-.!|<>~]/g, '').substring(0, 400) }}\n\n-----\n👨‍💼 Assigned: \n• {{ $('get agent CS').item.json.agent.Account[0].display_name }}\n• {{ $('get agent CS').item.json.agent.Account[0].email }}\n• {{ $('get agent CS').item.json.tg }}",
+        "replyMarkup": "inlineKeyboard",
+        "inlineKeyboard": {
+          "rows": [
+            {
+              "row": {
+                "buttons": [
+                  {
+                    "text": "Open",
+                    "additionalFields": {
+                      "url": "={{ $vars.nocodb_url_ex }}#/wqp6q0zt/p0a3eirwme1bmw7/m3gkcorj95359wn?rowId={{ $node[\"acivity Email\"].json[\"Id\"] }}"
+                    }
+                  }
+                ]
+              }
+            }
+          ]
+        },
+        "additionalFields": {
+          "appendAttribution": false,
+          "message_thread_id": 10
+        }
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        2480,
+        368
+      ],
+      "id": "48f8304d-73c3-4ecf-8ccf-f481f495fb9c",
+      "name": "cs activity",
+      "webhookId": "b2f97887-034a-47e7-bdb4-75327f72f103",
+      "credentials": {
+        "telegramApi": {
+          "id": "yv48JNV4VmuIREaW",
+          "name": "Citycompany"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "authentication": "nocoDbApiToken",
+        "workspaceId": "wqp6q0zt",
+        "projectId": "p0a3eirwme1bmw7",
+        "table": "mkbhjd0aqdl1r1m",
+        "id": "={{ $node[\"start\"].json[\"cs_id\"] }}"
+      },
+      "type": "n8n-nodes-base.nocoDb",
+      "typeVersion": 3,
+      "position": [
+        2256,
+        368
+      ],
+      "id": "acd273e7-4748-4ece-87c2-8320c38d293a",
+      "name": "get cs",
+      "credentials": {
+        "nocoDbApiToken": {
+          "id": "tg1sd8Mux2yjJLx7",
+          "name": "NocoDB"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "bb870b95-7450-4ef5-bc18-94263c8e2d97",
+              "leftValue": "={{ $node[\"start\"].json[\"contact_id\"] }}",
+              "rightValue": "",
+              "operator": {
+                "type": "number",
+                "operation": "notEmpty",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.filter",
+      "typeVersion": 2.2,
+      "position": [
+        1136,
+        624
+      ],
+      "id": "95bdc1d8-3580-428f-a4cd-3c19678a8119",
+      "name": "contact?1"
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $vars.warngroup }}",
+        "text": "=📊 Campaign Activity Detected\n\n👤 Contact: {{ $node[\"get contact\"].json[\"Name\"] }}\n📧 Email: {{ $node[\"get contact\"].json[\"Email\"] }}\n📱 Phone: {{ $node[\"get contact\"].json[\"Phone\"] }}\n\n📣 Channel: {{ $node[\"start\"].json[\"type\"].toTitleCase() }}\n💬 Message:\n{{ $node[\"start\"].json[\"message\"].replace(/[\\\\`*_{}[\\]()#+\\-.!|<>~]/g, '').substring(0, 400) }}\n\n-----\n👨‍💼 Assigned: \n• {{ $('get agent').item.json.agent.Account[0].display_name }}\n• {{ $('get agent').item.json.agent.Account[0].email }}\n• {{ $('get agent').item.json.tg }}",
+        "replyMarkup": "inlineKeyboard",
+        "inlineKeyboard": {
+          "rows": [
+            {
+              "row": {
+                "buttons": [
+                  {
+                    "text": "Open",
+                    "additionalFields": {
+                      "url": "={{ $vars.nocodb_url_ex }}#/wqp6q0zt/p0a3eirwme1bmw7/m3gkcorj95359wn?rowId={{ $node[\"note id\"].json[\"value\"] }}"
+                    }
+                  }
+                ]
+              }
+            }
+          ]
+        },
+        "additionalFields": {
+          "appendAttribution": false,
+          "message_thread_id": 83
+        }
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        2016,
+        624
+      ],
+      "id": "2ded8136-471b-4440-9e55-7a6af3a33504",
+      "name": "contact activity",
+      "webhookId": "b2f97887-034a-47e7-bdb4-75327f72f103",
+      "credentials": {
+        "telegramApi": {
+          "id": "yv48JNV4VmuIREaW",
+          "name": "Citycompany"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "authentication": "nocoDbApiToken",
+        "workspaceId": "wqp6q0zt",
+        "projectId": "p0a3eirwme1bmw7",
+        "table": "meyq439syguvqhb",
+        "id": "={{ $node[\"start\"].json[\"contact_id\"] }}"
+      },
+      "type": "n8n-nodes-base.nocoDb",
+      "typeVersion": 3,
+      "position": [
+        1584,
+        624
+      ],
+      "id": "f889d770-09dd-441b-98ba-b6001fa2f912",
+      "name": "get contact",
+      "credentials": {
+        "nocoDbApiToken": {
+          "id": "tg1sd8Mux2yjJLx7",
+          "name": "NocoDB"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "9b0b4422-b2f8-4031-b401-6508e970bf7f",
+              "name": "value",
+              "value": "={{ $(\"acivity Email\").isExecuted ? $(\"acivity Email\").first().json[\"Id\"] : ($(\"acivity LD\").isExecuted ? $(\"acivity LD\").first().json[\"Id\"] : 0) }}",
+              "type": "number"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1792,
+        624
+      ],
+      "id": "5edd2695-14be-4d51-80a8-f2550c89ceeb",
+      "name": "note id"
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [
+        720,
+        240
+      ],
+      "id": "9b258825-cf05-431a-84e2-f6bbf06964d6",
+      "name": "next"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "bb870b95-7450-4ef5-bc18-94263c8e2d97",
+              "leftValue": "={{ $node[\"start\"].json[\"contact_id\"] }}",
+              "rightValue": "",
+              "operator": {
+                "type": "number",
+                "operation": "notEmpty",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.filter",
+      "typeVersion": 2.2,
+      "position": [
+        624,
+        544
+      ],
+      "id": "a8c15549-5290-49bf-a0e7-d99fc68c5589",
+      "name": "contact?2"
+    },
+    {
+      "parameters": {
+        "authentication": "nocoDbApiToken",
+        "operation": "update",
+        "workspaceId": "wqp6q0zt",
+        "projectId": "p0a3eirwme1bmw7",
+        "table": "meyq439syguvqhb",
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldName": "Id",
+              "fieldValue": "={{ $node[\"start\"].json[\"contact_id\"] }}"
+            },
+            {
+              "fieldName": "Campagin",
+              "fieldValue": "Done"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.nocoDb",
+      "typeVersion": 3,
+      "position": [
+        816,
+        544
+      ],
+      "id": "171fc911-a388-4a08-ad22-75617321446e",
+      "name": "to done contact CN",
+      "credentials": {
+        "nocoDbApiToken": {
+          "id": "tg1sd8Mux2yjJLx7",
+          "name": "NocoDB"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "start": {
+      "main": [
+        [
+          {
+            "node": "limiter",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "limiter": {
+      "main": [
+        [
+          {
+            "node": "email",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "linkedin",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Activity Agent": {
+      "main": [
+        [
+          {
+            "node": "branch",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "branch": {
+      "main": [
+        [],
+        [
+          {
+            "node": "next",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [],
+        [
+          {
+            "node": "next",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "channel": {
+      "main": [
+        [
+          {
+            "node": "contact?",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "check call email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "call?": {
+      "main": [
+        [
+          {
+            "node": "get lead",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Notification activity",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "libphonenumber": {
+      "main": [
+        [
+          {
+            "node": "valid phone?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "valid phone?": {
+      "main": [
+        [
+          {
+            "node": "update phone",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Notification invalid phone",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "update phone": {
+      "main": [
+        [
+          {
+            "node": "chekc CS",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "sheduled?": {
+      "main": [
+        [
+          {
+            "node": "timeZone",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "RUN Call",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "valid name": {
+      "main": [
+        [
+          {
+            "node": "to call system",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Notification invalid name",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "check name": {
+      "main": [
+        [
+          {
+            "node": "valid name",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "get lead": {
+      "main": [
+        [
+          {
+            "node": "libphonenumber",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "to call system": {
+      "main": [
+        [
+          {
+            "node": "create call event",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "timeZone": {
+      "main": [
+        [
+          {
+            "node": "Callback Plan",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Callback Plan": {
+      "main": [
+        [
+          {
+            "node": "Notification call sheduled",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "RUN Call": {
+      "main": [
+        [
+          {
+            "node": "Notification call now",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "create call event": {
+      "main": [
+        [
+          {
+            "node": "sheduled?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "DNC": {
+      "main": [
+        [
+          {
+            "node": "check name",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Notification calls are prohibited",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "result check?": {
+      "main": [
+        [
+          {
+            "node": "DNC",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Notification already in calls",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "chekc CS": {
+      "main": [
+        [
+          {
+            "node": "result check?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "linkedin": {
+      "main": [
+        [
+          {
+            "node": "check activity",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "email": {
+      "main": [
+        [
+          {
+            "node": "check activity",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "check activity": {
+      "main": [
+        [
+          {
+            "node": "allow?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "allow?": {
+      "main": [
+        [
+          {
+            "node": "Activity Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "acivity LD": {
+      "main": [
+        [
+          {
+            "node": "contact?1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "contact?": {
+      "main": [
+        [
+          {
+            "node": "acivity LD",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "check call email": {
+      "main": [
+        [
+          {
+            "node": "acivity Email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "from calls?": {
+      "main": [
+        [
+          {
+            "node": "get agent CS",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "contact?1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "acivity Email": {
+      "main": [
+        [
+          {
+            "node": "from calls?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "get agent CS": {
+      "main": [
+        [
+          {
+            "node": "ok agents cs?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "ok agents cs?": {
+      "main": [
+        [
+          {
+            "node": "get cs",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "contact?1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "get cs": {
+      "main": [
+        [
+          {
+            "node": "cs activity",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "contact?1": {
+      "main": [
+        [
+          {
+            "node": "get agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "get agent": {
+      "main": [
+        [
+          {
+            "node": "get contact",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "get contact": {
+      "main": [
+        [
+          {
+            "node": "note id",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "note id": {
+      "main": [
+        [
+          {
+            "node": "contact activity",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "next": {
+      "main": [
+        [
+          {
+            "node": "channel",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "contact?2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "contact?2": {
+      "main": [
+        [
+          {
+            "node": "to done contact CN",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "callerPolicy": "workflowsFromSameOwner",
+    "errorWorkflow": "EuAkMSh7w9p9TJgj",
+    "availableInMCP": false
+  },
+  "triggerCount": 0,
+  "versionId": "eb76e865-51ad-4324-9c3f-4c9ac33b6933",
+  "owner": {
+    "type": "personal",
+    "projectId": "I8ZweZXokOc0zbYb",
+    "projectName": "BSU Agency <info@brilliantseedup.com>",
+    "personalEmail": "info@brilliantseedup.com"
+  },
+  "parentFolderId": "pKxPYoaapRWNwU1d",
+  "isArchived": false
+}

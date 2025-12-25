@@ -1,0 +1,170 @@
+{
+  "id": "Q9Vt2uppyVHp1sd8",
+  "name": "tst",
+  "nodes": [
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "bdd00334-6706-421e-999a-409e61439560",
+              "name": "value",
+              "value": "=CONTEXT FROM PREVIOUS CALL:\n\nCall Date: November 11, 2025\nCall Time: 10:45 AM EST\nPrevious Agent: You (Striker Agent)\nDuration: 4 minutes\nLead Status: Decision-maker identified, callback scheduled\n\n---\n\nWHAT HAPPENED IN PREVIOUS CALL:\n\nYou called ABC Logistics Inc. and spoke with the receptionist (David Martinez).\n\nDavid informed you that he is NOT the decision-maker for logistics/carrier partnerships.\n\nYou successfully collected the following information:\n- Decision-maker Name: Sarah Johnson\n- Title: Transportation Manager\n- Direct Phone: +1-416-555-7890\n- Email: sarah.johnson@abclogistics.com\n- Company: ABC Logistics Inc.\n\nDavid mentioned that Sarah handles all carrier onboarding and partnerships for the company.\n\nSarah was in a meeting at the time, so you scheduled this callback.\n\n---\n\nCURRENT SITUATION:\n\nYou are NOW calling back at the scheduled time.\nYou are calling: +1-416-555-7890 (Sarah Johnson's direct line)\n\nSarah Johnson is expecting your call.\n\n---\n\nYOUR TASK FOR THIS CALL:\n\n1. When someone answers, confirm if it's Sarah Johnson\n2. If YES - she is the DECISION-MAKER you were trying to reach\n3. Remind her briefly: \"Hi Sarah, this is Alex from City Company - we scheduled a callback for today\"\n4. Confirm she handles logistics/carrier partnerships (she does)\n5. IMMEDIATELY transfer to Main Agent using \"to_main_agent\"\n\nDO NOT do gatekeeper flow - Sarah IS the decision-maker.\nDO NOT collect contact info again - you already have it.\n\nYour only goal: Confirm identity and transfer to Main Agent for qualification.\n\n---\n\nIMPORTANT NOTES:\n- Sarah was described as \"very busy but interested\"\n- Company handles 25+ shipments weekly (per David)\n- They primarily use FTL and some LTL\n- Direct callback was specifically requested",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        192,
+        -160
+      ],
+      "id": "281c990b-e2f6-4654-9f9c-9c007d2e6719",
+      "name": "1"
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        -32,
+        64
+      ],
+      "id": "e7ec2838-cba5-49d1-985f-d1efbedf5581",
+      "name": "When clicking ‘Execute workflow’"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.vapi.ai/call",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpBearerAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "=json",
+        "bodyParameters": {
+          "parameters": [
+            {}
+          ]
+        },
+        "jsonBody": "={\n \"assistantOverrides\": {\n    \"variableValues\": {\n      \"contact_name\": \"Sarah\",\n      \"agent_name\": \"{{ $vars.agent_name }}\",\n      \"callback\": \"\"\n    } \n  },\n    \"assistantId\": \"623b0515-a060-430a-aed3-b84061176953\",\n    \"phoneNumberId\": \"{{ $vars.vapi_twilio_id }}\",\n    \"customer\": {\n        \"number\": \"+375447481893\"\n    }\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        208,
+        64
+      ],
+      "id": "32436279-c5a2-4497-973a-069c2327ef0e",
+      "name": "vapi",
+      "alwaysOutputData": false,
+      "retryOnFail": true,
+      "waitBetweenTries": 5000,
+      "credentials": {
+        "httpBearerAuth": {
+          "id": "ipZ3sNSO2duuH9Qw",
+          "name": "Vapi"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $node[\"Webhook\"].json[\"body\"][\"message\"][\"call\"][\"monitor\"][\"controlUrl\"] }}",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"type\": \"add-message\",\n  \"message\": {\n    \"role\": \"assistant\",\n    \"content\": {{ JSON.stringify ($json.value) }}\n  },\n  \"triggerResponseEnabled\": false\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        400,
+        -160
+      ],
+      "id": "c49db0e7-2e23-4092-af94-ec640df639cf",
+      "name": "to memory"
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "0cc93d9f-bb64-4d2b-8fa4-74e9702912a5",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        0,
+        -160
+      ],
+      "id": "48a3ff4f-e309-4319-82c0-6b97d72b1e68",
+      "name": "Webhook",
+      "webhookId": "0cc93d9f-bb64-4d2b-8fa4-74e9702912a5"
+    }
+  ],
+  "connections": {
+    "1": {
+      "main": [
+        [
+          {
+            "node": "to memory",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "When clicking ‘Execute workflow’": {
+      "main": [
+        [
+          {
+            "node": "vapi",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "vapi": {
+      "main": [
+        []
+      ]
+    },
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "triggerCount": 1,
+  "versionId": "8ddd633e-a743-4361-b42b-0049055d0594",
+  "owner": {
+    "type": "personal",
+    "projectId": "I8ZweZXokOc0zbYb",
+    "projectName": "BSU Agency <info@brilliantseedup.com>",
+    "personalEmail": "info@brilliantseedup.com"
+  },
+  "parentFolderId": null,
+  "isArchived": true
+}

@@ -1,0 +1,402 @@
+{
+  "id": "E3nRIwCZ37bkSlEr",
+  "name": "Test form",
+  "nodes": [
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT \n    id,\n    \"Name\",\n    \"Surname\",\n    \"Phone\",\n    \"Email\",\n    \"Company\",\n    \"Stage\"\nFROM p0a3eirwme1bmw7.\"Contacts\"\nWHERE REGEXP_REPLACE(\"Phone\", '[^0-9]', '', 'g') = '{{ $json.Phone }}';",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        80,
+        0
+      ],
+      "id": "6ef0c0e8-0e37-4953-89f5-4cc4bce76610",
+      "name": "search",
+      "alwaysOutputData": true,
+      "credentials": {
+        "postgres": {
+          "id": "oZABCHH2vjfMvXoi",
+          "name": "nocodb"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "605d9a07-3a4f-4d6d-a5ec-409d6c8739c4",
+              "leftValue": "={{ $json.id }}",
+              "rightValue": "",
+              "operator": {
+                "type": "number",
+                "operation": "notEmpty",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        336,
+        0
+      ],
+      "id": "40b624a2-2e61-453d-bb7b-5433db0f1ad8",
+      "name": "If"
+    },
+    {
+      "parameters": {
+        "authentication": "nocoDbApiToken",
+        "operation": "update",
+        "workspaceId": "wqp6q0zt",
+        "projectId": "p0a3eirwme1bmw7",
+        "table": "meyq439syguvqhb",
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldName": "=Id",
+              "fieldValue": "={{ $json.id }}"
+            },
+            {
+              "fieldName": "Name",
+              "fieldValue": "={{ $('start').item.json.Name }}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.nocoDb",
+      "typeVersion": 3,
+      "position": [
+        560,
+        -96
+      ],
+      "id": "d10a3083-5727-4a3f-bc22-4e63714b712c",
+      "name": "update client",
+      "credentials": {
+        "nocoDbApiToken": {
+          "id": "tg1sd8Mux2yjJLx7",
+          "name": "NocoDB"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "authentication": "nocoDbApiToken",
+        "operation": "create",
+        "workspaceId": "wqp6q0zt",
+        "projectId": "p0a3eirwme1bmw7",
+        "table": "meyq439syguvqhb",
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldName": "Name",
+              "fieldValue": "={{ $('start').item.json.Name }}"
+            },
+            {
+              "fieldName": "Phone",
+              "fieldValue": "={{ $('start').item.json.Phone }}"
+            },
+            {
+              "fieldName": "Segment",
+              "fieldValue": "test form"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.nocoDb",
+      "typeVersion": 3,
+      "position": [
+        560,
+        96
+      ],
+      "id": "dd9db56c-d308-4c4f-a68c-5d2e7a936696",
+      "name": "create lead",
+      "credentials": {
+        "nocoDbApiToken": {
+          "id": "tg1sd8Mux2yjJLx7",
+          "name": "NocoDB"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "authentication": "nocoDbApiToken",
+        "workspaceId": "wqp6q0zt",
+        "projectId": "p0a3eirwme1bmw7",
+        "table": "meyq439syguvqhb",
+        "id": "={{ $json.Id }}"
+      },
+      "type": "n8n-nodes-base.nocoDb",
+      "typeVersion": 3,
+      "position": [
+        1248,
+        -96
+      ],
+      "id": "e2ab62f7-7c15-42d5-8926-0c1cf7933c83",
+      "name": "get lead",
+      "credentials": {
+        "nocoDbApiToken": {
+          "id": "tg1sd8Mux2yjJLx7",
+          "name": "NocoDB"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "formTitle": "Test Call",
+        "formFields": {
+          "values": [
+            {
+              "fieldLabel": "Name",
+              "requiredField": true
+            },
+            {
+              "fieldLabel": "Phone",
+              "fieldType": "number",
+              "placeholder": "International format"
+            }
+          ]
+        },
+        "options": {
+          "appendAttribution": false
+        }
+      },
+      "type": "n8n-nodes-base.formTrigger",
+      "typeVersion": 2.3,
+      "position": [
+        -176,
+        0
+      ],
+      "id": "57a47042-c030-4fc2-8255-606360895a4c",
+      "name": "start",
+      "webhookId": "c17999b9-02d7-4f82-94c1-5ab9b9e99542"
+    },
+    {
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "value": "dtcMXfwfFTXKGFHq",
+          "mode": "list",
+          "cachedResultUrl": "/workflow/dtcMXfwfFTXKGFHq",
+          "cachedResultName": "Single normalization"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "contact_id": "={{ $json.Id }}"
+          },
+          "matchingColumns": [
+            "contact_id"
+          ],
+          "schema": [
+            {
+              "id": "contact_id",
+              "displayName": "contact_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "number",
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": true
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.3,
+      "position": [
+        752,
+        96
+      ],
+      "id": "c03cc118-96f5-4d1a-aa4e-f8b4ea301983",
+      "name": "Call 'Single normalization'"
+    },
+    {
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "value": "Ki2rtHA95No8GXD5",
+          "mode": "list",
+          "cachedResultUrl": "/workflow/Ki2rtHA95No8GXD5",
+          "cachedResultName": "Primary processor"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {}
+        },
+        "options": {
+          "waitForSubWorkflow": false
+        }
+      },
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.3,
+      "position": [
+        1488,
+        -96
+      ],
+      "id": "4fad6c92-0198-42f5-b45d-cf35489e8fe3",
+      "name": "Call 'Primary processor'"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "94a76852-0eb3-4d3d-925f-f729eb7698e2",
+              "leftValue": "={{ $json.Id }}",
+              "rightValue": "",
+              "operator": {
+                "type": "number",
+                "operation": "notEmpty",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        976,
+        96
+      ],
+      "id": "cce6d3a9-1a45-4881-ab11-dae06469b7e4",
+      "name": "If1"
+    }
+  ],
+  "connections": {
+    "If": {
+      "main": [
+        [
+          {
+            "node": "update client",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "create lead",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "update client": {
+      "main": [
+        [
+          {
+            "node": "get lead",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "create lead": {
+      "main": [
+        [
+          {
+            "node": "Call 'Single normalization'",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "search": {
+      "main": [
+        [
+          {
+            "node": "If",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "start": {
+      "main": [
+        [
+          {
+            "node": "search",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Call 'Single normalization'": {
+      "main": [
+        [
+          {
+            "node": "If1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "get lead": {
+      "main": [
+        [
+          {
+            "node": "Call 'Primary processor'",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If1": {
+      "main": [
+        [
+          {
+            "node": "get lead",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "triggerCount": 1,
+  "versionId": "82d78104-e5c2-45ae-aaf7-56348602f866",
+  "owner": {
+    "type": "personal",
+    "projectId": "I8ZweZXokOc0zbYb",
+    "projectName": "BSU Agency <info@brilliantseedup.com>",
+    "personalEmail": "info@brilliantseedup.com"
+  },
+  "parentFolderId": "v1Un8AcPCflFCY9o",
+  "isArchived": false
+}

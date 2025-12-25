@@ -1,0 +1,469 @@
+{
+  "id": "6dPZqsWMQJRoCqJH",
+  "name": "Credentials",
+  "nodes": [
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": false,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "fcc50da6-f010-4cc7-a469-ccce0a85d78a",
+                    "leftValue": "={{ $node[\"start\"].json[\"type\"] }}",
+                    "rightValue": "sendpulse",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              }
+            }
+          ]
+        },
+        "options": {
+          "fallbackOutput": "extra",
+          "ignoreCase": true
+        }
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.2,
+      "position": [
+        -720,
+        336
+      ],
+      "id": "0c66a293-9272-4c54-aec5-d56405ef2a72",
+      "name": "Switch"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "fe9f9c8c-3b27-4ba8-98eb-e5347b12b149",
+              "name": "type",
+              "value": "=unknown",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -1216,
+        640
+      ],
+      "id": "08b9bc37-676c-47db-8cf6-2dd62088f5a6",
+      "name": "unknown"
+    },
+    {
+      "parameters": {
+        "workflowInputs": {
+          "values": [
+            {
+              "name": "type"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        -1232,
+        336
+      ],
+      "id": "ac457abf-5c05-4a4d-a5c5-35984b87c4cc",
+      "name": "start"
+    },
+    {
+      "parameters": {
+        "operation": "upsert",
+        "schema": {
+          "__rl": true,
+          "mode": "list",
+          "value": "public"
+        },
+        "table": {
+          "__rl": true,
+          "value": "tokens",
+          "mode": "list",
+          "cachedResultName": "tokens"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "key": "={{ $('start').item.json.type }}",
+            "token": "={{ $json.token }}",
+            "date_created": "={{ new Date().toISOString() }}"
+          },
+          "matchingColumns": [
+            "key"
+          ],
+          "schema": [
+            {
+              "id": "key",
+              "displayName": "key",
+              "required": true,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "token",
+              "displayName": "token",
+              "required": true,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "date_created",
+              "displayName": "date_created",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "dateTime",
+              "canBeUsedToMatch": false,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        -704,
+        656
+      ],
+      "id": "4cfa4ebc-b6fb-485f-8215-f903a1fdd909",
+      "name": "add-update token",
+      "credentials": {
+        "postgres": {
+          "id": "oZABCHH2vjfMvXoi",
+          "name": "directus"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "fe9f9c8c-3b27-4ba8-98eb-e5347b12b149",
+              "name": "type",
+              "value": "={{ $('start').item.json.type }}",
+              "type": "string"
+            },
+            {
+              "id": "38448ca3-1462-4b0a-80e4-52c075e6b891",
+              "name": "key",
+              "value": "={{ $json.token }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -704,
+        928
+      ],
+      "id": "2f5a7d42-e599-4713-9679-63aea07ec31d",
+      "name": "output"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.sendpulse.com/oauth/access_token",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "grant_type",
+              "value": "client_credentials"
+            },
+            {
+              "name": "client_id",
+              "value": "b35c0bdbed491540dc0eaacf8ca2170a"
+            },
+            {
+              "name": "client_secret",
+              "value": "01bc39c94d72cc68e8a62d324270a308"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -192,
+        352
+      ],
+      "id": "cb2dc38a-3658-4a31-b310-f8d764510106",
+      "name": "sendpulse token"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "94397fe9-aefc-495a-abd6-3073e12a1ad7",
+              "leftValue": "={{ $json.key }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty",
+                "singleValue": true
+              }
+            },
+            {
+              "id": "c9844e77-1ce7-4d89-9c7f-408580c4a7c6",
+              "leftValue": "={{ $json.token }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty",
+                "singleValue": true
+              }
+            },
+            {
+              "id": "14d96f66-bb81-4c28-98ec-094d6fefd062",
+              "leftValue": "={{ (new Date().getTime() - new Date($json.date_created).getTime()) <= 3500000 }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -416,
+        352
+      ],
+      "id": "2f2f45a2-223c-4f18-9319-f9a795f745e8",
+      "name": "valid sendpulse?"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "2012bf96-0047-439d-b529-e10d616ad88f",
+              "name": "token",
+              "value": "={{ $json.access_token }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        32,
+        352
+      ],
+      "id": "f79aae73-dc83-4ba7-9195-48a75bee2bb1",
+      "name": "var sendpulse"
+    },
+    {
+      "parameters": {
+        "content": "CREATE TABLE public.tokens (\n    key character varying(255) NOT NULL PRIMARY KEY,\n    token text NOT NULL,\n    created_at timestamp with time zone DEFAULT CURRENT_TIMESTAMP\n);",
+        "height": 192,
+        "width": 528
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -464,
+        0
+      ],
+      "id": "12bf9058-9565-4700-9be3-479b153bc122",
+      "name": "Sticky Note"
+    },
+    {
+      "parameters": {
+        "operation": "select",
+        "schema": {
+          "__rl": true,
+          "mode": "list",
+          "value": "public"
+        },
+        "table": {
+          "__rl": true,
+          "value": "tokens",
+          "mode": "list",
+          "cachedResultName": "tokens"
+        },
+        "limit": 1,
+        "where": {
+          "values": [
+            {
+              "column": "key",
+              "value": "={{ $node[\"start\"].json[\"type\"] }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        -1008,
+        336
+      ],
+      "id": "9d04fd79-b153-4867-bbf8-7c0c363ede7f",
+      "name": "select",
+      "alwaysOutputData": true,
+      "credentials": {
+        "postgres": {
+          "id": "oZABCHH2vjfMvXoi",
+          "name": "directus"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Switch": {
+      "main": [
+        [
+          {
+            "node": "valid sendpulse?",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "unknown",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "start": {
+      "main": [
+        [
+          {
+            "node": "select",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "add-update token": {
+      "main": [
+        [
+          {
+            "node": "output",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "sendpulse token": {
+      "main": [
+        [
+          {
+            "node": "var sendpulse",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "valid sendpulse?": {
+      "main": [
+        [
+          {
+            "node": "output",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "sendpulse token",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "var sendpulse": {
+      "main": [
+        [
+          {
+            "node": "add-update token",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "select": {
+      "main": [
+        [
+          {
+            "node": "Switch",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "saveDataSuccessExecution": "none",
+    "callerPolicy": "workflowsFromSameOwner",
+    "availableInMCP": false
+  },
+  "triggerCount": 0,
+  "versionId": "6a947fca-7dae-4963-9d78-662358737005",
+  "owner": {
+    "type": "personal",
+    "projectId": "I8ZweZXokOc0zbYb",
+    "projectName": "BSU Agency <info@brilliantseedup.com>",
+    "personalEmail": "info@brilliantseedup.com"
+  },
+  "parentFolderId": "bF4ciYwr94o73FSy",
+  "isArchived": false
+}

@@ -1,0 +1,688 @@
+{
+  "id": "dP86bWgyIa0VIGtW",
+  "name": "Inbound",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "3a7571ab-5ad3-4d9d-aca3-f6dffe5796e7",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        -2144,
+        112
+      ],
+      "id": "71f1eab5-e4d0-484e-b360-6a2287763e9e",
+      "name": "Webhook",
+      "webhookId": "3a7571ab-5ad3-4d9d-aca3-f6dffe5796e7"
+    },
+    {
+      "parameters": {
+        "respondWith": "text",
+        "responseBody": "=<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<Response>\n    <Reject reason=\"busy\"/>\n</Response>",
+        "options": {
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "Content-Type",
+                "value": "application/xml"
+              }
+            ]
+          }
+        }
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.4,
+      "position": [
+        -1920,
+        112
+      ],
+      "id": "6deaae0f-d3ff-4ac4-b810-4483ffb7f688",
+      "name": "Respond to Webhook"
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $vars.warngroup }}",
+        "text": "=📞 Incoming Call!\n\n📱 Phone: {{ $('Webhook').item.json.body.From }}\n\n❌ This number is not in the database.",
+        "additionalFields": {
+          "appendAttribution": false,
+          "message_thread_id": 8
+        }
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        -1648,
+        384
+      ],
+      "id": "2cac7962-34bb-4957-bc66-fd2f44133cde",
+      "name": "no match",
+      "webhookId": "48199868-b398-4b55-87df-ffaa5f874f35",
+      "credentials": {
+        "telegramApi": {
+          "id": "yv48JNV4VmuIREaW",
+          "name": "Citycompany"
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "9a323432-19aa-44ee-80dd-b6422e6ef7da",
+              "leftValue": "={{ $json.Id }}",
+              "rightValue": "",
+              "operator": {
+                "type": "number",
+                "operation": "notEmpty",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -1472,
+        112
+      ],
+      "id": "d3833dbe-304b-4a85-a695-a3a85811b1c2",
+      "name": "match"
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $vars.warngroup }}",
+        "text": "=📞 Incoming Call\n\n👤 Name: {{ $node[\"get cs\"].json[\"Name\"] }}\n📱 Phone: {{ $node[\"get cs\"].json[\"Phone\"] }}\n📧 Email: {{ $node[\"get cs\"].json[\"Email\"] || \"-\" }}\n\n⏸️ No Action Taken\nLast incoming call was less than 1 hour ago.",
+        "replyMarkup": "inlineKeyboard",
+        "inlineKeyboard": {
+          "rows": [
+            {
+              "row": {
+                "buttons": [
+                  {
+                    "text": "CS",
+                    "additionalFields": {
+                      "url": "={{ $vars.nocodb_url_ex }}#/wqp6q0zt/p0a3eirwme1bmw7/mkbhjd0aqdl1r1m?rowId={{ $node[\"get cs\"].json[\"Id\"] }}"
+                    }
+                  }
+                ]
+              }
+            }
+          ]
+        },
+        "additionalFields": {
+          "appendAttribution": false,
+          "message_thread_id": 8
+        }
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        -1200,
+        384
+      ],
+      "id": "59f97376-6aa1-4816-b3c7-00a605997116",
+      "name": "match no action",
+      "webhookId": "48199868-b398-4b55-87df-ffaa5f874f35",
+      "credentials": {
+        "telegramApi": {
+          "id": "yv48JNV4VmuIREaW",
+          "name": "Citycompany"
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "30090c29-0954-416d-aac5-76313874e1b1",
+              "leftValue": "={{ $json.has_recent_calls }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "notEquals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -1024,
+        112
+      ],
+      "id": "4f71f4db-e0a3-4ae6-8ae3-a17d6cc8b2d2",
+      "name": "action"
+    },
+    {
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "value": "lPsyg1sBbGWfkXo8",
+          "mode": "list",
+          "cachedResultUrl": "/workflow/lPsyg1sBbGWfkXo8",
+          "cachedResultName": "Run call"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "cs_id": "={{ $node[\"get cs\"].json[\"Id\"] }}"
+          },
+          "matchingColumns": [
+            "Id"
+          ],
+          "schema": [
+            {
+              "id": "cs_id",
+              "displayName": "cs_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "number",
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": true
+        },
+        "options": {
+          "waitForSubWorkflow": false
+        }
+      },
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.2,
+      "position": [
+        -112,
+        96
+      ],
+      "id": "a07b1865-f372-4ccb-8295-0d196b407860",
+      "name": "Run call"
+    },
+    {
+      "parameters": {
+        "authentication": "nocoDbApiToken",
+        "operation": "getAll",
+        "workspaceId": "wqp6q0zt",
+        "projectId": "p0a3eirwme1bmw7",
+        "table": "mkbhjd0aqdl1r1m",
+        "limit": 1,
+        "options": {
+          "where": "=(Phone,eq,{{ $('Webhook').item.json.body.From }})~and(Status,neq,Progress)"
+        }
+      },
+      "type": "n8n-nodes-base.nocoDb",
+      "typeVersion": 3,
+      "position": [
+        -1696,
+        112
+      ],
+      "id": "f3f6a65d-5bfb-4ad3-bb5b-3532614ee7a4",
+      "name": "get cs",
+      "alwaysOutputData": true,
+      "credentials": {
+        "nocoDbApiToken": {
+          "id": "tg1sd8Mux2yjJLx7",
+          "name": "NocoDB"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT \n  CASE \n    WHEN COUNT(*) > 0 THEN true \n    ELSE false \n  END as has_recent_calls,\n  COUNT(*) as recent_calls_count,\n  MAX(\"created_at\") as last_call_time\nFROM p0a3eirwme1bmw7.\"Events\"\nWHERE \"Call system_id\" = {{ $node[\"get cs\"].json[\"Id\"] }}\n  AND \"Type\" = 'Incoming call'\n  AND \"created_at\" > NOW() - INTERVAL '1 hour'",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        -1248,
+        112
+      ],
+      "id": "ec68bf7f-7e7b-403a-b81c-2ed2f8ffda4c",
+      "name": "check last call",
+      "credentials": {
+        "postgres": {
+          "id": "oZABCHH2vjfMvXoi",
+          "name": "nocodb"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "authentication": "nocoDbApiToken",
+        "operation": "create",
+        "workspaceId": "wqp6q0zt",
+        "projectId": "p0a3eirwme1bmw7",
+        "table": "m3gkcorj95359wn",
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldName": "Note",
+              "fieldValue": "=Incoming call from Twilio"
+            },
+            {
+              "fieldName": "Type",
+              "fieldValue": "Incoming call"
+            },
+            {
+              "fieldName": "Call system_id",
+              "fieldValue": "={{ $node[\"get cs\"].json[\"Id\"] }}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.nocoDb",
+      "typeVersion": 3,
+      "position": [
+        -800,
+        112
+      ],
+      "id": "527c7d0f-54ce-4554-b58b-6cc1ccae8d88",
+      "name": "create note",
+      "credentials": {
+        "nocoDbApiToken": {
+          "id": "tg1sd8Mux2yjJLx7",
+          "name": "NocoDB"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT \n  CASE \n    WHEN EXISTS (\n      SELECT 1 \n      FROM p0a3eirwme1bmw7.\"Scheduler\" \n      WHERE \"Call system_id\" = {{ $node[\"get cs\"].json[\"Id\"] }}\n    ) THEN true \n    ELSE false \n  END as has_scheduler_records,\n  \n  CASE \n    WHEN EXISTS (\n      SELECT 1 \n      FROM p0a3eirwme1bmw7.\"Calls\" \n      WHERE \"Call system_id\" = {{ $node[\"get cs\"].json[\"Id\"] }}\n        AND \"Status\" = 'Ringing'\n    ) THEN true \n    ELSE false \n  END as has_ringing_calls",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        -576,
+        112
+      ],
+      "id": "cde2dc58-0b98-4546-bd62-51dd42e1ba3d",
+      "name": "check status",
+      "credentials": {
+        "postgres": {
+          "id": "oZABCHH2vjfMvXoi",
+          "name": "nocodb"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "de72cfef-f511-4df6-8e7b-e31e988489dd",
+              "leftValue": "={{ $json.has_scheduler_records }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            },
+            {
+              "id": "4de7a1b6-0abf-41a1-a992-fdd64d04272c",
+              "leftValue": "={{ $json.has_ringing_calls }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "false",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -352,
+        112
+      ],
+      "id": "2850fd3a-22ae-456f-9f41-3cc7ac59ba3b",
+      "name": "status?"
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $vars.warngroup }}",
+        "text": "=📞 Incoming Call\n\n👤 Name: {{ $node[\"get cs\"].json[\"Name\"] }}\n📱 Phone: {{ $node[\"get cs\"].json[\"Phone\"] }}\n📧 Email: {{ $node[\"get cs\"].json[\"Email\"] || \"-\" }}\n\n⏸️ No Action Taken\nСontact does not have a scheduler or is currently in an active call.",
+        "replyMarkup": "inlineKeyboard",
+        "inlineKeyboard": {
+          "rows": [
+            {
+              "row": {
+                "buttons": [
+                  {
+                    "text": "CS",
+                    "additionalFields": {
+                      "url": "={{ $vars.nocodb_url_ex }}#/wqp6q0zt/p0a3eirwme1bmw7/mkbhjd0aqdl1r1m?rowId={{ $node[\"get cs\"].json[\"Id\"] }}"
+                    }
+                  }
+                ]
+              }
+            }
+          ]
+        },
+        "additionalFields": {
+          "appendAttribution": false,
+          "message_thread_id": 8
+        }
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        -592,
+        400
+      ],
+      "id": "afc4abc5-e533-4358-b52c-0094f0482b63",
+      "name": "match no action2",
+      "webhookId": "48199868-b398-4b55-87df-ffaa5f874f35",
+      "credentials": {
+        "telegramApi": {
+          "id": "yv48JNV4VmuIREaW",
+          "name": "Citycompany"
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "value": "TzPSlJCrmIa3aftV",
+          "mode": "list",
+          "cachedResultUrl": "/workflow/TzPSlJCrmIa3aftV",
+          "cachedResultName": "Comment nocobd"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "comment": "=[Starting a call from an incoming call](https://{{ $env[\"N8N_HOST\"] }}/workflow/{{ $workflow.id }}/executions/{{ $execution.id }})",
+            "base_id": "={{ $vars.nc_base_cs }}",
+            "row_id": "={{ $node[\"get cs\"].json[\"Id\"] }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "comment",
+              "displayName": "comment",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "base_id",
+              "displayName": "base_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "row_id",
+              "displayName": "row_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "number"
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": true
+        },
+        "options": {
+          "waitForSubWorkflow": false
+        }
+      },
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.2,
+      "position": [
+        -112,
+        -96
+      ],
+      "id": "5d2c9764-f8ca-464c-bf30-3cd870e314bc",
+      "name": "comment to cs"
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $vars.warngroup }}",
+        "text": "=📞 Incoming Call\n\n👤 Name: {{ $node[\"get cs\"].json[\"Name\"] }}\n📱 Phone: {{ $node[\"get cs\"].json[\"Phone\"] }}\n📧 Email: {{ $node[\"get cs\"].json[\"Email\"] || \"-\" }}\n\n✅ Callback Started\nOutbound call workflow is now running.",
+        "replyMarkup": "inlineKeyboard",
+        "inlineKeyboard": {
+          "rows": [
+            {
+              "row": {
+                "buttons": [
+                  {
+                    "text": "CS",
+                    "additionalFields": {
+                      "url": "={{ $vars.nocodb_url_ex }}#/wqp6q0zt/p0a3eirwme1bmw7/mkbhjd0aqdl1r1m?rowId={{ $node[\"get cs\"].json[\"Id\"] }}"
+                    }
+                  }
+                ]
+              }
+            }
+          ]
+        },
+        "additionalFields": {
+          "appendAttribution": false,
+          "message_thread_id": 8
+        }
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        128,
+        96
+      ],
+      "id": "e39ee4a9-123c-4ac7-85ca-15dd33f6137f",
+      "name": "ok",
+      "webhookId": "48199868-b398-4b55-87df-ffaa5f874f35",
+      "credentials": {
+        "telegramApi": {
+          "id": "yv48JNV4VmuIREaW",
+          "name": "Citycompany"
+        }
+      },
+      "onError": "continueRegularOutput"
+    }
+  ],
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Respond to Webhook": {
+      "main": [
+        [
+          {
+            "node": "get cs",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "match": {
+      "main": [
+        [
+          {
+            "node": "check last call",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "no match",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "match no action": {
+      "main": [
+        []
+      ]
+    },
+    "action": {
+      "main": [
+        [
+          {
+            "node": "create note",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "match no action",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Run call": {
+      "main": [
+        [
+          {
+            "node": "ok",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "get cs": {
+      "main": [
+        [
+          {
+            "node": "match",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "check last call": {
+      "main": [
+        [
+          {
+            "node": "action",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "create note": {
+      "main": [
+        [
+          {
+            "node": "check status",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "check status": {
+      "main": [
+        [
+          {
+            "node": "status?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "status?": {
+      "main": [
+        [
+          {
+            "node": "comment to cs",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Run call",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "match no action2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "callerPolicy": "workflowsFromSameOwner",
+    "availableInMCP": false,
+    "errorWorkflow": "agw6jjdVg6yAawFi"
+  },
+  "triggerCount": 1,
+  "versionId": "bc981cb4-7809-49aa-a2ee-b17fabb08a22",
+  "owner": {
+    "type": "personal",
+    "projectId": "I8ZweZXokOc0zbYb",
+    "projectName": "BSU Agency <info@brilliantseedup.com>",
+    "personalEmail": "info@brilliantseedup.com"
+  },
+  "parentFolderId": "mIvDkh1v9thmXFfY",
+  "isArchived": false
+}

@@ -1,0 +1,197 @@
+{
+  "id": "MNoPW1Eu89cdkE0g",
+  "name": "AntiDuples",
+  "nodes": [
+    {
+      "parameters": {
+        "path": "ad85a9d9-765c-4525-8c36-8865b9a9c371",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        -288,
+        80
+      ],
+      "id": "f7c625be-ae01-4d45-8924-b05ae9444c31",
+      "name": "Webhook",
+      "webhookId": "ad85a9d9-765c-4525-8c36-8865b9a9c371"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "-- Скрипт дедупликации контактов с очисткой дублирующихся ячеек\n-- Ищет дубликаты во ВСЕХ записях и очищает их\n\n-- Очистка дублирующихся Email\nWITH normalized_contacts AS (\n    SELECT\n        c.\"id\",\n        NULLIF(LOWER(TRIM(c.\"Email\")), '') AS norm_email\n    FROM pp17t5v4q0ctqmw.\"AntiDuples\" c\n    WHERE c.\"Email\" IS NOT NULL\n),\ncontacts_with_email AS (\n    SELECT \"id\", norm_email AS dedup_key\n    FROM normalized_contacts\n    WHERE norm_email IS NOT NULL\n),\nranked_email AS (\n    SELECT\n        id,\n        dedup_key,\n        COUNT(*) OVER (PARTITION BY dedup_key) AS group_count,\n        ROW_NUMBER() OVER (\n            PARTITION BY dedup_key\n            ORDER BY id ASC\n        ) AS rn\n    FROM contacts_with_email\n),\nto_clear_email AS (\n    SELECT id\n    FROM ranked_email\n    WHERE group_count > 1 \n      AND rn > 1\n)\nUPDATE pp17t5v4q0ctqmw.\"AntiDuples\"\nSET \"Email\" = NULL\nWHERE \"id\" IN (SELECT id FROM to_clear_email);\n\n-- Очистка дублирующихся Phone\nWITH normalized_contacts AS (\n    SELECT\n        c.\"id\",\n        NULLIF(REGEXP_REPLACE(c.\"Phone\", '\\D', '', 'g'), '') AS norm_phone\n    FROM pp17t5v4q0ctqmw.\"AntiDuples\" c\n    WHERE c.\"Phone\" IS NOT NULL\n),\ncontacts_with_phone AS (\n    SELECT \"id\", norm_phone AS dedup_key\n    FROM normalized_contacts\n    WHERE norm_phone IS NOT NULL\n),\nranked_phone AS (\n    SELECT\n        id,\n        dedup_key,\n        COUNT(*) OVER (PARTITION BY dedup_key) AS group_count,\n        ROW_NUMBER() OVER (\n            PARTITION BY dedup_key\n            ORDER BY id ASC\n        ) AS rn\n    FROM contacts_with_phone\n),\nto_clear_phone AS (\n    SELECT id\n    FROM ranked_phone\n    WHERE group_count > 1 \n      AND rn > 1\n)\nUPDATE pp17t5v4q0ctqmw.\"AntiDuples\"\nSET \"Phone\" = NULL\nWHERE \"id\" IN (SELECT id FROM to_clear_phone);\n\n-- Очистка дублирующихся LinkedIn\nWITH normalized_contacts AS (\n    SELECT\n        c.\"id\",\n        NULLIF(\n            LOWER(\n                SUBSTRING(\n                    REGEXP_REPLACE(TRIM(c.\"LinkedIn\"), '/+$', '')\n                    FROM '([^/?#]+)$'\n                )\n            ),\n            ''\n        ) AS norm_linkedin\n    FROM pp17t5v4q0ctqmw.\"AntiDuples\" c\n    WHERE c.\"LinkedIn\" IS NOT NULL\n),\ncontacts_with_linkedin AS (\n    SELECT \"id\", norm_linkedin AS dedup_key\n    FROM normalized_contacts\n    WHERE norm_linkedin IS NOT NULL\n),\nranked_linkedin AS (\n    SELECT\n        id,\n        dedup_key,\n        COUNT(*) OVER (PARTITION BY dedup_key) AS group_count,\n        ROW_NUMBER() OVER (\n            PARTITION BY dedup_key\n            ORDER BY id ASC\n        ) AS rn\n    FROM contacts_with_linkedin\n),\nto_clear_linkedin AS (\n    SELECT id\n    FROM ranked_linkedin\n    WHERE group_count > 1 \n      AND rn > 1\n)\nUPDATE pp17t5v4q0ctqmw.\"AntiDuples\"\nSET \"LinkedIn\" = NULL\nWHERE \"id\" IN (SELECT id FROM to_clear_linkedin);",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        160,
+        -16
+      ],
+      "id": "d937a9a0-3a51-4506-bb07-94218c74a16c",
+      "name": "clear cell duples",
+      "alwaysOutputData": false,
+      "credentials": {
+        "postgres": {
+          "id": "oZABCHH2vjfMvXoi",
+          "name": "nocodb"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "aggregate": "aggregateAllItemData",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.aggregate",
+      "typeVersion": 1,
+      "position": [
+        -64,
+        80
+      ],
+      "id": "aeee531e-0ef6-4711-80f9-2d3fc107cb9e",
+      "name": "Aggregate"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT \n    \"id\"\nFROM pp17t5v4q0ctqmw.\"AntiDuples\"\nWHERE \n    (\n        \"Email\" IS NULL \n        OR TRIM(\"Email\") = ''\n    )\n    AND (\n        \"Phone\" IS NULL \n        OR TRIM(\"Phone\") = ''\n    )\n    AND (\n        \"LinkedIn\" IS NULL \n        OR TRIM(\"LinkedIn\") = ''\n    );",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        160,
+        176
+      ],
+      "id": "4f0b81a3-ee7a-4f3c-87b2-6212ceaa42b1",
+      "name": "get bad",
+      "credentials": {
+        "postgres": {
+          "id": "oZABCHH2vjfMvXoi",
+          "name": "nocodb"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "batchSize": 800,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        384,
+        176
+      ],
+      "id": "e935da20-0d54-4b8c-aa32-2311682a2859",
+      "name": "Loop Over Items"
+    },
+    {
+      "parameters": {
+        "authentication": "nocoDbApiToken",
+        "operation": "delete",
+        "workspaceId": "wqp6q0zt",
+        "projectId": "pp17t5v4q0ctqmw",
+        "table": "mx2hw9drr6sf6i7",
+        "id": "={{ $json.id }}"
+      },
+      "type": "n8n-nodes-base.nocoDb",
+      "typeVersion": 3,
+      "position": [
+        608,
+        192
+      ],
+      "id": "e16a1f0e-b5a8-44c2-a93e-e2fd9a58fb76",
+      "name": "Delete a row",
+      "credentials": {
+        "nocoDbApiToken": {
+          "id": "tg1sd8Mux2yjJLx7",
+          "name": "NocoDB"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Aggregate",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Aggregate": {
+      "main": [
+        [
+          {
+            "node": "clear cell duples",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "get bad",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "clear cell duples": {
+      "main": [
+        []
+      ]
+    },
+    "get bad": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Loop Over Items": {
+      "main": [
+        [],
+        [
+          {
+            "node": "Delete a row",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Delete a row": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "triggerCount": 1,
+  "versionId": "c696f999-67a4-411a-9a34-9d58df3891af",
+  "owner": {
+    "type": "personal",
+    "projectId": "I8ZweZXokOc0zbYb",
+    "projectName": "BSU Agency <info@brilliantseedup.com>",
+    "personalEmail": "info@brilliantseedup.com"
+  },
+  "parentFolderId": "f38emmI3bPpmxDcz",
+  "isArchived": false
+}

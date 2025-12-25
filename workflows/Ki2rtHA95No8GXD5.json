@@ -1,0 +1,889 @@
+{
+  "id": "Ki2rtHA95No8GXD5",
+  "name": "Primary processor",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "minutes",
+              "minutesInterval": 3
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        -864,
+        288
+      ],
+      "id": "3f2ee8ca-0713-443e-8995-e74613e7ad46",
+      "name": "Schedule Trigger"
+    },
+    {
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "value": "lPsyg1sBbGWfkXo8",
+          "mode": "list",
+          "cachedResultUrl": "/workflow/lPsyg1sBbGWfkXo8",
+          "cachedResultName": "Run call"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "cs_id": "={{ $('task CS').item.json.id }}"
+          },
+          "matchingColumns": [
+            "Id"
+          ],
+          "schema": [
+            {
+              "id": "cs_id",
+              "displayName": "cs_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "number",
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": true
+        },
+        "options": {
+          "waitForSubWorkflow": false
+        }
+      },
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.2,
+      "position": [
+        2208,
+        272
+      ],
+      "id": "8f35019e-d9fd-4d5c-9ed9-90dc5ec34547",
+      "name": "Sent Data"
+    },
+    {
+      "parameters": {
+        "amount": 20
+      },
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        2192,
+        672
+      ],
+      "id": "ffd5068e-625d-4219-8d22-3398886b4f90",
+      "name": "Wait",
+      "webhookId": "2f4573db-0e42-41f0-baba-47a87a71667c"
+    },
+    {
+      "parameters": {
+        "inputSource": "passthrough"
+      },
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        16,
+        64
+      ],
+      "id": "e826075c-1c02-497d-8033-264cf00d5b8b",
+      "name": "form"
+    },
+    {
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "value": "oHxaM4NpOa215dXT",
+          "mode": "list",
+          "cachedResultUrl": "/workflow/oHxaM4NpOa215dXT",
+          "cachedResultName": "Check paralelizm"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {},
+          "matchingColumns": [],
+          "schema": [],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": true
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.2,
+      "position": [
+        864,
+        192
+      ],
+      "id": "b8687f82-f5a0-4086-8bf7-d4df7f2dc20f",
+      "name": "Check paralelizm"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "6079aaf0-152f-4822-a696-0bb408233695",
+              "leftValue": "={{ $json.success }}",
+              "rightValue": 10,
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        1088,
+        272
+      ],
+      "id": "94cb5906-f879-4528-8fae-9eee63369f12",
+      "name": "Result paralelizm"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "WITH params AS (\n  SELECT\n    {{ $node[\"get settings\"].json[\"wh_start\"] || 10 }}::int      AS start_hour, \n    {{ $node[\"get settings\"].json[\"wh_end\"] || 18 }}::int        AS end_hour, \n    {{ $node[\"get settings\"].json[\"check_weekend\"] || true }}::bool AS check_weekend\n)\nSELECT l.*\nFROM public.contacts AS l\nCROSS JOIN params p\n-- 1) Нормализуем телефон до цифр\nCROSS JOIN LATERAL (\n  SELECT regexp_replace(coalesce(l.phone, ''), '\\D', '', 'g') AS digits\n) ph\n-- 2) Пытаемся определить TZ по коду телефона\nLEFT JOIN LATERAL (\n  SELECT tz.timezone AS tz\n  FROM public.timezones AS tz\n  JOIN LATERAL (VALUES (3),(2),(1)) AS lens(len) ON true\n  WHERE tz.code = NULLIF(LEFT(ph.digits, lens.len), '')::bigint\n  ORDER BY lens.len DESC\n  LIMIT 1\n) m ON true\n-- 3) Если у контакта задан IANA TZ, проверяем что он валиден в Postgres\nLEFT JOIN LATERAL (\n  SELECT pgtz.name AS tz\n  FROM pg_timezone_names AS pgtz\n  WHERE pgtz.name = trim(l.timezone)\n  LIMIT 1\n) tz_ok ON true\n-- 4) Локальное время: сначала берём tz из contacts.timezone (если валидна),\n--    иначе из маппинга по телефону, иначе из дефолта\nCROSS JOIN LATERAL (\n  SELECT (now() AT TIME ZONE COALESCE(tz_ok.tz, m.tz, '{{ $env['GENERIC_TIMEZONE'] }}')) AS local_ts\n) t\nWHERE l.css = 'waiting'\n  AND l.fix = true\n  AND (NOT p.check_weekend OR EXTRACT(DOW FROM t.local_ts) BETWEEN 1 AND 5)\n  AND (\n    EXTRACT(HOUR FROM t.local_ts) >= p.start_hour\n    AND (\n      EXTRACT(HOUR FROM t.local_ts) < p.end_hour\n      OR (\n        EXTRACT(HOUR FROM t.local_ts) = p.end_hour\n        AND EXTRACT(MINUTE FROM t.local_ts) = 0\n      )\n    )\n  )\nLIMIT 3;",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        -192,
+        288
+      ],
+      "id": "69d3d408-322e-423c-8e4b-aed734096e06",
+      "name": "SELECT",
+      "credentials": {
+        "postgres": {
+          "id": "oZABCHH2vjfMvXoi",
+          "name": "directus"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "1a3c50f2-b95b-4279-b8d1-b7597db565f4",
+              "leftValue": "={{ $json.id }}",
+              "rightValue": "",
+              "operator": {
+                "type": "number",
+                "operation": "exists",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        16,
+        288
+      ],
+      "id": "3e58a767-47fa-433e-87b3-db275541d454",
+      "name": "output?"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT (COUNT(*) > 0) AS quantity\nFROM public.contacts \nWHERE css = 'waiting';",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        -432,
+        592
+      ],
+      "id": "27b63d13-19ff-4c16-b807-09271691c84e",
+      "name": "check quantity",
+      "credentials": {
+        "postgres": {
+          "id": "oZABCHH2vjfMvXoi",
+          "name": "directus"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "70698c4c-9ca0-4331-9c72-1fd5a8a8958a",
+              "leftValue": "={{ $json.quantity }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -208,
+        592
+      ],
+      "id": "57d3f7a6-089b-4824-b19e-32693c5dfe32",
+      "name": "end?"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        416,
+        272
+      ],
+      "id": "e65c6709-30fd-48e3-b091-38b3b899b5a1",
+      "name": "loop"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "6191c4c2-1c3b-4404-abd0-d53409d6b870",
+              "leftValue": "={{ $json.id }}",
+              "rightValue": "",
+              "operator": {
+                "type": "number",
+                "operation": "notEmpty",
+                "singleValue": true
+              }
+            },
+            {
+              "id": "3606862d-0cef-4ccb-9969-e42baf5d62f4",
+              "leftValue": "={{ $json.phone }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        640,
+        192
+      ],
+      "id": "613a1d97-e6d2-4353-b190-f4dccaf6b06c",
+      "name": "result"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "33abca1f-bc79-442c-b477-299dfd3b120c",
+              "leftValue": "={{ $json[0].id }}",
+              "rightValue": 0,
+              "operator": {
+                "type": "number",
+                "operation": "empty",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        1536,
+        272
+      ],
+      "id": "0207e846-e763-4826-b236-a7173958dc7c",
+      "name": "check result"
+    },
+    {
+      "parameters": {
+        "operation": "select",
+        "schema": {
+          "__rl": true,
+          "mode": "list",
+          "value": "public"
+        },
+        "table": {
+          "__rl": true,
+          "value": "settings",
+          "mode": "list",
+          "cachedResultName": "settings"
+        },
+        "limit": 1,
+        "options": {
+          "outputColumns": [
+            "wh_start",
+            "wh_end",
+            "check_weekend",
+            "primary_processor"
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        -640,
+        288
+      ],
+      "id": "63f4eb60-a37e-4187-97e1-6042541b3b6e",
+      "name": "get settings",
+      "credentials": {
+        "postgres": {
+          "id": "oZABCHH2vjfMvXoi",
+          "name": "directus"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "schema": {
+          "__rl": true,
+          "mode": "list",
+          "value": "public"
+        },
+        "table": {
+          "__rl": true,
+          "value": "settings",
+          "mode": "list",
+          "cachedResultName": "settings"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "primary_processor": false,
+            "id": 1
+          },
+          "matchingColumns": [
+            "id"
+          ],
+          "schema": [
+            {
+              "id": "id",
+              "displayName": "id",
+              "required": false,
+              "defaultMatch": true,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "wh_start",
+              "displayName": "wh_start",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "wh_end",
+              "displayName": "wh_end",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "agent_name",
+              "displayName": "agent_name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "check_weekend",
+              "displayName": "check_weekend",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "boolean",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "primary_processor",
+              "displayName": "primary_processor",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "boolean",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        64,
+        592
+      ],
+      "id": "663248f1-c0c4-453d-ae84-f277981fd3e8",
+      "name": "disable processor",
+      "credentials": {
+        "postgres": {
+          "id": "oZABCHH2vjfMvXoi",
+          "name": "directus"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "6dd92412-8ac7-49ee-96b9-51d5797d22a8",
+              "leftValue": "={{ $json.primary_processor }}",
+              "rightValue": false,
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.filter",
+      "typeVersion": 2.2,
+      "position": [
+        -416,
+        288
+      ],
+      "id": "0ff3710e-766b-4f58-a9c6-3b646b415557",
+      "name": "enabled?"
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "id": "={{ $node[\"loop\"].json[\"id\"] }}",
+        "collection": "contacts",
+        "data": "={\"css\":\"done\"}"
+      },
+      "type": "@stumpworks/n8n-nodes-directus.directus",
+      "typeVersion": 1,
+      "position": [
+        688,
+        672
+      ],
+      "id": "4aa0b595-1e59-429b-b3c9-f70ca25717f6",
+      "name": "to done",
+      "credentials": {
+        "directusApi": {
+          "id": "kIJhRDZv2PR5UO1f",
+          "name": "Directus"
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "collection": "call_system",
+        "additionalFields": {
+          "filter": "={\n    \"_and\": [\n        {\n            \"status\": {\n                \"_eq\": \"progress\"\n            }\n        },\n        {\n            \"contact_id\": {\n                \"_eq\": \"{{ $node[\"loop\"].json[\"id\"] }}\"\n            }\n        }\n    ]\n}"
+        }
+      },
+      "type": "@stumpworks/n8n-nodes-directus.directus",
+      "typeVersion": 1,
+      "position": [
+        1296,
+        272
+      ],
+      "id": "3cd5cfb2-bcdf-4b7b-9fd0-fde3f4b64d10",
+      "name": "check cs",
+      "credentials": {
+        "directusApi": {
+          "id": "kIJhRDZv2PR5UO1f",
+          "name": "Directus"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "create",
+        "collection": "call_system",
+        "data": "={\n    \"name\": \"{{ $('loop').item.json.name }}\",\n    \"phone\": \"{{ $('loop').item.json.phone }}\",\n    \"email\": \"{{ $('loop').item.json.email }}\",\n    \"contact_id\": {{ $node[\"loop\"].json[\"id\"] }},\n    \"status\": \"progress\"\n}"
+      },
+      "type": "@stumpworks/n8n-nodes-directus.directus",
+      "typeVersion": 1,
+      "position": [
+        1760,
+        272
+      ],
+      "id": "fd3066da-e5e4-4f89-a2c1-51e3000442ec",
+      "name": "task CS",
+      "credentials": {
+        "directusApi": {
+          "id": "kIJhRDZv2PR5UO1f",
+          "name": "Directus"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "id": "={{ $node[\"loop\"].json[\"id\"] }}",
+        "collection": "contacts",
+        "data": "={\"css\":\"progress\"}"
+      },
+      "type": "@stumpworks/n8n-nodes-directus.directus",
+      "typeVersion": 1,
+      "position": [
+        1984,
+        272
+      ],
+      "id": "4477491f-2095-488c-b936-6a758cf06bc9",
+      "name": "update contact",
+      "credentials": {
+        "directusApi": {
+          "id": "kIJhRDZv2PR5UO1f",
+          "name": "Directus"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "get settings",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Sent Data": {
+      "main": [
+        [
+          {
+            "node": "Wait",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait": {
+      "main": [
+        [
+          {
+            "node": "loop",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "form": {
+      "main": [
+        [
+          {
+            "node": "loop",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check paralelizm": {
+      "main": [
+        [
+          {
+            "node": "Result paralelizm",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Result paralelizm": {
+      "main": [
+        [
+          {
+            "node": "check cs",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "loop",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "to done",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "SELECT": {
+      "main": [
+        [
+          {
+            "node": "output?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "output?": {
+      "main": [
+        [
+          {
+            "node": "loop",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "check quantity",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "check quantity": {
+      "main": [
+        [
+          {
+            "node": "end?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "end?": {
+      "main": [
+        [],
+        [
+          {
+            "node": "disable processor",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "loop": {
+      "main": [
+        [],
+        [
+          {
+            "node": "result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "result": {
+      "main": [
+        [
+          {
+            "node": "Check paralelizm",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "to done",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "check result": {
+      "main": [
+        [
+          {
+            "node": "task CS",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "to done",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "get settings": {
+      "main": [
+        [
+          {
+            "node": "enabled?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "enabled?": {
+      "main": [
+        [
+          {
+            "node": "SELECT",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "to done": {
+      "main": [
+        [
+          {
+            "node": "loop",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "check cs": {
+      "main": [
+        [
+          {
+            "node": "check result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "task CS": {
+      "main": [
+        [
+          {
+            "node": "update contact",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "update contact": {
+      "main": [
+        [
+          {
+            "node": "Sent Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "callerPolicy": "workflowsFromSameOwner",
+    "errorWorkflow": "agw6jjdVg6yAawFi",
+    "saveDataSuccessExecution": "none",
+    "availableInMCP": false
+  },
+  "triggerCount": 1,
+  "versionId": "0979e1f8-2bd0-4dc5-899b-efbc2d39bc4d",
+  "owner": {
+    "type": "personal",
+    "projectId": "I8ZweZXokOc0zbYb",
+    "projectName": "BSU Agency <info@brilliantseedup.com>",
+    "personalEmail": "info@brilliantseedup.com"
+  },
+  "parentFolderId": "v1Un8AcPCflFCY9o",
+  "isArchived": false
+}

@@ -1,0 +1,429 @@
+{
+  "id": "LDOIlXgHNRS3diBH",
+  "name": "Callback bot",
+  "nodes": [
+    {
+      "parameters": {
+        "workflowInputs": {
+          "values": [
+            {
+              "name": "cs_id",
+              "type": "number"
+            },
+            {
+              "name": "callback"
+            },
+            {
+              "name": "timezone"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        -224,
+        0
+      ],
+      "id": "bc75473f-4ff8-47d2-8722-ce7bb33765b0",
+      "name": "start"
+    },
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "value": "gpt-4.1",
+          "mode": "list",
+          "cachedResultName": "GPT-4.1"
+        },
+        "messages": {
+          "values": [
+            {
+              "content": "=You are a date parser that converts natural language time expressions into ISO 8601 datetime format.\n\nCURRENT DATE/TIME: {{ \n  \"[\" + \n  ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'][$now.setZone($node[\"offset\"].json[\"value\"]).weekday % 7] + \n  \"] \" + \n  $now.setZone($node[\"offset\"].json[\"value\"]).toFormat(\"yyyy-MM-dd HH:mm:ss\") \n}}\n\nRULES:\n- Always use the above CURRENT DATE/TIME as your reference point.   \n- If no specific time is mentioned, set the time to {{(()=>{const s=11*60,e=14*60,r=Math.floor(Math.random()*(e-s+1)+s),h=String(Math.floor(r/60)).padStart(2,'0'),m=String(r%60).padStart(2,'0');return `${h}:${m}`})()}} local time by default.  \n- Your answer must be in this exact format (without timezone):  \nYYYY-MM-DD HH:MM:SS (e.g., 2025-05-04 15:00:00)  \n- Only output the datetime string in the exact format above.  \n- Do NOT explain anything, do not add any extra text—just output the datetime string.\nif the input data is not enough to calculate the time, return \"null\"\n- Never set past tense - if the request you receive implies past tense > take the current time plus one hour.\n- Only one date-time, even if the request jumps to different options.\n\n\nEXAMPLES:\n\nInput: \"tomorrow at 12\"  \nOutput: 2025-05-02 12:00:00\n\nInput: \"in two weeks at 5 PM\"  \nOutput: 2025-05-15 17:00:00\n\nInput: \"on Wednesday at 3 in the afternoon\"  \nOutput: 2025-05-07 15:00:00\n\nInput: \"Monday at 1 PM\"  \nOutput: 2025-05-05 13:00:00\n\nInput: \"Tuesday anytime after 10 AM\"  \nOutput: 2025-05-06 13:00:00\n\nInput: \"Friday evening\"  \nOutput: 2025-05-03 19:00:00\n\nInput: \"in a week time\"  \nOutput: 2025-05-08 09:00:00\n\nInput: \"just after 11\"\nOutput: 2025-08-09 12:00:00\n\nReturn STRICTLY the date in this format: YYYY-MM-DD HH:MM:SS (e.g., 2025-05-03 15:30:00) or \"null\" and NOTHING ELSE.",
+              "role": "system"
+            },
+            {
+              "content": "={{ $node[\"start\"].json[\"callback\"] || \"-\" }}"
+            }
+          ]
+        },
+        "options": {
+          "temperature": 0
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 1.8,
+      "position": [
+        432,
+        0
+      ],
+      "id": "950154d2-62f2-4e96-a3c7-5d45a7b875ec",
+      "name": "Callback",
+      "retryOnFail": true,
+      "waitBetweenTries": 5000,
+      "credentials": {
+        "openAiApi": {
+          "id": "895vd8bC2qxU4JL4",
+          "name": "OpenAi"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "value": "r8iFGyQZgNDdeazO",
+          "mode": "list",
+          "cachedResultUrl": "/workflow/r8iFGyQZgNDdeazO",
+          "cachedResultName": "Setter"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "next": "={{ $node[\"Callback\"].json[\"message\"][\"content\"] + $node[\"offset\"].json[\"value\"] }}",
+            "type": "Callback",
+            "cs_id": "={{ $node[\"start\"].json[\"cs_id\"] }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "next",
+              "displayName": "next",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "cs_id",
+              "displayName": "cs_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "number",
+              "removed": false
+            },
+            {
+              "id": "type",
+              "displayName": "type",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": true
+        },
+        "options": {
+          "waitForSubWorkflow": false
+        }
+      },
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.2,
+      "position": [
+        1024,
+        0
+      ],
+      "id": "83314d26-fd39-4445-af57-05b1e726f407",
+      "name": "Sheduler"
+    },
+    {
+      "parameters": {
+        "jsCode": "const timezone = $node[\"start\"].json[\"timezone\"] || $env[\"GENERIC_TIMEZONE\"];\nconst now = new Date();\nlet offset = null;\n\ntry {\n  const options = { timeZone: timezone, hour12: false };\n  const localTime = new Date(now.toLocaleString('en-US', options));\n  \n  const offsetInMillis = localTime.getTime() - now.getTime();\n  const offsetMinutes = Math.round(offsetInMillis / 1000 / 60);\n  \n  const offsetHours = Math.floor(Math.abs(offsetMinutes) / 60);\n  const offsetMins = Math.abs(offsetMinutes) % 60;\n  \n  const sign = offsetMinutes < 0 ? \"-\" : \"+\";\n  \n  offset = sign +\n    String(offsetHours).padStart(2, '0') + \":\" +\n    String(offsetMins).padStart(2, '0');\n  \n} catch (e) {\n  // Если и это не сработало — ставим дефолт из ENV\n  offset = $env[\"GENERIC_TIMEZONE\"];\n}\n\nreturn [\n  {\n    json: {\n      value: offset\n    },\n  },\n];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        208,
+        0
+      ],
+      "id": "7c1e4ca8-7696-4054-9263-8d82b83d6e44",
+      "name": "offset"
+    },
+    {
+      "parameters": {},
+      "type": "@n8n/n8n-nodes-langchain.toolCalculator",
+      "typeVersion": 1,
+      "position": [
+        512,
+        224
+      ],
+      "id": "3cb98bbc-7286-46a1-bb4d-404be0ba0c88",
+      "name": "Calculator"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "f3d25dae-18f2-467c-a9c0-8fc858887cc2",
+              "leftValue": "={{ \n  ($node[\"Callback\"].json[\"message\"][\"content\"] + $node[\"offset\"].json[\"value\"]).toDateTime().isValid && \n  ($node[\"Callback\"].json[\"message\"][\"content\"] + $node[\"offset\"].json[\"value\"]).toDateTime() > $now\n}}",
+              "rightValue": "null",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        800,
+        0
+      ],
+      "id": "390e66b7-4f0c-4a47-8446-cd7bd1b516b0",
+      "name": "result"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "b0b3954c-c8ac-4028-b355-8a781383a520",
+              "name": "result",
+              "value": false,
+              "type": "boolean"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        0,
+        256
+      ],
+      "id": "7fcfba99-eca9-46de-abc7-7fc7436e16cd",
+      "name": "result bad"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "b0b3954c-c8ac-4028-b355-8a781383a520",
+              "name": "result",
+              "value": true,
+              "type": "boolean"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1472,
+        0
+      ],
+      "id": "53a173dd-8f97-45d2-bb6a-a6652c72ce59",
+      "name": "result done"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "17f0ca17-4b51-4d0b-bb8d-2a74c2ce6e61",
+              "leftValue": "={{ $json.callback.length >= 3 }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -16,
+        0
+      ],
+      "id": "729f5399-9a70-4cce-9857-1ff63e75e4e6",
+      "name": "data?"
+    },
+    {
+      "parameters": {
+        "authentication": "nocoDbApiToken",
+        "operation": "update",
+        "workspaceId": "wqp6q0zt",
+        "projectId": "p0a3eirwme1bmw7",
+        "table": "mkbhjd0aqdl1r1m",
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldName": "Id",
+              "fieldValue": "={{ $node[\"start\"].json[\"cs_id\"] }}"
+            },
+            {
+              "fieldName": "Schedule",
+              "fieldValue": "Default"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.nocoDb",
+      "typeVersion": 3,
+      "position": [
+        1248,
+        0
+      ],
+      "id": "2a5e4124-6fb4-42ae-b62a-9c2231b475c9",
+      "name": "update schedule",
+      "credentials": {
+        "nocoDbApiToken": {
+          "id": "tg1sd8Mux2yjJLx7",
+          "name": "NocoDB"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "start": {
+      "main": [
+        [
+          {
+            "node": "data?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Callback": {
+      "main": [
+        [
+          {
+            "node": "result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "offset": {
+      "main": [
+        [
+          {
+            "node": "Callback",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Calculator": {
+      "ai_tool": [
+        [
+          {
+            "node": "Callback",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "result": {
+      "main": [
+        [
+          {
+            "node": "Sheduler",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "result bad",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Sheduler": {
+      "main": [
+        [
+          {
+            "node": "update schedule",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "data?": {
+      "main": [
+        [
+          {
+            "node": "offset",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "result bad",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "update schedule": {
+      "main": [
+        [
+          {
+            "node": "result done",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "callerPolicy": "workflowsFromSameOwner",
+    "availableInMCP": false,
+    "errorWorkflow": "agw6jjdVg6yAawFi",
+    "saveDataSuccessExecution": "none"
+  },
+  "triggerCount": 0,
+  "versionId": "feafe056-a624-4704-8c24-8f38d40572ad",
+  "owner": {
+    "type": "personal",
+    "projectId": "I8ZweZXokOc0zbYb",
+    "projectName": "BSU Agency <info@brilliantseedup.com>",
+    "personalEmail": "info@brilliantseedup.com"
+  },
+  "parentFolderId": "ZtZlVganCQMwp6yk",
+  "isArchived": false
+}

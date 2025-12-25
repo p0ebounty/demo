@@ -1,0 +1,456 @@
+{
+  "id": "60qVnVOE737qvTPl",
+  "name": "New Tasks",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "minutes",
+              "minutesInterval": 20
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        -16,
+        0
+      ],
+      "id": "9accd5d7-83b3-4370-b73d-aa20952d8f1b",
+      "name": "Schedule Trigger"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "-- Находим контакты в Progress без запланированных писем\nSELECT \n    c.id,\n    c.\"Email\",\n    c.\"Phone\",\n    c.\"DNC\",\n    c.\"CData\"\nFROM {{ $vars.ncdbid }}.\"Contacts\" AS c\nWHERE \n    -- Контакт в статусе Progress\n    c.\"Campagin\" = 'Progress'\n    \n    -- И у него НЕТ писем со статусом Planned\n    AND NOT EXISTS (\n        SELECT 1 \n        FROM {{ $vars.ncdbid }}.\"CMails\" AS cm\n        WHERE cm.\"Contacts_id\" = c.id\n          AND cm.\"Status\" IN ('Waiting', 'Building', 'Planned', 'Ready')\n    )\nORDER BY c.created_at DESC\nLIMIT 2000;",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        208,
+        0
+      ],
+      "id": "8157b146-9858-471a-97cf-7146dc71a3c4",
+      "name": "SELECT",
+      "credentials": {
+        "postgres": {
+          "id": "oZABCHH2vjfMvXoi",
+          "name": "nocodb"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.Email ? $json.Email.isEmail() : false }}",
+                    "rightValue": "",
+                    "operator": {
+                      "type": "boolean",
+                      "operation": "true",
+                      "singleValue": true
+                    },
+                    "id": "29d65d84-90a3-4e6a-8317-53fd9a412aa3"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "email"
+            }
+          ]
+        },
+        "options": {
+          "fallbackOutput": "extra"
+        }
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.3,
+      "position": [
+        624,
+        0
+      ],
+      "id": "a10bdcb8-4622-4801-8b25-e74ec1a7806b",
+      "name": "channel"
+    },
+    {
+      "parameters": {
+        "batchSize": 500,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        960,
+        0
+      ],
+      "id": "5a17d728-2886-4c2c-9985-32185f3529b7",
+      "name": "loop"
+    },
+    {
+      "parameters": {
+        "amount": 3
+      },
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        1584,
+        96
+      ],
+      "id": "5575fa31-6bfb-46d8-950b-afaa0f35ac1b",
+      "name": "Wait",
+      "webhookId": "8f6fae39-4032-426b-8fe4-a6de55c436df"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "-- Обновляем Data в CMails, собирая информацию из Contacts и Call system\nUPDATE p0a3eirwme1bmw7.\"CMails\" AS cm\nSET \n    \"Data\" = jsonb_build_object(\n        'name', cnt.\"Name\",\n        'phone', cnt.\"Phone\",\n        'email', cnt.\"Email\",\n        'position', cnt.\"Position\",\n        'human', COALESCE(cnt.\"Human\", false),\n        'description', cnt.\"Description\",\n        'company', cnt.\"Company\",\n        'location', cnt.\"Location\",\n        'state', cnt.\"State\",\n        'segment', cnt.\"Segment\",\n        'last_summary', COALESCE(\n            (\n                SELECT jsonb_agg(c.\"Summarize\" ORDER BY c.created_at DESC)\n                FROM (\n                    SELECT calls.\"Summarize\", calls.created_at\n                    FROM p0a3eirwme1bmw7.\"Call system\" cs\n                    JOIN p0a3eirwme1bmw7.\"Calls\" calls \n                        ON calls.\"Call system_id\" = cs.id\n                    WHERE cs.\"Contacts_id\" = cnt.id\n                      AND calls.\"Status\" = 'Answered'\n                      AND calls.\"Summarize\" IS NOT NULL\n                    ORDER BY calls.created_at DESC\n                    LIMIT 2\n                ) AS c\n            ),\n            '[]'::jsonb\n        )\n    ),\n    \"updated_at\" = NOW()\nFROM p0a3eirwme1bmw7.\"Contacts\" AS cnt\nWHERE cm.\"Contacts_id\" = cnt.id\n  AND (cm.\"Data\" IS NULL OR cm.\"Data\"::text = '{}')\n  AND cm.\"Status\" IN ('Planned', 'Waiting');",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        1376,
+        -80
+      ],
+      "id": "f8aab256-9762-426c-9c14-bf458905323c",
+      "name": "enrich data",
+      "executeOnce": true,
+      "credentials": {
+        "postgres": {
+          "id": "oZABCHH2vjfMvXoi",
+          "name": "nocodb"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "authentication": "nocoDbApiToken",
+        "operation": "create",
+        "workspaceId": "wqp6q0zt",
+        "projectId": "p0a3eirwme1bmw7",
+        "table": "m6axccf0owo5kzd",
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldName": "Status",
+              "fieldValue": "Waiting"
+            },
+            {
+              "fieldName": "Type",
+              "fieldValue": "Email"
+            },
+            {
+              "fieldName": "Trigger",
+              "fieldValue": "={{ $json.scheduledTime }}"
+            },
+            {
+              "fieldName": "Contacts_id",
+              "fieldValue": "={{ $('loop').item.json.id }}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.nocoDb",
+      "typeVersion": 3,
+      "position": [
+        1376,
+        96
+      ],
+      "id": "2a7119e6-30b8-4ef1-ad7c-53c261621f9d",
+      "name": "create task email",
+      "credentials": {
+        "nocoDbApiToken": {
+          "id": "tg1sd8Mux2yjJLx7",
+          "name": "NocoDB"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "batchSize": 500,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        0,
+        320
+      ],
+      "id": "436635b1-9c80-4248-a871-c6aa801172c0",
+      "name": "floop"
+    },
+    {
+      "parameters": {
+        "authentication": "nocoDbApiToken",
+        "operation": "update",
+        "workspaceId": "wqp6q0zt",
+        "projectId": "p0a3eirwme1bmw7",
+        "table": "meyq439syguvqhb",
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldName": "=Id",
+              "fieldValue": "={{ $json.id }}"
+            },
+            {
+              "fieldName": "Campagin",
+              "fieldValue": "Done"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.nocoDb",
+      "typeVersion": 3,
+      "position": [
+        432,
+        384
+      ],
+      "id": "1688ca15-efbd-45da-b462-01976663bb87",
+      "name": "done contact",
+      "credentials": {
+        "nocoDbApiToken": {
+          "id": "tg1sd8Mux2yjJLx7",
+          "name": "NocoDB"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "amount": 3
+      },
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        640,
+        384
+      ],
+      "id": "c7ddea24-ec62-4479-b384-593440ceee87",
+      "name": "Wait1",
+      "webhookId": "78fa5370-94d2-43d8-aafb-f2c6847da798"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "b464f7c5-0674-415d-af32-fe8b28ac0e85",
+              "leftValue": "={{ $json.DNC }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "notEquals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        416,
+        0
+      ],
+      "id": "24999ae3-0f41-42c0-a082-2567f51820f9",
+      "name": "DNC?"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Code Node (JavaScript)\n// Режим: Run Once for All Items\n\nconst items = $input.all();\nconst processedItems = [];\n\nfor (let i = 0; i < items.length; i++) {\n  const item = items[i].json;\n  \n  // 1. Получаем базовый интервал в часах (по умолчанию 84)\n  const baseInterval = item.CData?.email_interval || 84;\n  \n  // 2. Вычисляем базовую дату\n  let scheduledTime = $now.plus({ hours: baseInterval });\n  \n  // 3. Округляем минуты до десятков (0, 10, 20, 30, 40, 50)\n  const currentMinute = scheduledTime.minute;\n  const roundedMinute = Math.floor(currentMinute / 10) * 10;\n  scheduledTime = scheduledTime.set({ minute: roundedMinute, second: 0, millisecond: 0 });\n  \n  // 4. Рандомизация ±3 часа с шагом 10 минут\n  // Диапазон: от -18 до +18 (включительно) → умножаем на 10 → от -180 до +180 минут\n  const randomSteps = Math.floor(Math.random() * 37) - 18; // -18 до +18\n  const randomOffset = randomSteps * 10; // -180 до +180 минут\n  scheduledTime = scheduledTime.plus({ minutes: randomOffset });\n  \n  // 5. Возвращаем результат\n  processedItems.push({\n    json: {\n      scheduledTime: scheduledTime.toISO()\n    }\n  });\n}\n\nreturn processedItems;"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1168,
+        96
+      ],
+      "id": "dbe3aa3f-a2ca-4b33-8330-5e38490ed07b",
+      "name": "calc time em"
+    }
+  ],
+  "connections": {
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "SELECT",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "SELECT": {
+      "main": [
+        [
+          {
+            "node": "DNC?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "channel": {
+      "main": [
+        [
+          {
+            "node": "loop",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "floop",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "loop": {
+      "main": [
+        [
+          {
+            "node": "enrich data",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "calc time em",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait": {
+      "main": [
+        [
+          {
+            "node": "loop",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "create task email": {
+      "main": [
+        [
+          {
+            "node": "Wait",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "floop": {
+      "main": [
+        [],
+        [
+          {
+            "node": "done contact",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "done contact": {
+      "main": [
+        [
+          {
+            "node": "Wait1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait1": {
+      "main": [
+        [
+          {
+            "node": "floop",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "DNC?": {
+      "main": [
+        [
+          {
+            "node": "channel",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "floop",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "calc time em": {
+      "main": [
+        [
+          {
+            "node": "create task email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "callerPolicy": "workflowsFromSameOwner",
+    "availableInMCP": false,
+    "errorWorkflow": "EuAkMSh7w9p9TJgj",
+    "saveDataSuccessExecution": "none",
+    "executionTimeout": -1
+  },
+  "triggerCount": 1,
+  "versionId": "f5229c5c-5166-485a-afbe-0f18def7e7b3",
+  "owner": {
+    "type": "personal",
+    "projectId": "I8ZweZXokOc0zbYb",
+    "projectName": "BSU Agency <info@brilliantseedup.com>",
+    "personalEmail": "info@brilliantseedup.com"
+  },
+  "parentFolderId": "HWn7vIRYn4vaHZR5",
+  "isArchived": false
+}

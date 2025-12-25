@@ -1,0 +1,32 @@
+[
+  {
+    "id": "0QHLPxYkPeg6VrFG",
+    "key": "twillio_sid",
+    "type": "string",
+    "value": ""
+  },
+  {
+    "id": "lQcV4PS4N304tXB0",
+    "key": "vapi_twilio_id",
+    "type": "string",
+    "value": ""
+  },
+  {
+    "id": "Zcn1FMUpMt3n3EVt",
+    "key": "directus_url",
+    "type": "string",
+    "value": ""
+  },
+  {
+    "id": "GTiNTUz8gUTRVjVR",
+    "key": "directus_url_ex",
+    "type": "string",
+    "value": ""
+  },
+  {
+    "id": "rppxJAoEZ9ybV4i8",
+    "key": "warngroup",
+    "type": "string",
+    "value": ""
+  }
+]

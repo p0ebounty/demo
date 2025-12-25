@@ -1,0 +1,523 @@
+{
+  "id": "t8qfTrTzuxNeZyDj",
+  "name": "Delivery Control",
+  "nodes": [
+    {
+      "parameters": {
+        "inputSource": "passthrough"
+      },
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        -80,
+        -32
+      ],
+      "id": "c3d677a2-a1a3-42ad-b7d9-c94b9b9548c3",
+      "name": "start"
+    },
+    {
+      "parameters": {
+        "aggregate": "aggregateAllItemData",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.aggregate",
+      "typeVersion": 1,
+      "position": [
+        144,
+        -32
+      ],
+      "id": "cb0566e9-a376-424c-b025-357bbd40992d",
+      "name": "Aggregate"
+    },
+    {
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "value": "6dPZqsWMQJRoCqJH",
+          "mode": "list",
+          "cachedResultUrl": "/workflow/6dPZqsWMQJRoCqJH",
+          "cachedResultName": "Credentials"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "type": "sendpulse"
+          },
+          "matchingColumns": [
+            "type"
+          ],
+          "schema": [
+            {
+              "id": "type",
+              "displayName": "type",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": true
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.3,
+      "position": [
+        592,
+        -32
+      ],
+      "id": "34559342-5395-4412-846c-5724a9cbf756",
+      "name": "bearer"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.sendpulse.com/smtp/emails/info",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $json.key }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\"emails\":{{ JSON.stringify(($node[\"Aggregate\"].json.data || []).map(item => item.messageId).removeDuplicates()) }}}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        816,
+        -128
+      ],
+      "id": "1bcfbe6a-bbeb-4d2c-bdf7-d67963d94c4a",
+      "name": "get statuses"
+    },
+    {
+      "parameters": {
+        "url": "https://api.sendpulse.com/smtp/unsubscribe",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "date",
+              "value": "={{ $json.date }}"
+            }
+          ]
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $('bearer').item.json.key }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        1040,
+        64
+      ],
+      "id": "470f5dcf-5ca7-4806-9e69-bcf9bd583452",
+      "name": "get unsubscribe"
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        1488,
+        -48
+      ],
+      "id": "6cf211ce-d632-4671-9ea1-9a1730597191",
+      "name": "Merge"
+    },
+    {
+      "parameters": {
+        "aggregate": "aggregateAllItemData",
+        "destinationFieldName": "statuses",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.aggregate",
+      "typeVersion": 1,
+      "position": [
+        1264,
+        -128
+      ],
+      "id": "e48af11b-307f-4ce7-bdcf-da3e1b2f9a59",
+      "name": "Aggregate1"
+    },
+    {
+      "parameters": {
+        "aggregate": "aggregateAllItemData",
+        "destinationFieldName": "unsubscribe",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.aggregate",
+      "typeVersion": 1,
+      "position": [
+        1264,
+        64
+      ],
+      "id": "76d5cc92-a35d-48c2-bb6a-0cf04512d7a6",
+      "name": "Aggregate2"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Получаем данные из Aggregate\nconst aggregateData = $node[\"Aggregate\"].json.data || [];\n\n// Получаем данные из узла с проверкой (замени \"HTTP Request\" на имя твоего узла)\nconst checkResult = $node[\"result\"].json.check_result || [];\nconst statuses = checkResult[0]?.statuses || [];\nconst unsubscribed = checkResult[1]?.unsubscribe || [];\n\n// Создаём Set из email'ов отписавшихся для быстрого поиска\nconst unsubscribedEmails = new Set(unsubscribed.map(u => u.email));\n\n// Фильтруем items из Aggregate\nconst filteredItems = aggregateData.filter(item => {\n  // Находим соответствующий статус по messageId\n  const status = statuses.find(s => s.id === item.messageId);\n  \n  // Если статус не найден - возвращаем item\n  if (!status) return true;\n  \n  // Проверяем код ответа (валидный только 250)\n  const isInvalidStatus = status.smtp_answer_code !== 250;\n  \n  // Проверяем, есть ли email в списке отписавшихся\n  const isUnsubscribed = unsubscribedEmails.has(status.recipient);\n  \n  // Возвращаем item если статус НЕ 250 ИЛИ email отписался\n  return isInvalidStatus || isUnsubscribed;\n});\n\n// Возвращаем отфильтрованные items\nreturn filteredItems.map(item => ({ json: item }));"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1936,
+        -48
+      ],
+      "id": "1d7a6a41-34a6-43cf-a186-53e7c3a03495",
+      "name": "checker"
+    },
+    {
+      "parameters": {
+        "aggregate": "aggregateAllItemData",
+        "destinationFieldName": "check_result",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.aggregate",
+      "typeVersion": 1,
+      "position": [
+        1712,
+        -48
+      ],
+      "id": "2df052fe-92c8-46ce-9383-48aaf0a55a37",
+      "name": "result"
+    },
+    {
+      "parameters": {
+        "compare": "selectedFields",
+        "fieldsToCompare": "contact_id",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.removeDuplicates",
+      "typeVersion": 2,
+      "position": [
+        2160,
+        -48
+      ],
+      "id": "5c0d2b43-55b4-4640-a9ba-5c422d7f37f4",
+      "name": "Remove Duplicates"
+    },
+    {
+      "parameters": {
+        "authentication": "nocoDbApiToken",
+        "operation": "update",
+        "workspaceId": "wqp6q0zt",
+        "projectId": "p0a3eirwme1bmw7",
+        "table": "meyq439syguvqhb",
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldName": "Id",
+              "fieldValue": "={{ $json.contact_id }}"
+            },
+            {
+              "fieldName": "Campagin",
+              "fieldValue": "Done"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.nocoDb",
+      "typeVersion": 3,
+      "position": [
+        2384,
+        -48
+      ],
+      "id": "33442f27-04b1-423c-8160-ccd0663474b5",
+      "name": "to done",
+      "credentials": {
+        "nocoDbApiToken": {
+          "id": "tg1sd8Mux2yjJLx7",
+          "name": "NocoDB"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "amount": 25,
+        "unit": "hours"
+      },
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        368,
+        -32
+      ],
+      "id": "281940b6-ca19-41c1-9162-d7c2e2f34485",
+      "name": "Wait",
+      "webhookId": "5f4af749-74c7-4fa8-806a-f7cd20585a29"
+    },
+    {
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "value": "TzPSlJCrmIa3aftV",
+          "mode": "list",
+          "cachedResultUrl": "/workflow/TzPSlJCrmIa3aftV",
+          "cachedResultName": "Comment nocobd"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "comment": "=Campagins stopped - contact is unreachable or unsubscribed.",
+            "base_id": "=meyq439syguvqhb",
+            "row_id": "={{ $json.Id }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "comment",
+              "displayName": "comment",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "base_id",
+              "displayName": "base_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "row_id",
+              "displayName": "row_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "number"
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": true
+        },
+        "options": {
+          "waitForSubWorkflow": false
+        }
+      },
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.2,
+      "position": [
+        2608,
+        -48
+      ],
+      "id": "dc9e7737-8e5d-48d1-8925-2b99fa0fa899",
+      "name": "comment1"
+    },
+    {
+      "parameters": {
+        "jsCode": "return [\n  { json: { date: $now.toFormat('yyyy-MM-dd') } },\n  { json: { date: $now.minus({ days: 1 }).toFormat('yyyy-MM-dd') } }\n];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        816,
+        64
+      ],
+      "id": "cf8d14f7-bc9d-49d6-825a-77e8e15a1f4e",
+      "name": "dates"
+    }
+  ],
+  "connections": {
+    "start": {
+      "main": [
+        [
+          {
+            "node": "Aggregate",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Aggregate": {
+      "main": [
+        [
+          {
+            "node": "Wait",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "bearer": {
+      "main": [
+        [
+          {
+            "node": "get statuses",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "dates",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "get statuses": {
+      "main": [
+        [
+          {
+            "node": "Aggregate1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "get unsubscribe": {
+      "main": [
+        [
+          {
+            "node": "Aggregate2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Aggregate1": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Aggregate2": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Merge": {
+      "main": [
+        [
+          {
+            "node": "result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "result": {
+      "main": [
+        [
+          {
+            "node": "checker",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "checker": {
+      "main": [
+        [
+          {
+            "node": "Remove Duplicates",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Remove Duplicates": {
+      "main": [
+        [
+          {
+            "node": "to done",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait": {
+      "main": [
+        [
+          {
+            "node": "bearer",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "to done": {
+      "main": [
+        [
+          {
+            "node": "comment1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "dates": {
+      "main": [
+        [
+          {
+            "node": "get unsubscribe",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "callerPolicy": "workflowsFromSameOwner",
+    "executionTimeout": -1,
+    "availableInMCP": false,
+    "errorWorkflow": "EuAkMSh7w9p9TJgj",
+    "saveDataSuccessExecution": "none"
+  },
+  "triggerCount": 0,
+  "versionId": "d6560f11-4624-4237-bb1d-3a995a9c9007",
+  "owner": {
+    "type": "personal",
+    "projectId": "I8ZweZXokOc0zbYb",
+    "projectName": "BSU Agency <info@brilliantseedup.com>",
+    "personalEmail": "info@brilliantseedup.com"
+  },
+  "parentFolderId": "6Zu0qFSBwgKnmhZs",
+  "isArchived": false
+}

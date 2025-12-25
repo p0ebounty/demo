@@ -1,0 +1,754 @@
+{
+  "id": "JT1qtqFPb6VtxZpo",
+  "name": "Email activity catcher",
+  "nodes": [
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        -96,
+        80
+      ],
+      "id": "10f34ddd-696a-43da-be1e-b8496d1ee0c5",
+      "name": "loop mails"
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "minutes",
+              "minutesInterval": 10
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        -880,
+        80
+      ],
+      "id": "631c493a-04e5-4af4-8712-f3760733d476",
+      "name": "check emails"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "95b555ee-cd5c-48a2-8a15-f28b8fc1a3d1",
+              "name": "contact_id",
+              "value": "={{ $json.contact_id }}",
+              "type": "number"
+            },
+            {
+              "id": "579df0ee-c26e-41c5-914c-d1dc5b0da736",
+              "name": "cs_id",
+              "value": "={{ $json.cs_id }}",
+              "type": "number"
+            },
+            {
+              "id": "15ec2cd9-20c5-4ff1-a71d-9e36ef3364ac",
+              "name": "textContent",
+              "value": "={{ $node[\"cleaner\"].json[\"text\"] }}",
+              "type": "string"
+            },
+            {
+              "id": "05caa206-b263-48f8-9b9d-735cba81a1a9",
+              "name": "uid",
+              "value": "={{ $node[\"loop mails\"].json[\"threadId\"] }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        448,
+        -192
+      ],
+      "id": "40ad9a55-bac8-4fca-a446-be185664e721",
+      "name": "output check"
+    },
+    {
+      "parameters": {
+        "amount": 1
+      },
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        672,
+        -192
+      ],
+      "id": "d5c7102b-fd40-4623-9d22-ea9b840a4a7d",
+      "name": "Wait",
+      "webhookId": "f59efa60-ca99-4d0c-b896-09babe4de00a"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "63fda011-a840-43fc-be6d-9b8bd997b58e",
+              "leftValue": "={{ $json.contact_id }}",
+              "rightValue": "",
+              "operator": {
+                "type": "number",
+                "operation": "notEmpty",
+                "singleValue": true
+              }
+            },
+            {
+              "id": "47089838-4ca9-4030-806e-d5ab32406e24",
+              "leftValue": "={{ $json.cs_id }}",
+              "rightValue": "",
+              "operator": {
+                "type": "number",
+                "operation": "notEmpty",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "or"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        240,
+        368
+      ],
+      "id": "4d83a449-a4c2-4740-91f7-bf4dee137e7d",
+      "name": "lead found?"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        496,
+        368
+      ],
+      "id": "1f5a0431-cdd6-4a31-853d-61cf08ec514b",
+      "name": "cleaner loop"
+    },
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "value": "gpt-4.1-mini",
+          "mode": "list",
+          "cachedResultName": "GPT-4.1-MINI"
+        },
+        "messages": {
+          "values": [
+            {
+              "content": "=You are a powerful language model designed to extract and clean the relevant information from email responses. You will be given raw content of an email that may contain both the client's message and quoted text from previous emails. Your task is to:\n\n1. Extract only the text written by the client. This may include any response the client has written, even if it’s just a few sentences.\n   \n2. Clean the extracted client message. If the client’s message contains:\n   - Unnecessary spaces, extra line breaks, or special characters, remove them.\n   - Links, tracking URLs, or any other unrelated content (e.g., \"unsubscribe\" links), remove them.\n   - Email signatures, company details, or any marketing material, remove them.\n   - If there are formatting issues, clean up the text to look natural and clear.\n\n3. If the email contains only quoted text (such as previous messages or signatures), return \"-\" as the output.\n\n4. Ensure the text you return is exactly the client’s words, with no additional formatting or unnecessary content.\n\n5. Do not include any parts of the email that are quoted or refer to previous messages (e.g., lines like \"On [Date], [Name] wrote:\").\n\n6. If there is a mix of the client’s message and quoted text, only return the client’s message, and clean it if necessary.\n\n7. If the email contains only a signature, advertisement, or quoted content, return \"-\".\n\nYour task is to cleanly extract the client’s message. If there is no valid message or only quoted content, return \"-\".",
+              "role": "system"
+            },
+            {
+              "content": "={{ $json.textContent || \"-\" }}"
+            }
+          ]
+        },
+        "options": {
+          "temperature": 0
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 1.8,
+      "position": [
+        448,
+        112
+      ],
+      "id": "4383aaca-f6a6-4679-8778-a53ad605797b",
+      "name": "cleaner agent",
+      "credentials": {
+        "openAiApi": {
+          "id": "895vd8bC2qxU4JL4",
+          "name": "OpenAi"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "amount": 1
+      },
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        1024,
+        112
+      ],
+      "id": "f8617ee1-0a34-44b7-a082-cbac4ebcb747",
+      "name": "Wait1",
+      "webhookId": "9bdd4e5e-81e8-4df2-81d7-a4417291527c"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "95b555ee-cd5c-48a2-8a15-f28b8fc1a3d1",
+              "name": "contact_id",
+              "value": "={{ $('cleaner loop').item.json.contact_id }}",
+              "type": "number"
+            },
+            {
+              "id": "bebff66c-b308-4e57-8ce2-c6dbe1a13e23",
+              "name": "cs_id",
+              "value": "={{ $('cleaner loop').item.json.cs_id }}",
+              "type": "number"
+            },
+            {
+              "id": "15ec2cd9-20c5-4ff1-a71d-9e36ef3364ac",
+              "name": "textContent",
+              "value": "={{ $json.message.content }}",
+              "type": "string"
+            },
+            {
+              "id": "c8d5f72e-f99f-441a-af19-37aa6284fb49",
+              "name": "uid",
+              "value": "={{ $('cleaner loop').item.json.uid }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        800,
+        112
+      ],
+      "id": "119180bd-800c-4b69-8ce0-7aaff44adbde",
+      "name": "output cleaner"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "f9e81a82-9aaf-443d-a782-e8ab7bcea2d0",
+              "leftValue": "={{ $json.textContent }}",
+              "rightValue": "-",
+              "operator": {
+                "type": "string",
+                "operation": "notEquals"
+              }
+            },
+            {
+              "id": "d00b066c-962b-4f1c-868c-21763f48346f",
+              "leftValue": "={{ $json.textContent }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        704,
+        384
+      ],
+      "id": "94c72a89-aa40-4054-bdda-f12c9abd5404",
+      "name": "answer?"
+    },
+    {
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "value": "tCLwd8xf3839vFkM",
+          "mode": "list",
+          "cachedResultUrl": "/workflow/tCLwd8xf3839vFkM",
+          "cachedResultName": "Feedback processing"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "type": "email",
+            "message": "={{ $json.textContent }}",
+            "data": "={ \"mail_uid\": \"{{ $json.uid }}\" }",
+            "contact_id": "={{ $json.contact_id }}",
+            "cs_id": "={{ $json.cs_id }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "contact_id",
+              "displayName": "contact_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "number",
+              "removed": false
+            },
+            {
+              "id": "cs_id",
+              "displayName": "cs_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "number",
+              "removed": false
+            },
+            {
+              "id": "type",
+              "displayName": "type",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "message",
+              "displayName": "message",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "data",
+              "displayName": "data",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "object"
+            }
+          ],
+          "attemptToConvertTypes": true,
+          "convertFieldsToString": true
+        },
+        "mode": "each",
+        "options": {
+          "waitForSubWorkflow": false
+        }
+      },
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.2,
+      "position": [
+        1440,
+        384
+      ],
+      "id": "4649d3b4-9f04-4d65-8243-f02e7a403c75",
+      "name": "Feedback processing"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        1216,
+        368
+      ],
+      "id": "39c8c856-d6bb-4bf8-9e91-da557c962643",
+      "name": "transfer loop"
+    },
+    {
+      "parameters": {
+        "amount": 0.5
+      },
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        1648,
+        384
+      ],
+      "id": "0daaf9c9-e20a-4959-8b30-eb129caa2b35",
+      "name": "Wait2",
+      "webhookId": "ea4f7d37-2376-4f46-b5db-ca73b26b7653"
+    },
+    {
+      "parameters": {
+        "jsCode": "const inputData = items.map(item => item.json);\n\nconst grouped = inputData.reduce((acc, item) => {\n  // Определяем ключ группировки: приоритет contact_id, затем cs_id\n  const groupKey = item.contact_id || item.cs_id;\n  \n  // Если нет ни одного - пропускаем\n  if (!groupKey) return acc;\n  \n  if (!acc[groupKey]) {\n    acc[groupKey] = {\n      contact_id: item.contact_id || null,\n      cs_id: item.cs_id || null,\n      textContent: item.textContent,\n      uid: item.uid,\n    };\n  } else {\n    acc[groupKey].textContent += `\\n- ${item.textContent}`;\n  }\n  return acc;\n}, {});\n\nconst result = Object.values(grouped).map(obj => {\n  if (!obj.textContent.includes('\\n')) {\n    obj.textContent = obj.textContent.trim();\n  } else {\n    obj.textContent = `- ${obj.textContent}`;\n  }\n  return { json: obj };\n});\n\nreturn result;"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        944,
+        368
+      ],
+      "id": "fa40be72-59d5-43db-acac-86c82160ffe3",
+      "name": "merge"
+    },
+    {
+      "parameters": {
+        "operation": "getAll",
+        "returnAll": true,
+        "simple": false,
+        "filters": {
+          "readStatus": "unread",
+          "receivedAfter": "={{ new Date(new Date().getTime() - 14 * 60 * 60 * 1000).toISOString() }}"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [
+        -656,
+        80
+      ],
+      "id": "447b8e7f-38f9-490f-93e7-66f30c090aa0",
+      "name": "get emails",
+      "webhookId": "08467dd0-9887-49ae-9231-928ac6d593a7",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "nNwwiMmgsNP43Hqh",
+          "name": "dispatch@citycompany.net"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Code Node (JavaScript)\nconst items = $input.all();\n\nconst processedItems = items.map(item => {\n  const data = item.json;\n  \n  // 1. Извлекаем и очищаем текст\n  let cleanText = '';\n  const textSource = data.text?.trim() || data.html?.trim() || data.textAsHtml?.trim() || '';\n  \n  if (textSource) {\n    cleanText = textSource\n      .replace(/<style[^>]*>[\\s\\S]*?<\\/style>/gi, '')\n      .replace(/<script[^>]*>[\\s\\S]*?<\\/script>/gi, '')\n      .replace(/<[^>]+>/g, ' ')\n      .replace(/&nbsp;/g, ' ')\n      .replace(/&[a-zA-Z0-9#]+;/g, '')\n      .replace(/\\s+/g, ' ')\n      .trim();\n  }\n  \n  // 2. Извлекаем email\n  let email = '';\n  const fromData = data.from;\n  \n  if (fromData?.value?.[0]?.address) {\n    email = fromData.value[0].address.trim();\n  } else if (typeof fromData === 'string') {\n    // Используем встроенную функцию extractEmail через $evaluateExpression\n    // или регулярное выражение как fallback\n    const emailMatch = fromData.match(/<?([^\\s<>]+@[^\\s<>]+)>?/);\n    email = emailMatch ? emailMatch[1].trim() : '';\n  }\n  \n  return {\n    json: {\n      text: cleanText,\n      email: email\n    }\n  };\n});\n\nreturn processedItems;"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -224,
+        -192
+      ],
+      "id": "10404242-8160-4be4-a946-1621e287de4e",
+      "name": "cleaner"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "WITH \ninput_email AS (\n    SELECT LOWER(NULLIF(TRIM('{{ $node[\"cleaner\"].json[\"email\"] || \"\" }}'), '')) AS email\n),\nmatched_contacts AS (\n    SELECT id\n    FROM {{ $vars.ncdbid }}.\"Contacts\"\n    WHERE (SELECT email FROM input_email) IS NOT NULL\n      AND LOWER(\"Email\") = (SELECT email FROM input_email)\n),\nmatched_cs AS (\n    SELECT id, \"Contacts_id\" AS linked_contact_id\n    FROM {{ $vars.ncdbid }}.\"Call system\"\n    WHERE (SELECT email FROM input_email) IS NOT NULL\n      AND LOWER(\"Email\") = (SELECT email FROM input_email)\n    ORDER BY CASE WHEN \"Status\" = 'Progress' THEN 0 ELSE 1 END, id\n),\npaired AS (\n    SELECT \n        c.id AS contact_id,\n        cs.id AS cs_id\n    FROM matched_contacts c\n    JOIN matched_cs cs ON c.id = cs.linked_contact_id\n    ORDER BY CASE WHEN (SELECT \"Status\" FROM {{ $vars.ncdbid }}.\"Call system\" WHERE id = cs.id) = 'Progress' THEN 0 ELSE 1 END\n    LIMIT 1\n),\nfallback AS (\n    SELECT \n        (SELECT id FROM matched_contacts LIMIT 1) AS contact_id,\n        (SELECT id FROM matched_cs LIMIT 1) AS cs_id\n)\nSELECT \n    COALESCE(p.contact_id, f.contact_id) AS contact_id,\n    COALESCE(p.cs_id, f.cs_id) AS cs_id\nFROM fallback f\nLEFT JOIN paired p ON true;",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        224,
+        -192
+      ],
+      "id": "116dd53c-b1b6-42cc-b097-8b4efaad08eb",
+      "name": "search",
+      "credentials": {
+        "postgres": {
+          "id": "oZABCHH2vjfMvXoi",
+          "name": "nocodb"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Code Node (JavaScript)\n// Фильтрует письма, оставляя только последнее из каждой треды\n\nconst items = $input.all();\n\nconst latestByThread = {};\n\nfor (const item of items) {\n  const threadId = item.json.threadId;\n  const currentDate = new Date(item.json.date).getTime();\n  \n  if (!latestByThread[threadId]) {\n    latestByThread[threadId] = item;\n  } else {\n    const existingDate = new Date(latestByThread[threadId].json.date).getTime();\n    // Сравниваем timestamp - больше значит новее\n    if (currentDate > existingDate) {\n      latestByThread[threadId] = item;\n    }\n  }\n}\n\nreturn Object.values(latestByThread);"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -432,
+        80
+      ],
+      "id": "027b5202-7866-4521-ab76-707426992021",
+      "name": "cutter thread"
+    },
+    {
+      "parameters": {
+        "resource": "thread",
+        "operation": "removeLabels",
+        "threadId": "={{ $node[\"loop mails\"].json[\"threadId\"] }}",
+        "labelIds": [
+          "UNREAD"
+        ]
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [
+        0,
+        -192
+      ],
+      "id": "2930156d-ac19-497c-b919-7ff71c1441f7",
+      "name": "read thread",
+      "webhookId": "0a4bc19c-f387-4be4-9266-8812dff8694f",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "nNwwiMmgsNP43Hqh",
+          "name": "dispatch@citycompany.net"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "loop mails": {
+      "main": [
+        [
+          {
+            "node": "lead found?",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "cleaner",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "output check": {
+      "main": [
+        [
+          {
+            "node": "Wait",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait": {
+      "main": [
+        [
+          {
+            "node": "loop mails",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "lead found?": {
+      "main": [
+        [
+          {
+            "node": "cleaner loop",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "cleaner loop": {
+      "main": [
+        [
+          {
+            "node": "answer?",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "cleaner agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "cleaner agent": {
+      "main": [
+        [
+          {
+            "node": "output cleaner",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait1": {
+      "main": [
+        [
+          {
+            "node": "cleaner loop",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "output cleaner": {
+      "main": [
+        [
+          {
+            "node": "Wait1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "answer?": {
+      "main": [
+        [
+          {
+            "node": "merge",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Feedback processing": {
+      "main": [
+        [
+          {
+            "node": "Wait2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "transfer loop": {
+      "main": [
+        [],
+        [
+          {
+            "node": "Feedback processing",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait2": {
+      "main": [
+        [
+          {
+            "node": "transfer loop",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "merge": {
+      "main": [
+        [
+          {
+            "node": "transfer loop",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "check emails": {
+      "main": [
+        [
+          {
+            "node": "get emails",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "get emails": {
+      "main": [
+        [
+          {
+            "node": "cutter thread",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "cleaner": {
+      "main": [
+        [
+          {
+            "node": "read thread",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "search": {
+      "main": [
+        [
+          {
+            "node": "output check",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "cutter thread": {
+      "main": [
+        [
+          {
+            "node": "loop mails",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "read thread": {
+      "main": [
+        [
+          {
+            "node": "search",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "callerPolicy": "workflowsFromSameOwner",
+    "errorWorkflow": "EuAkMSh7w9p9TJgj",
+    "saveDataSuccessExecution": "none",
+    "availableInMCP": false
+  },
+  "triggerCount": 1,
+  "versionId": "5e98cc5f-4185-4dbd-af9e-65b13ea9baf9",
+  "owner": {
+    "type": "personal",
+    "projectId": "I8ZweZXokOc0zbYb",
+    "projectName": "BSU Agency <info@brilliantseedup.com>",
+    "personalEmail": "info@brilliantseedup.com"
+  },
+  "parentFolderId": "pKxPYoaapRWNwU1d",
+  "isArchived": false
+}

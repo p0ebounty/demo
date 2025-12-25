@@ -1,0 +1,126 @@
+{
+  "id": "cZVtFVMSwSQSqK7R",
+  "name": "Create Note",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "1b190005-afe5-47f2-b3f7-64017729e9ab",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        -96,
+        -64
+      ],
+      "id": "45b23af6-7f5a-40e5-a765-ea3688aababa",
+      "name": "Webhook",
+      "webhookId": "3d2b6b1a-b4b3-478b-b716-473bb48fe7ad"
+    },
+    {
+      "parameters": {
+        "authentication": "nocoDbApiToken",
+        "operation": "getAll",
+        "workspaceId": "wqp6q0zt",
+        "projectId": "p0a3eirwme1bmw7",
+        "table": "mq8zrzuevo96lmw",
+        "limit": 1,
+        "options": {
+          "fields": [],
+          "where": "=(Call ID,eq,{{ $('Webhook').item.json.body.message.call.id }})"
+        }
+      },
+      "type": "n8n-nodes-base.nocoDb",
+      "typeVersion": 3,
+      "position": [
+        128,
+        -64
+      ],
+      "id": "d7c0af2e-1a64-4e04-ad62-c00fdba0ebfe",
+      "name": "find call",
+      "alwaysOutputData": false,
+      "credentials": {
+        "nocoDbApiToken": {
+          "id": "tg1sd8Mux2yjJLx7",
+          "name": "NocoDB"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "authentication": "nocoDbApiToken",
+        "operation": "update",
+        "workspaceId": "wqp6q0zt",
+        "projectId": "p0a3eirwme1bmw7",
+        "table": "mq8zrzuevo96lmw",
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldName": "Id",
+              "fieldValue": "={{ $('find call').item.json.Id }}"
+            },
+            {
+              "fieldName": "Note",
+              "fieldValue": "={{ true }}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.nocoDb",
+      "typeVersion": 3,
+      "position": [
+        352,
+        -64
+      ],
+      "id": "3e041e6e-e5c3-480e-86f5-2abb3b2278ac",
+      "name": "mark note",
+      "credentials": {
+        "nocoDbApiToken": {
+          "id": "tg1sd8Mux2yjJLx7",
+          "name": "NocoDB"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "find call",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "find call": {
+      "main": [
+        [
+          {
+            "node": "mark note",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "callerPolicy": "workflowsFromSameOwner",
+    "availableInMCP": false,
+    "errorWorkflow": "agw6jjdVg6yAawFi"
+  },
+  "triggerCount": 1,
+  "versionId": "99e09979-7635-4a8c-b31f-9d2046d3c534",
+  "owner": {
+    "type": "personal",
+    "projectId": "I8ZweZXokOc0zbYb",
+    "projectName": "BSU Agency <info@brilliantseedup.com>",
+    "personalEmail": "info@brilliantseedup.com"
+  },
+  "parentFolderId": "LFb2ICwgYRTdyBEb",
+  "isArchived": false
+}

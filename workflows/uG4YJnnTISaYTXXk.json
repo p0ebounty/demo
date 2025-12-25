@@ -1,0 +1,69 @@
+{
+  "id": "uG4YJnnTISaYTXXk",
+  "name": "Error general",
+  "nodes": [
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.errorTrigger",
+      "typeVersion": 1,
+      "position": [
+        0,
+        0
+      ],
+      "id": "b2e3c155-ac7b-4a8c-a081-97d081b2148b",
+      "name": "Error Trigger"
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $vars.warngroup }}",
+        "text": "=Error in the general system.\n\nWorkflow name: {{ $('Error Trigger').item.json.workflow.name }}\n\nWorkflow ID: {{ $('Error Trigger').item.json.workflow.id }}\n\nError message: {{ $('Error Trigger').item.json.execution.error.message.replace(/[\\\\`*_{}[\\]()#+\\-.!|<>~]/g, '').substring(0, 400) }}\n\nURL: {{ $('Error Trigger').item.json.execution.url }}\n\n@p0ebounty",
+        "additionalFields": {
+          "appendAttribution": false,
+          "message_thread_id": 2
+        }
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        224,
+        0
+      ],
+      "id": "67fd8d32-1685-4801-8f5f-0aca11b1b2ed",
+      "name": "Sent error",
+      "webhookId": "48199868-b398-4b55-87df-ffaa5f874f35",
+      "credentials": {
+        "telegramApi": {
+          "id": "yv48JNV4VmuIREaW",
+          "name": "TGBot"
+        }
+      },
+      "onError": "continueRegularOutput"
+    }
+  ],
+  "connections": {
+    "Error Trigger": {
+      "main": [
+        [
+          {
+            "node": "Sent error",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "triggerCount": 0,
+  "versionId": "85a151c5-b702-4cae-8488-4069dbe640e9",
+  "owner": {
+    "type": "personal",
+    "projectId": "I8ZweZXokOc0zbYb",
+    "projectName": "BSU Agency <info@brilliantseedup.com>",
+    "personalEmail": "info@brilliantseedup.com"
+  },
+  "parentFolderId": "bF4ciYwr94o73FSy",
+  "isArchived": false
+}

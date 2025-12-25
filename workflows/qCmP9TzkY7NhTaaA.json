@@ -1,0 +1,598 @@
+{
+  "id": "qCmP9TzkY7NhTaaA",
+  "name": "Call Validator",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "405672ee-abb8-4dee-b4c9-d5af6ed38eb1",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        -1376,
+        80
+      ],
+      "id": "970405c4-ed91-4dc4-8361-f3bae44cb96a",
+      "name": "Webhook",
+      "webhookId": "405672ee-abb8-4dee-b4c9-d5af6ed38eb1"
+    },
+    {
+      "parameters": {
+        "jsCode": "const items = $input.all();\nlet transcripts = [];\nfor (const item of items) {\n  // Извлекаем массив сообщений из структуры\n  const messages = item.json.body?.message?.artifact?.messages || [];\n  \n  // Фильтруем только сообщения пользователя и бота\n  const conversation = messages\n    .filter(msg => {\n      // Фильтруем только роли user и bot\n      if (msg.role !== 'user' && msg.role !== 'bot') {\n        return false;\n      }\n      \n      // Убираем боты с памятью предыдущих звонков\n      if (msg.role === 'bot' && msg.message.includes('[MEMORY FROM PREVIOUS CALL(S)]')) {\n        return false;\n      }\n      \n      return true;\n    })\n    .map(msg => {\n      const speaker = msg.role === 'bot' ? 'AI' : 'User';\n      return `${speaker}: ${msg.message}`;\n    })\n    .join('\\n');\n  \n  transcripts.push({\n    json: {\n      transcript: conversation,\n      callId: item.json.body?.message?.call?.id || 'unknown',\n      timestamp: new Date().toISOString()\n    }\n  });\n}\nreturn transcripts;"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1152,
+        80
+      ],
+      "id": "5fa6eb0f-a7fe-4dda-ae6c-87be2ec1a572",
+      "name": "transcript"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "75de9cc7-8eb7-4119-843b-de1cab0e9d74",
+              "leftValue": "={{ $json.message.content.valid }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "false",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -592,
+        80
+      ],
+      "id": "da389b53-a4fa-41a5-aa76-6f20173ca286",
+      "name": "detect?"
+    },
+    {
+      "parameters": {
+        "url": "={{ $('Webhook').item.json.body.message.call.monitor.controlUrl }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "content-type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "type",
+              "value": "end-call"
+            }
+          ]
+        },
+        "options": {
+          "timeout": 10000
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -352,
+        224
+      ],
+      "id": "054f9c52-d0c9-4571-9371-ec5226971f17",
+      "name": "end call",
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "authentication": "nocoDbApiToken",
+        "operation": "getAll",
+        "workspaceId": "wqp6q0zt",
+        "projectId": "p0a3eirwme1bmw7",
+        "table": "mq8zrzuevo96lmw",
+        "limit": 1,
+        "options": {
+          "where": "=(Call ID,eq,{{ $('Webhook').item.json.body.message.call.id }})"
+        }
+      },
+      "type": "n8n-nodes-base.nocoDb",
+      "typeVersion": 3,
+      "position": [
+        -352,
+        -112
+      ],
+      "id": "53247a01-ad0e-4581-8aeb-2bbb0e0c147f",
+      "name": "get call",
+      "credentials": {
+        "nocoDbApiToken": {
+          "id": "tg1sd8Mux2yjJLx7",
+          "name": "NocoDB"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "authentication": "nocoDbApiToken",
+        "operation": "update",
+        "workspaceId": "wqp6q0zt",
+        "projectId": "p0a3eirwme1bmw7",
+        "table": "mq8zrzuevo96lmw",
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldName": "Id",
+              "fieldValue": "={{ $json.Id }}"
+            },
+            {
+              "fieldName": "Summarize",
+              "fieldValue": "={{ $('validator').item.json.message.content.reason }}"
+            },
+            {
+              "fieldName": "Transcript",
+              "fieldValue": "={{ $('transcript').item.json.transcript }}"
+            },
+            {
+              "fieldName": "Status",
+              "fieldValue": "Protect"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.nocoDb",
+      "typeVersion": 3,
+      "position": [
+        -128,
+        -112
+      ],
+      "id": "34568ce0-2705-45fc-9a0a-b4ba724eaab3",
+      "name": "update",
+      "credentials": {
+        "nocoDbApiToken": {
+          "id": "tg1sd8Mux2yjJLx7",
+          "name": "NocoDB"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "value": "gpt-4.1",
+          "mode": "list",
+          "cachedResultName": "GPT-4.1"
+        },
+        "messages": {
+          "values": [
+            {
+              "content": "=You are a specialized conversation analysis agent that validates whether a User in a conversation transcript is a legitimate human caller or an automated/fraudulent system.\n\nYou analyze conversation transcripts between an AI voice agent and a User, focusing on the User's behavior patterns to detect non-human or malicious interactions.\n\n## Task\nAnalyze the provided conversation transcript and determine if the User is:\n- A legitimate human engaging in genuine conversation\n- An automated system, bot, voicemail, or fraudulent caller\n\n## Analysis Process\n\nMANDATORY: You MUST use your thinking process before providing the final answer.\n\nBefore returning your JSON response, you must internally analyze:\n\n1. Conversation Length: Count total exchanges - is it short (1-3), medium (4-7), or long (8+)?\n\n2. Initial Engagement: How did User respond in first 2-3 exchanges? Natural? Automated? Confused?\n\n3. Pattern Analysis: \n   - Are there repetitions? If yes, how many times and across how many exchanges?\n   - Is there a data monologue? Does it continue across 4+ exchanges?\n   - Any explicit refusals or automated messages?\n\n4. Context Check: \n   - If there are repetitions, what was AI asking?\n   - Could the repeated word be a transcription error? (number, time, yes/no)\n   - Did User engage normally before any issues?\n\n5. Transcription Error Factors (if repetitions detected):\n   - Prior normal engagement? (yes/no)\n   - Word plausibility as mishearing? (yes/no)\n   - Contextual fit? (yes/no)\n   - Single occurrence? (yes/no)\n   - Count how many factors = true\n\n6. Evidence Strength: \n   - Weak (1-2 indicators, could be human error)\n   - Medium (3-4 indicators, but explainable)\n   - Strong (5+ indicators across multiple exchanges, clear pattern)\n\n7. Final Decision Logic:\n   - If voicemail/screening system message detected → INVALID (type: \"next\")\n   - If disconnected/invalid number detected → INVALID (type: \"end\")\n   - If phishing/scam attempt detected → INVALID (type: \"end\")\n   - If strong evidence across 4+ exchanges → INVALID (determine type based on permanence)\n   - If transcription error factors ≥ 3 → VALID\n   - If User engaged normally with one glitch → VALID\n   - When in doubt → VALID\n\nRecord all this thinking before outputting your JSON response.\n\n## Output Format\nReturn ONLY a JSON object with no additional text:\n\n\n{\n  \"valid\": true\n}\n\n\nOR\n\n\n{\n  \"valid\": false,\n  \"reason\": \"Specific description of what was detected with exact quotes from transcript\",\n  \"type\": \"end\"\n}\n\n\nOR\n\n\n{\n  \"valid\": false,\n  \"reason\": \"Specific description of what was detected with exact quotes from transcript\",\n  \"type\": \"next\"\n}\n\n\n### Type Field Logic\n\nWhen marking a call as invalid (`valid: false`), you MUST include the `type` field:\n\n**Use `\"type\": \"end\"`** - No point in calling back (permanent issue):\n- Number disconnected/not in service: \"not in service\", \"disconnected\", \"no longer available\"\n- Invalid/wrong number: \"wrong number\", \"invalid number\"\n- Permanent unavailability: \"this number has been permanently disconnected\"\n- Company no longer exists: \"business has closed permanently\"\n- Phishing/scam attempts: requesting credentials, verification codes\n\n**Use `\"type\": \"next\"`** - Worth trying again later (temporary issue):\n- Voicemail systems: Any standard voicemail greeting\n- Office hours: \"office is closed\", \"call during business hours\", \"closed for the day\"\n- Temporary unavailability: \"all operators busy\", \"please hold\", \"call back later\"\n- Call screening: Google Call Screen or carrier screening (person might answer next time)\n- Automated defense bots: Lottery numbers, data monologues (might be temporary protection)\n- Trolling: Human wasting time (might engage properly next time)\n- Temporary confusion: Language barrier or confusion that might resolve\n- No clear reason: When situation is unclear, default to \"next\"\n\n\n## Detection Criteria\n\n### VOICEMAIL SYSTEMS\nDetect when User is an automated voicemail/answering machine:\n\nIndicators:\n- Automated greeting messages: \"You have reached the voicemail of...\", \"This is [name], I'm not available...\"\n- Recording instructions: \"Please leave a message after the beep/tone\"\n- System prompts: \"Please leave your name and number\", \"At the tone, please record your message\"\n- Generic unavailability: \"The number you have dialed is not available\", \"The person you are calling cannot take your call\"\n- Pre-recorded personal messages that don't respond to AI's questions\n\nExample:\n\n\nAI: Hello, is this John?\nUser: Hi, you've reached John. I'm not available right now. Please leave a message after the beep.\nAI: When would be a good time to call back?\nUser: [beep sound]\n\n\n→ {\"valid\": false, \"reason\": \"voicemail detected: automated greeting 'Hi, you've reached John. I'm not available right now. Please leave a message after the beep.'\", \"type\": \"next\"}\n\n### AUTOMATED DEFENSE BOTS\nDetect anti-telemarketing bots that waste caller's time:\n\nIndicators:\n- Continuous stream of data/numbers without engagement\n- Lottery results, stock prices, sports scores, weather data in loops\n- Ignores ALL AI questions while continuing monologue\n- Same content repeating in cycles\n- No acknowledgment of AI's attempts to communicate\n- Pattern must persist for 4+ exchanges to rule out transcription errors\n\nExample:\n\n\nAI: Hello, am I speaking with Sarah?\nUser: The winning numbers for July 28th were 22, 27, 46, 56, 65. Powerball was 13. Mega Millions winning numbers for July 31st were 12, 15, 35, 64, 69...\nAI: Sorry, could you repeat that?\nUser: The Cash For Life winning numbers were 21, 45, 48, 51, 58. Quick draw numbers were 1, 9, 22, 23, 37, 38, 39, 40...\nAI: Are you interested in our services?\nUser: The winning numbers for July 28th were 22, 27, 46, 56, 65. Powerball was 13. Mega Millions winning numbers for July 31st were 12, 15, 35, 64, 69...\nAI: Can you hear me?\nUser: Mega Millions winning numbers for July 31st were 12, 15, 35, 64, 69. The Cash For Life winning numbers were 21, 45, 48, 51, 58...\n\n\n→ {\"valid\": false, \"reason\": \"automated defense bot detected: continuous lottery numbers monologue with exact repetition across 4+ exchanges, completely ignoring all AI questions\", \"type\": \"next\"}\n\n### REPETITIVE AUTOMATED RESPONSES\nDetect bots/systems that repeat identical phrases:\n\nIndicators:\n- Same phrase repeated 3+ times verbatim\n- Repetitions ignore AI's clarification attempts\n- No contextual awareness of conversation\n- Mechanical, unchanging responses\n- Pattern continues across multiple exchanges\n\n⚠️ CRITICAL - TRANSCRIPTION ERROR EXCEPTIONS:\nBefore marking as invalid for repetition, check these factors:\n\n1. Prior Normal Engagement: Did User have 3+ normal, contextual exchanges BEFORE repetitions?\n2. Conversation Context: Does the repeated word make sense as a mishearing?\n   - Numbers/times: \"four\" → \"store\", \"two\" → \"too\"\n   - Short confirmations: \"yes\" → \"yeah\" → \"yep\"\n   - Names or single-word answers\n3. AI's Question Type: Was AI asking for a simple answer (time, number, yes/no)?\n4. Single Occurrence: Did repetition happen only ONCE in the conversation?\n5. Word Plausibility: Could the word be a transcription error? (single syllable, common mishearing)\n\nIf 3 or more of these factors are true → LEAN TOWARD VALID (likely transcription error)\n\nExamples:\n\nINVALID - Clear Bot:\n\nAI: What are you interested in today?\nUser: I'd like it in fiscal leg poop\nAI: Sorry, could you repeat that?\nUser: I'd like it in fiscal leg poop\nAI: I didn't catch that, could you clarify?\nUser: I'd like it in fiscal leg poop\n\n→ {\"valid\": false, \"reason\": \"automated system detected: nonsensical phrase 'I'd like it in fiscal leg poop' repeated 3 times identically without responding to clarification requests\", \"type\": \"next\"}\n\nVALID - Likely Transcription Error:\n\nAI: Hello, is this Jennifer?\nUser: Yes, this is she.\nAI: Great! Would 2 PM or 4 PM work better?\nUser: Four. Four. Four.\nAI: Sorry, I didn't catch that.\nUser: Four o'clock.\n\n→ {\"valid\": true} - User had normal conversation before, \"four\" is plausible answer to time question, likely transcription glitch\n\nVALID - Another Transcription Error Example:\n\nAI: This is Edward from Expert Bridge. Is now a good time?\nUser: No. Not a good time. Can we speak on Monday?\nAI: Of course. What time on Monday would work?\nUser: Okay.\nAI: Great. Is there a—\nUser: How many time in the afternoon?\nAI: Would 2 o'clock suit you? Or 4 or 5?\nUser: Store. Store. Store. Store.\nAI: Sorry.\nUser: Store.\n\n→ {\"valid\": true} - User engaged normally for 5+ exchanges, \"store\" likely mishearing of \"four\" in context of scheduling, single occurrence of repetition\n\n### TROLLING & TIME-WASTING\nDetect humans deliberately wasting time:\n\nIndicators:\n- Playing games, singing, making noises (sustained, not brief)\n- Deliberately confusing or absurd responses across multiple exchanges\n- Mockery, sarcasm, or hostile tone\n- Laughing at AI's confusion\n- Explicit statements about wasting time\n- Testing if AI is human with multiple test questions\n\n⚠️ Single joke or brief humor is NOT trolling - must be sustained pattern\n\nExample:\n\n\nAI: How can I help you today?\nUser: Are you a robot? Haha, let's see... beep boop beep\nAI: I'm here to assist you. What would you like to know?\nUser: Nothing, just testing you bot. How many fingers am I holding up?\nAI: I'm calling about—\nUser: Beep boop! Error error! Hahaha\n\n\n→ {\"valid\": false, \"reason\": \"trolling detected: user making robot sounds ('beep boop beep') across multiple exchanges, explicitly stating they're 'testing' the AI, and asking impossible questions\", \"type\": \"next\"}\n\n### SCAM/PHISHING ATTEMPTS\nDetect fraudulent callers trying to extract information:\n\nIndicators:\n- Asking AI for sensitive information (credentials, verification codes)\n- Impersonating authority figures\n- Urgent or threatening language\n- Requesting verification codes, passwords, account numbers, employee IDs\n- Pretending to be from technical support or authorities\n\nExample:\n\n\nAI: Hello, this is calling from Tech Support.\nUser: Oh great! I need YOUR employee ID number and the verification code from your system to confirm this call is legitimate.\nAI: I'm calling to help you with—\nUser: No, first give me your supervisor's name and employee number.\n\n\n→ {\"valid\": false, \"reason\": \"phishing attempt detected: user requesting employee credentials ('employee ID number') and verification codes from AI agent\", \"type\": \"end\"}\n\n### CONFUSED/NON-RESPONSIVE PATTERNS\nDetect when User genuinely cannot engage:\n\nIndicators:\n- Language barrier preventing communication (sustained, across 4+ exchanges)\n- Consistently unrelated responses that are NOT trolling (no humor, just confusion)\n- Completely nonsensical or incoherent responses across multiple exchanges\n\n⚠️ Brief confusion or single misunderstanding is NOT invalid\n⚠️ DO NOT mark as invalid for: \"not interested\", \"remove from list\", \"don't call me\" - these are handled elsewhere\n\n### CALL SCREENING SYSTEMS\nDetect Google Call Screen, carrier spam filters, or screening apps:\n\nIndicators:\n- \"Who is calling and why?\" automated prompts\n- \"Describe why you're calling\" system messages\n- Carrier warnings: \"Potential spam\", \"Scam likely\"\n- Screening app messages\n- Robotic voice asking for caller identification\n\nExample:\n\n\nUser: Hi, the person you're trying to reach is using a screening service. Please state your name and reason for calling.\nAI: This is Edward from Expert Bridge—\nUser: Please hold while the call is being screened.\n\n\n→ {\"valid\": false, \"reason\": \"call screening system detected: automated message 'the person you're trying to reach is using a screening service'\", \"type\": \"next\"}\n\n### DISCONNECTED/INVALID NUMBERS (type: \"end\")\nDetect when number is permanently unavailable:\n\nIndicators:\n- \"Number not in service\", \"disconnected\", \"no longer available\"\n- \"Invalid number\", \"number has been changed\"\n- \"This number is permanently disconnected\"\n- Carrier messages about non-working numbers\n- Automated \"number cannot be completed as dialed\" messages\n\nExample:\n\n\nAI: Hello, this is Alex from City Company.\nUser: We're sorry. The number you have dialed is not in service. Please check the number and dial again.\n\n\n→ {\"valid\": false, \"reason\": \"disconnected number: 'The number you have dialed is not in service'\", \"type\": \"end\"}\n\nExample 2:\n\n\nAI: Hi, I'm calling for Jennifer.\nUser: This number has been permanently disconnected. For assistance, please contact customer service.\n\n\n→ {\"valid\": false, \"reason\": \"permanently disconnected: 'This number has been permanently disconnected'\", \"type\": \"end\"}\n\n## VALID HUMAN INDICATORS\n\nMark as valid (true) when User shows:\n- Natural conversational responses\n- Answering AI's questions contextually (even if briefly)\n- Asking clarifying questions\n- Expressing genuine interest or disinterest\n- Natural interruptions, \"um\", \"uh\", thinking pauses\n- Emotional responses (frustrated, interested, confused but trying)\n- Varying their responses (not repetitive across multiple exchanges)\n- Acknowledging what AI said\n- Normal conversation flow even with occasional glitches\n\nExamples of VALID interactions:\n\nExample 1 - Natural Decline:\n\nAI: Hello, is this Jennifer?\nUser: Yes, this is she. Who's calling?\nAI: I'm calling about your recent inquiry.\nUser: Oh, I'm actually not interested right now. Could you remove my number?\n\n→ {\"valid\": true}\n\nExample 2 - Engaged Interest:\n\nAI: Are you interested in our investment services?\nUser: Um, maybe? Can you tell me more about what you offer?\nAI: Of course! We help with...\nUser: Hold on, I'm driving. Can I call you back later?\n\n→ {\"valid\": true}\n\nExample 3 - Scheduling (with transcription glitch):\n\nAI: This is Edward from Expert Bridge. Is now a good time?\nUser: No. Not a good time. Can we speak on Monday, please?\nAI: Of course, Khalil. What time on Monday would work best for you?\nUser: Okay.\nAI: Great, Khalil. Is there a—\nUser: How many time in the afternoon?\nAI: Sure. Would early afternoon, like 2 o'clock suit you? Or do you prefer later around 4 or 5?\nUser: Store. Store. Store. Store.\nAI: Sorry.\nUser: Store.\n\n→ {\"valid\": true} - Normal engagement throughout, \"store\" likely transcription error for \"four\" in context\n\n## Decision Rules\n\n1. Immediate Invalid with Type:\n   - Voicemail greetings → type: \"next\"\n   - Disconnected number messages → type: \"end\"\n   - Call screening systems → type: \"next\"\n   - Phishing/scam attempts → type: \"end\"\n\n2. After 4+ exchanges: Repetitive identical phrases (unless transcription error factors present), data monologues, complete non-responsiveness\n   - Defense bots/trolling → type: \"next\"\n   - Confusion/language barrier → type: \"next\" (might improve next time)\n\n3. Context matters critically: \n   - A single confused response is NOT invalid\n   - Brief repetition after normal conversation suggests transcription error\n   - Pattern of confusion/repetition across 4+ exchanges IS invalid\n   - Consider ENTIRE conversation history before deciding\n\n4. Transcription Error Awareness:\n   - Voice recognition is imperfect\n   - Short words, numbers, times are commonly misheard\n   - If User engaged normally before glitch → lean toward valid\n   - Look for contextual clues (what was AI asking?)\n\n5. Quote exactly: Always include specific quotes from transcript in reason field\n\n6. Type Selection Logic:\n   - **\"end\"** = Permanent (disconnected, invalid number, phishing/scam, company closed permanently)\n   - **\"next\"** = Temporary or unclear (voicemail, office hours, screening, busy, bots, trolling, language barrier)\n   - When uncertain between end/next → use \"next\" (safer to retry)\n   - **DO NOT use \"end\" for:** \"not interested\", \"remove from list\", \"don't call me\" - these handled elsewhere\n\n7. When in doubt: If User is trying to engage (even poorly), mark as valid. Only mark invalid when clear automation/fraud/sustained trolling detected across multiple exchanges\n\n8. Conversation Length Analysis:\n   - Short conversations (1-3 exchanges): Need clear voicemail/screening system for invalid\n   - Medium conversations (4-7 exchanges): Look for sustained patterns\n   - Long conversations (8+ exchanges): Single glitch is almost certainly transcription error\n\n## Important Notes\n\n- Analyze the ENTIRE conversation transcript before deciding - don't judge from one exchange\n- Short conversations (1-2 exchanges) may not have enough data - default to valid unless clear voicemail/screening detected\n- Transcription errors are common - voice recognition makes mistakes, especially with:\n  - Numbers and times\n  - Single syllable words\n  - Accents and background noise\n  - Names and proper nouns\n- Cultural differences, accents, or language barriers alone are NOT invalid\n- A frustrated or confused human is still valid\n- Brief humor or single joke is NOT trolling\n- Only mark invalid when you have strong evidence across multiple exchanges of automation/fraud/sustained trolling\n- When User has normal conversation and then one glitch → assume transcription error, mark valid\n\n## Response Format Reminder\n\nAlways return ONLY valid JSON, nothing else:\n- Valid: {\"valid\": true}\n- Invalid with retry: {\"valid\": false, \"reason\": \"specific detection with quotes\", \"type\": \"next\"}\n- Invalid permanent: {\"valid\": false, \"reason\": \"specific detection with quotes\", \"type\": \"end\"}\n\n**CRITICAL:** When marking invalid, you MUST include the \"type\" field:\n- Use \"end\" for permanent issues (disconnected, do not call, invalid number)\n- Use \"next\" for temporary issues (voicemail, office closed, screening, busy) or when unclear\n\nNo explanations, no markdown, no additional text - ONLY the JSON object.\n\n## Final Validation Checklist\n\nBefore marking as INVALID, confirm:\n- [ ] Pattern persists across 3-4+ exchanges (not just one occurrence)?\n- [ ] User did NOT have normal conversation before the issue?\n- [ ] Issue is NOT explainable by transcription error?\n- [ ] Clear evidence of automation/fraud/screening system/sustained trolling?\n\nIf you answer \"no\" to any of these → mark as VALID.\n\n---\n\n## THINKING PROCESS REQUIREMENT\n\nYOU MUST THINK THROUGH YOUR ANALYSIS BEFORE RESPONDING\n\nUse your internal thinking to work through:\n\nStep 1: Count & Classify\n- Total exchanges: [number]\n- Conversation length category: [short/medium/long]\n\nStep 2: Initial Assessment\n- First 2-3 User responses: [quote them]\n- Assessment: [natural/automated/confused/other]\n\nStep 3: Issue Detection\n- Any voicemail indicators? [yes/no + quote if yes]\n- Any screening system? [yes/no + quote if yes]\n- Any repetitions? [yes/no + details]\n- Any data monologue? [yes/no + details]\n- Any trolling? [yes/no + details]\n- Any explicit refusal? [yes/no + quote if yes]\n\nStep 4: If Repetitions Detected\n- What word/phrase repeated? \"[exact quote]\"\n- How many times? [number]\n- Across how many exchanges? [number]\n- What was AI asking? \"[quote AI question]\"\n\nStep 5: Transcription Error Check (if applicable)\n- [ ] Prior normal engagement (3+ exchanges)? \n- [ ] Word could be mishearing? (what could it be?)\n- [ ] Contextually fits as answer?\n- [ ] Single occurrence only?\n- [ ] Plausible transcription error? (short word, number, time)\n- Total TRUE factors: [X/5]\n\nStep 6: Evidence Evaluation\n- Strength: [weak/medium/strong]\n- Key evidence: [list main points]\n- Counter-evidence: [anything suggesting valid human?]\n\nStep 7: Decision\n- Lean toward: [valid/invalid]\n- Confidence: [low/medium/high]\n- Reasoning: [1-2 sentences]\n\nStep 8: If Invalid - Determine Type\nIs this permanent (end) or temporary (next)?\n- [ ] Disconnected/invalid number?\n- [ ] Phishing/scam attempt?\n- [ ] Company closed permanently?\n→ If YES to any: type = \"end\"\n\n- [ ] Voicemail/office hours?\n- [ ] Screening/busy?\n- [ ] Defense bot/trolling?\n- [ ] Unclear situation?\n→ If YES to any: type = \"next\"\n\n**Note:** DO NOT use type = \"end\" for \"not interested\", \"remove from list\" - handled elsewhere\n\nType decision: [end/next/N/A if valid]\n\nStep 9: Final Check\n- [ ] Pattern across 3-4+ exchanges?\n- [ ] No prior normal conversation?\n- [ ] Not explainable by transcription?\n- [ ] Clear automation/fraud evidence?\n\nDecision: [VALID/INVALID]\nReason (if invalid): [specific reason with quotes]\nType (if invalid): [end/next]\n\nAfter completing your thinking, provide ONLY the JSON response.",
+              "role": "system"
+            },
+            {
+              "content": "={{ $json.transcript || \"-\" }}"
+            }
+          ]
+        },
+        "jsonOutput": true,
+        "options": {
+          "temperature": 0.3
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 1.8,
+      "position": [
+        -928,
+        80
+      ],
+      "id": "4a362b18-0c32-4008-ae95-9e16fc9dc194",
+      "name": "validator",
+      "credentials": {
+        "openAiApi": {
+          "id": "895vd8bC2qxU4JL4",
+          "name": "OpenAi"
+        }
+      }
+    },
+    {
+      "parameters": {},
+      "type": "@n8n/n8n-nodes-langchain.toolThink",
+      "typeVersion": 1.1,
+      "position": [
+        -832,
+        288
+      ],
+      "id": "d275770e-8d5f-4882-819e-fc78a755ca0d",
+      "name": "Think"
+    },
+    {
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "value": "TzPSlJCrmIa3aftV",
+          "mode": "list",
+          "cachedResultUrl": "/workflow/TzPSlJCrmIa3aftV",
+          "cachedResultName": "Comment nocobd"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "base_id": "mq8zrzuevo96lmw",
+            "comment": "=[Robot protection](https://{{ $env[\"N8N_HOST\"] }}/workflow/{{ $workflow.id }}/executions/{{ $execution.id }})",
+            "row_id": "={{ $node[\"get call\"].json[\"Id\"] }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "comment",
+              "displayName": "comment",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "base_id",
+              "displayName": "base_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "row_id",
+              "displayName": "row_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "number"
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": true
+        },
+        "options": {
+          "waitForSubWorkflow": false
+        }
+      },
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.2,
+      "position": [
+        80,
+        -112
+      ],
+      "id": "f74215ad-addf-452d-93e5-bf04b67f2338",
+      "name": "comment"
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $vars.warngroup }}",
+        "text": "=🛑 Protection from robots\n\n👤 Name: {{ $node[\"get call\"].json[\"Call system\"][\"Name\"] || \"-\" }}\n📱 Phone: {{ $node[\"Webhook\"].json[\"body\"][\"message\"][\"customer\"][\"number\"] || \"-\" }}\n\n💬 Reason:\n{{ $node[\"validator\"].json[\"message\"][\"content\"][\"reason\"] }}",
+        "replyMarkup": "inlineKeyboard",
+        "inlineKeyboard": {
+          "rows": [
+            {
+              "row": {
+                "buttons": [
+                  {
+                    "text": "Workflow",
+                    "additionalFields": {
+                      "url": "=https://{{ $env[\"N8N_HOST\"] }}/workflow/{{ $workflow.id }}/executions/{{ $execution.id }}"
+                    }
+                  },
+                  {
+                    "text": "Call",
+                    "additionalFields": {
+                      "url": "={{ $vars.nocodb_url_ex }}#/wqp6q0zt/p0a3eirwme1bmw7/mq8zrzuevo96lmw?rowId={{ $node[\"get call\"].json[\"Id\"] }}"
+                    }
+                  }
+                ]
+              }
+            }
+          ]
+        },
+        "additionalFields": {
+          "appendAttribution": false,
+          "message_thread_id": 8
+        }
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        -128,
+        -304
+      ],
+      "id": "9c8705bd-dc7d-4a41-a586-0c36f1984d76",
+      "name": "to calls",
+      "webhookId": "48199868-b398-4b55-87df-ffaa5f874f35",
+      "credentials": {
+        "telegramApi": {
+          "id": "yv48JNV4VmuIREaW",
+          "name": "Citycompany"
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "ea6e4c7b-740a-4fc8-95cd-f9352edff206",
+              "leftValue": "={{ $node[\"validator\"].json[\"message\"][\"content\"][\"type\"] }}",
+              "rightValue": "end",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -128,
+        96
+      ],
+      "id": "8cb20246-4b8d-4bc6-93a0-1664ae23a16e",
+      "name": "type"
+    },
+    {
+      "parameters": {
+        "authentication": "nocoDbApiToken",
+        "operation": "update",
+        "workspaceId": "wqp6q0zt",
+        "projectId": "p0a3eirwme1bmw7",
+        "table": "mkbhjd0aqdl1r1m",
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldName": "Id",
+              "fieldValue": "={{ $node[\"get call\"].json[\"Call system\"][\"Id\"] }}"
+            },
+            {
+              "fieldName": "Status",
+              "fieldValue": "Stopped"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.nocoDb",
+      "typeVersion": 3,
+      "position": [
+        96,
+        96
+      ],
+      "id": "a27a7570-1246-460c-8191-9c7d634bfa89",
+      "name": "stop cs",
+      "credentials": {
+        "nocoDbApiToken": {
+          "id": "tg1sd8Mux2yjJLx7",
+          "name": "NocoDB"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "value": "TzPSlJCrmIa3aftV",
+          "mode": "list",
+          "cachedResultUrl": "/workflow/TzPSlJCrmIa3aftV",
+          "cachedResultName": "Comment nocobd"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "base_id": "mkbhjd0aqdl1r1m",
+            "comment": "=[{{ $node[\"validator\"].json[\"message\"][\"content\"][\"reason\"] }}](https://{{ $env[\"N8N_HOST\"] }}/workflow/{{ $workflow.id }}/executions/{{ $execution.id }})",
+            "row_id": "={{ $node[\"get call\"].json[\"Call system\"][\"Id\"] }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "comment",
+              "displayName": "comment",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "base_id",
+              "displayName": "base_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "row_id",
+              "displayName": "row_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "number"
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": true
+        },
+        "options": {
+          "waitForSubWorkflow": false
+        }
+      },
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.2,
+      "position": [
+        320,
+        96
+      ],
+      "id": "3cd3dd98-cc2e-46d9-af4a-2434310eacdc",
+      "name": "comment1"
+    }
+  ],
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "transcript",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "transcript": {
+      "main": [
+        [
+          {
+            "node": "validator",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "detect?": {
+      "main": [
+        [
+          {
+            "node": "get call",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "end call",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "get call": {
+      "main": [
+        [
+          {
+            "node": "update",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "to calls",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "type",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "update": {
+      "main": [
+        [
+          {
+            "node": "comment",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "validator": {
+      "main": [
+        [
+          {
+            "node": "detect?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Think": {
+      "ai_tool": [
+        [
+          {
+            "node": "validator",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "type": {
+      "main": [
+        [
+          {
+            "node": "stop cs",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "stop cs": {
+      "main": [
+        [
+          {
+            "node": "comment1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "callerPolicy": "workflowsFromSameOwner",
+    "availableInMCP": false,
+    "errorWorkflow": "agw6jjdVg6yAawFi"
+  },
+  "triggerCount": 1,
+  "versionId": "a380a419-7716-422c-9160-4e047dec19aa",
+  "owner": {
+    "type": "personal",
+    "projectId": "I8ZweZXokOc0zbYb",
+    "projectName": "BSU Agency <info@brilliantseedup.com>",
+    "personalEmail": "info@brilliantseedup.com"
+  },
+  "parentFolderId": "LFb2ICwgYRTdyBEb",
+  "isArchived": false
+}

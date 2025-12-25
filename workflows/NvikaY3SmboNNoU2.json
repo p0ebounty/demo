@@ -1,0 +1,78 @@
+{
+  "id": "NvikaY3SmboNNoU2",
+  "name": "Monitor",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "minutes",
+              "minutesInterval": 30
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        0,
+        0
+      ],
+      "id": "e2a07adf-1ea0-47d5-bb46-b6f2c811dca6",
+      "name": "Schedule Trigger"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "UPDATE {{ $vars.ncdbid }}.\"CMails\"\nSET \n    \"Status\" = 'Ready',\n    \"updated_at\" = NOW()\nWHERE \n    \"Status\" = 'Planned'\n    AND \"Trigger\" IS NOT NULL\n    AND \"Trigger\" <= NOW();\n\n-- 2. Удаляем некорректные записи (без триггера, контакта, типа или статуса)\nDELETE FROM {{ $vars.ncdbid }}.\"CMails\"\nWHERE \n    \"Trigger\" IS NULL\n    OR \"Contacts_id\" IS NULL\n    OR \"Type\" IS NULL\n    OR \"Status\" IS NULL;",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        208,
+        0
+      ],
+      "id": "35689c9f-c800-495a-a5d4-884ed722b0a9",
+      "name": "Planned monitor",
+      "credentials": {
+        "postgres": {
+          "id": "oZABCHH2vjfMvXoi",
+          "name": "nocodb"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "Planned monitor",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "saveDataSuccessExecution": "none",
+    "callerPolicy": "workflowsFromSameOwner",
+    "executionTimeout": -1,
+    "availableInMCP": false,
+    "errorWorkflow": "EuAkMSh7w9p9TJgj"
+  },
+  "triggerCount": 1,
+  "versionId": "84004ce0-f96c-43ea-a85f-dff81c1a9b4c",
+  "owner": {
+    "type": "personal",
+    "projectId": "I8ZweZXokOc0zbYb",
+    "projectName": "BSU Agency <info@brilliantseedup.com>",
+    "personalEmail": "info@brilliantseedup.com"
+  },
+  "parentFolderId": "3FZ7QkXyU8MKIos8",
+  "isArchived": false
+}

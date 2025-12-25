@@ -1,0 +1,160 @@
+{
+  "id": "7rKS93c3LTtvEsrI",
+  "name": "Status controller",
+  "nodes": [
+    {
+      "parameters": {
+        "workflowInputs": {
+          "values": [
+            {
+              "name": "group",
+              "type": "number"
+            },
+            {
+              "name": "data",
+              "type": "array"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        -448,
+        0
+      ],
+      "id": "419f1c8a-e4c1-4cf7-8c14-dcbbaab5d99d",
+      "name": "start"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "-- ШАГ 1: Переводим в Done все записи в Queue без телефона\nUPDATE {{ $vars.ncdbid }}.\"Contacts\"\nSET \"CSS\" = 'Done'\nWHERE \"CSS\" = 'Queue'\nAND (\"Phone\" IS NULL OR TRIM(\"Phone\") = '');\n\n-- ШАГ 2: Основная логика перевода Queue → Waiting (только для Fix = true)\nWITH group_status AS (\n    SELECT \n        \"id\",\n        \"CompanyGroup\",\n        \"Main\",\n        \"CSS\",\n        \"Fix\",  -- Добавляем поле Fix\n        -- Создаем уникальный ключ группировки\n        COALESCE(\"CompanyGroup\"::text, 'null_' || \"id\"::text) as group_key,\n        -- Проверяем наличие активных звонков в группе\n        MAX(\n            CASE \n                WHEN \"CSS\" IN ('Waiting', 'Progress') THEN 1\n                ELSE 0\n            END\n        ) OVER (PARTITION BY COALESCE(\"CompanyGroup\"::text, 'null_' || \"id\"::text)) as has_active_call,\n        -- Проверяем наличие Queue в группе\n        MAX(\n            CASE \n                WHEN \"CSS\" = 'Queue' THEN 1\n                ELSE 0\n            END\n        ) OVER (PARTITION BY COALESCE(\"CompanyGroup\"::text, 'null_' || \"id\"::text)) as has_queue\n    FROM {{ $vars.ncdbid }}.\"Contacts\"\n),\nprioritized_queue AS (\n    SELECT \n        \"id\",\n        \"CompanyGroup\",\n        \"Main\",\n        \"CSS\",\n        \"Fix\",\n        group_key,\n        has_active_call,\n        has_queue,\n        -- Определяем приоритет среди записей в Queue\n        ROW_NUMBER() OVER (\n            PARTITION BY group_key \n            ORDER BY \n                \"Main\" DESC NULLS LAST,\n                \"id\"\n        ) as queue_priority\n    FROM group_status\n    WHERE \n        \"CSS\" = 'Queue'  -- Только записи в очереди\n        AND has_active_call = 0  -- В группе НЕТ активных звонков\n        AND has_queue = 1  -- В группе ЕСТЬ очередь\n        AND \"Fix\" = true  -- ← НОВОЕ: Только для Fix = true\n)\nUPDATE {{ $vars.ncdbid }}.\"Contacts\" c\nSET \"CSS\" = 'Waiting'\nFROM prioritized_queue pq\nWHERE c.\"id\" = pq.\"id\"\nAND pq.queue_priority = 1;  -- Обновляем только первую по приоритету",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        -224,
+        224
+      ],
+      "id": "39f63fb7-18f2-46e1-a973-59c7b2ca459a",
+      "name": "Call queue monitor",
+      "credentials": {
+        "postgres": {
+          "id": "oZABCHH2vjfMvXoi",
+          "name": "nocodb"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "WITH contact_analysis AS (\n    SELECT \n        \"id\",\n        \"CompanyGroup\",\n        \"Main\",\n        \"CSS\",\n        -- Создаем уникальный ключ группировки\n        COALESCE(\"CompanyGroup\"::text, 'null_' || \"id\"::text) as group_key,\n        -- НЕ трогаем активные и завершенные статусы\n        CASE \n            WHEN \"CSS\" IN ('Waiting', 'Progress', 'Done') THEN true\n            ELSE false\n        END as skip_record\n    FROM {{ $vars.ncdbid }}.\"Contacts\"\n    WHERE \n        CASE \n            WHEN {{ $node[\"start\"].json[\"group\"] || 0 }} != 0 \n            THEN \"Group\" = {{ $node[\"start\"].json[\"group\"] || 0 }}\n            ELSE \"id\" = ANY(ARRAY[{{ $node[\"start\"].json.data?.map(item => item.Id).join(\", \") || \"\" }}]::bigint[])\n        END\n),\ngroup_status_check AS (\n    SELECT \n        *,\n        -- Проверяем наличие АКТИВНЫХ Waiting или Progress в группе\n        MAX(\n            CASE \n                WHEN \"CSS\" IN ('Waiting', 'Progress') THEN 1\n                ELSE 0\n            END\n        ) OVER (PARTITION BY group_key) as has_active_call\n    FROM contact_analysis\n),\nprioritized_contacts AS (\n    SELECT \n        \"id\",\n        \"CompanyGroup\",\n        \"Main\",\n        \"CSS\",\n        skip_record,\n        has_active_call,\n        group_key,\n        -- Определяем приоритет: сначала те, кто в Queue, потом остальные\n        ROW_NUMBER() OVER (\n            PARTITION BY group_key \n            ORDER BY \n                CASE WHEN skip_record THEN 1 ELSE 0 END,\n                CASE WHEN \"CSS\" = 'Queue' THEN 0 ELSE 1 END,\n                \"Main\" DESC NULLS LAST,\n                \"id\"\n        ) as priority_rank\n    FROM group_status_check\n)\nUPDATE {{ $vars.ncdbid }}.\"Contacts\" c\nSET \"CSS\" = CASE \n    -- Если есть активный звонок - все остальные в очередь\n    WHEN pc.has_active_call = 1 THEN 'Queue'\n    -- Первая по приоритету запись в Waiting\n    WHEN pc.priority_rank = 1 THEN 'Waiting'\n    -- Все остальные в Queue\n    ELSE 'Queue'\nEND\nFROM prioritized_contacts pc\nWHERE c.\"id\" = pc.\"id\"\nAND NOT pc.skip_record;",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        -224,
+        0
+      ],
+      "id": "e3244bae-347a-4335-80dc-cc87fa4d4e98",
+      "name": "To calls hybrid",
+      "credentials": {
+        "postgres": {
+          "id": "oZABCHH2vjfMvXoi",
+          "name": "nocodb"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "hours",
+              "hoursInterval": 6
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        -448,
+        320
+      ],
+      "id": "bc106b60-aee5-4ba2-aeee-1ec080c38ae4",
+      "name": "Schedule"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "UPDATE {{ $vars.ncdbid }}.\"Contacts\" c\nSET \"CSS\" = 'Done',\n    \"updated_at\" = NOW()\nWHERE c.\"CSS\" = 'Progress'\n  AND NOT EXISTS (\n    SELECT 1 \n    FROM {{ $vars.ncdbid }}.\"Call system\" cs\n    WHERE cs.\"Contacts_id\" = c.id\n      AND (\n        cs.\"Status\" = 'Progress'\n        OR cs.\"updated_at\" > NOW() - INTERVAL '1 hour'\n      )\n  );",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        -224,
+        416
+      ],
+      "id": "a52aa37c-fd69-42f8-a9da-79b01dd4049d",
+      "name": "Contact Stage controller",
+      "credentials": {
+        "postgres": {
+          "id": "oZABCHH2vjfMvXoi",
+          "name": "nocodb"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "start": {
+      "main": [
+        [
+          {
+            "node": "To calls hybrid",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Schedule": {
+      "main": [
+        [
+          {
+            "node": "Call queue monitor",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Contact Stage controller",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "callerPolicy": "workflowsFromSameOwner",
+    "executionTimeout": -1,
+    "saveDataSuccessExecution": "none",
+    "availableInMCP": false,
+    "errorWorkflow": "agw6jjdVg6yAawFi"
+  },
+  "triggerCount": 1,
+  "versionId": "dbae3192-02f0-4eb0-b9f1-a5e56f1a014a",
+  "owner": {
+    "type": "personal",
+    "projectId": "I8ZweZXokOc0zbYb",
+    "projectName": "BSU Agency <info@brilliantseedup.com>",
+    "personalEmail": "info@brilliantseedup.com"
+  },
+  "parentFolderId": "mIvDkh1v9thmXFfY",
+  "isArchived": false
+}

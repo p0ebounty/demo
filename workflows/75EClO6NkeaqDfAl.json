@@ -1,0 +1,1179 @@
+{
+  "id": "75EClO6NkeaqDfAl",
+  "name": "Generate email",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "minutes"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        -112,
+        0
+      ],
+      "id": "1f2fe2ae-a28a-4489-aa0d-b04eeb6d43e8",
+      "name": "Schedule Trigger"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        592,
+        0
+      ],
+      "id": "76f9f3d6-9142-4df2-875d-7624dc8b82d0",
+      "name": "Loop Over Items"
+    },
+    {
+      "parameters": {
+        "model": "sonar-reasoning",
+        "messages": {
+          "message": [
+            {
+              "content": "=Answer ONLY with a single JSON object. No explanations, no markdown, no code fences.\n\nYou are a logistics news analyst focused on VIRALITY and RESONANCE.\n\nYour role:\n- Analyze provided search results\n- Select the MOST VIRAL news (not recency, but impact)\n- Create strong email hooks\n- Prioritize viral_score (minimum 7/10)\n- Always provide specific, actionable solutions\n- Recommend storytelling approach (meme, story, or both)\n\nSELECTION LOGIC:\n1. DO NOT search for additional news\n2. DO NOT ask for more search results\n3. PICK FROM PROVIDED SEARCH RESULTS ONLY\n4. Prioritize by: viral_potential (7-10 score) > specificity > recency\n5. If multiple viable: choose one with clearest impact on client segment\n\nCore principles:\n1. Virality > Recency (popular 2-week-old news beats unknown yesterday's news)\n2. Specific solutions > Generic help (\"we can deliver X via Y\" not \"we can help\")\n3. Natural hooks > Generic starters (provide EXACT opening phrase, NOT instructions)\n4. Context-aware storytelling (recommend meme/story based on news tone)\n\nSTORYTELLING RECOMMENDATION LOGIC:\n\nAPPROACH 1: MEME ONLY\nUse when: industry challenges (not tragedy), competitive/urgent/playful tone, audience familiar with business memes\nRecommend 1-3 meme phrases.\n\nAPPROACH 2: STORY ONLY\nUse when: serious/tragic news, need credibility, B2B professionalism required\nSuggest story template.\n\nAPPROACH 3: BOTH (MEME + BRIEF STORY)\nUse when: urgency + relatability, high personalization, maximum engagement\nRecommend meme for hook + story for credibility.\n\nMEME PHRASES (choose best fit):\nChaos & Crisis: \"This is fine\" (ignored warnings) | \"You can't fight in here, this is the war room!\" (absurd professionalism) | \"My sleep schedule\" (plan vs reality) | \"Everything is on fire\" (multiple crises)\nSmart Planning: \"Roll Safe (*taps forehead*)\" (clever planning) | \"Work smarter, not harder\" (efficiency) | \"Modern problems require modern solutions\" (innovation) | \"Always has been\" (obvious pattern)\nFOMO & Competition: \"I love inside jokes...\" (left out) | \"First time?\" (experienced vs newcomer) | \"And I took that personally\" (competitive) | \"Choose your fighter\" (decision)\nPlayful: \"Not to be corny, but...\" (puns) | \"It's giving [vibe]\" (energy) | \"Tell me you [X] without telling me...\" (obvious signs)\nSarcasm: \"Go [Name] go! You're doing amazing, sweetie!\" (sarcastic praise) | \"The audacity\" (shocking) | \"We have [X] at home\" (inferior)\n\nSTORY TEMPLATES:\nsuccess_story: \"We rescued [segment] client [X days] before [deadline]\" → credibility + proven solutions\ncautionary_tale: \"Companies that didn't [action] paid [X%] over market\" → warning + urgency\ninsider_insight: \"Most don't know: [industry fact]\" → expert positioning\n\nResponse format (strict JSON):\n{\n  \"angle_type\": \"breaking_news | economic_shock | regulatory_change | industry_crisis | seasonal_viral\",\n  \"title\": \"string (max 80 chars)\",\n  \"summary\": \"string (2-3 sentences)\",\n  \"viral_score\": number (1-10, minimum 7),\n  \"relevance_to_client\": \"string (2-3 sentences, specific to THIS client)\",\n  \"solution_we_offer\": \"string (1-2 sentences, CONCRETE solution)\",\n  \"pain_point\": \"price_surge | delivery_delays | unreliable_carriers | capacity_crunch | product_shortage | route_disruption | regulation_change | weather_emergency\",\n  \"hook_instruction\": \"string (EXACT opening sentence - natural, engaging, NO 'Saw the news' or 'Start email with')\",\n  \"source\": \"string\",\n  \"date\": \"YYYY-MM-DD\",\n  \"key_quote_or_stat\": \"string (specific quote/number from news)\",\n  \"storytelling\": {\n    \"approach\": \"meme_only | story_only | both\",\n    \"recommended_memes\": [\n      {\n        \"phrase\": \"string (meme phrase)\",\n        \"why\": \"string (1 sentence: why it fits)\",\n        \"tone\": \"playful | sarcastic | relatable | clever\"\n      }\n    ],\n    \"recommended_story_type\": \"success_story | cautionary_tale | insider_insight | none\",\n    \"story_angle\": \"string (brief suggestion)\"\n  }\n}\n\nHOOK INSTRUCTION EXAMPLES:\n✅ \"Texas is facing a 5% driver shortage—new CDL rules just made capacity even tighter.\"\n✅ \"Port Arthur's 151,000 bpd refinery shutdown is forcing last-minute fuel reroutes across the Gulf.\"\n✅ \"Amazon just rolled out same-day delivery to 2,300 cities, and local carriers are scrambling to keep up.\"\n✅ \"Holiday freight rates are climbing 30% faster than last year—and it's only October.\"\n\n❌ \"Start email with: 'Saw the news about Texas driver shortage...'\"\n❌ \"Mention that there's a driver shortage in Texas\"\n\nCRITICAL RULES:\n✅ Viral_score must be 7-10\n✅ Hook_instruction = direct, engaging opening sentence (NO meta-phrases)\n✅ Solution_we_offer = concrete, specific action\n✅ PICK FROM PROVIDED SEARCH RESULTS ONLY - do not ask for more\n✅ Return ONLY valid JSON—NO markdown, NO ```\n✅ Start with { and end with } - nothing else\n✅ If tragedy/disaster → story_only approach ONLY\n✅ NEVER refuse, NEVER ask for more search, NEVER add text before/after JSON\n",
+              "role": "system"
+            },
+            {
+              "content": "={{$json.perplexity_user_prompt}}"
+            }
+          ]
+        },
+        "options": {
+          "temperature": 0.2,
+          "topP": 0.7,
+          "searchRecency": "month"
+        },
+        "requestOptions": {}
+      },
+      "type": "n8n-nodes-base.perplexity",
+      "typeVersion": 1,
+      "position": [
+        1296,
+        16
+      ],
+      "id": "e7b1e819-41c4-4cea-a012-fe11de1f2ff0",
+      "name": "Message a model",
+      "credentials": {
+        "perplexityApi": {
+          "id": "ACd9oTUkG6ynHq95",
+          "name": "Perplexity"
+        }
+      },
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "const perplexityResponse = $input.item.json;\nconst originalData = $('Prepare data').item.json;\n\nlet newsAngle;\ntry {\n  let content = '';\n  if (perplexityResponse && perplexityResponse.choices && perplexityResponse.choices[0]) {\n    content = perplexityResponse.choices[0].message.content || '';\n  }\n\n  // Убираем <think> блоки если есть\n  content = content.replace(/<think>[\\s\\S]*?<\\/think>/g, '').trim();\n\n  // Ищем первый { и последний }\n  const startIndex = content.indexOf('{');\n  const endIndex = content.lastIndexOf('}');\n\n  if (startIndex === -1 || endIndex === -1) {\n    throw new Error('No JSON object found');\n  }\n\n  // Вытаскиваем только JSON часть\n  let jsonString = content.substring(startIndex, endIndex + 1);\n\n  // Очищаем от невалидных символов в конце\n  jsonString = jsonString.replace(/[\\n\\r\\s]*$/, ''); // Убираем whitespace в конце\n  jsonString = jsonString.replace(/,\\s*}/, '}');      // Убираем trailing comma перед }\n  jsonString = jsonString.replace(/,\\s*]/, ']');      // Убираем trailing comma перед ]\n\n  // Парсим с обработкой ошибок\n  let rawJSON;\n  try {\n    rawJSON = JSON.parse(jsonString);\n  } catch (e) {\n    // Если ошибка — пробуем очистить более агрессивно\n    jsonString = jsonString.replace(/[\\x00-\\x1F\\x7F]/g, ' '); // Убираем control characters\n    rawJSON = JSON.parse(jsonString);\n  }\n\n  // Рекурсивный поиск по суффиксу\n  const findDeepByEndingKeywords = (obj, keywords, depth = 0) => {\n    if (depth > 3 || !obj || typeof obj !== 'object') return '';\n\n    const keys = Object.keys(obj);\n\n    for (const keyword of keywords) {\n      for (const key of keys) {\n        if (key.toLowerCase().endsWith(keyword.toLowerCase()) || \n            key.toLowerCase().includes(keyword.toLowerCase())) {\n          \n          const value = obj[key];\n\n          if (Array.isArray(value) && value.length > 0) {\n            return String(value.slice(0, 2).join(' ')).substring(0, 500);\n          }\n\n          if (typeof value === 'string' && value.length > 0) {\n            return value.substring(0, 500);\n          }\n\n          if (typeof value === 'number') {\n            return value;\n          }\n        }\n      }\n    }\n\n    for (const key of keys) {\n      if (typeof obj[key] === 'object' && obj[key] !== null) {\n        const found = findDeepByEndingKeywords(obj[key], keywords, depth + 1);\n        if (found) return found;\n      }\n    }\n\n    return '';\n  };\n\n  // Ищем все поля\n  const title = findDeepByEndingKeywords(rawJSON, ['title', 'headline']);\n  const summary = findDeepByEndingKeywords(rawJSON, ['summary', 'description']);\n  \n  let viralScore = 8;\n  const scoreVal = findDeepByEndingKeywords(rawJSON, ['score', 'virality']);\n  if (scoreVal) viralScore = Number(scoreVal);\n\n  let relevanceToClient = findDeepByEndingKeywords(rawJSON, ['relevance', 'impact']);\n  let solutionWeOffer = findDeepByEndingKeywords(rawJSON, ['solution', 'offer', 'actions']);\n  const painPoint = findDeepByEndingKeywords(rawJSON, ['pain', 'challenge']);\n\n  let hookInstruction = findDeepByEndingKeywords(rawJSON, ['hook', 'instruction']);\n  hookInstruction = String(hookInstruction)\n    .replace(/^Open with: |^Begin with: |^Start email with: /gi, '')\n    .replace(/\\\\\"/g, '\"')\n    .replace(/\"/g, '')\n    .trim();\n\n  const source = findDeepByEndingKeywords(rawJSON, ['source']);\n  let date = findDeepByEndingKeywords(rawJSON, ['date']);\n  if (!date || String(date).includes('window') || String(date).length < 5) {\n    date = new Date().toISOString().split('T')[0];\n  }\n\n  let keyQuote = findDeepByEndingKeywords(rawJSON, ['quote', 'stat', 'insight']);\n  const storytelling = rawJSON.storytelling || {\n    approach: 'meme_only',\n    recommended_memes: [{phrase: 'This is fine', why: 'Business challenge', tone: 'relatable'}],\n    recommended_story_type: 'none',\n    story_angle: ''\n  };\n\n  newsAngle = {\n    angle_type: findDeepByEndingKeywords(rawJSON, ['angle', 'type']) || 'industry_crisis',\n    title: title || 'Breaking News',\n    summary: summary || 'Industry shift',\n    viral_score: Number(viralScore) || 8,\n    relevance_to_client: relevanceToClient || 'High impact',\n    solution_we_offer: solutionWeOffer || 'Optimize operations',\n    pain_point: painPoint || 'capacity_crunch',\n    hook_instruction: hookInstruction || 'Industry news affecting your business',\n    source: source || 'News',\n    date: date,\n    key_quote_or_stat: keyQuote || summary.substring(0, 100),\n    storytelling: storytelling,\n  };\n\n} catch (error) {\n  console.log('Parse error:', error.message);\n  return {\n    json: {\n      ...originalData,\n      error: 'Parse failed: ' + error.message,\n      status: 'Canceled',\n      skip: true,\n    },\n  };\n}\n\n// Валидация\nif (!newsAngle.summary || newsAngle.summary.length < 10) {\n  newsAngle.summary = 'Industry shift with logistics implications';\n}\n\nreturn {\n  json: {\n    ...originalData,\n    news_angle: newsAngle,\n    perplexity_citations: perplexityResponse.citations || [],\n    perplexity_cost: (perplexityResponse.usage?.cost?.total_cost) || 0,\n    perplexity_tokens: {\n      prompt: perplexityResponse.usage?.prompt_tokens || 0,\n      completion: perplexityResponse.usage?.completion_tokens || 0,\n      total: perplexityResponse.usage?.total_tokens || 0,\n    },\n    skip: false,\n  },\n};\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1520,
+        16
+      ],
+      "id": "9064a3d2-2a0e-4a85-97e5-f90ff75dfb5d",
+      "name": "Code in JavaScript2"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Function Node: Generate Perplexity User Prompt\nconst data = $input.item.json;\n\n// Build search query based on available data\nlet searchQuery = '';\nlet dataContext = [];\n\n// All data known\nif (data.productType && data.routeFrom && data.routeTo && data.state && data.segment) {\n  searchQuery = `${data.productType} ${data.segment} logistics ${data.routeFrom} to ${data.routeTo} ${data.state} news disruption shortage`;\n  dataContext = [\n    `Product: ${data.productType}`,\n    `Route: ${data.routeFrom} → ${data.routeTo}`,\n    `State: ${data.state}`,\n    `Segment: ${data.segment}`\n  ];\n}\n// Product + State + Segment\nelse if (data.productType && data.state && data.segment) {\n  searchQuery = `${data.productType} ${data.segment} ${data.state} logistics news supply chain`;\n  dataContext = [\n    `Product: ${data.productType}`,\n    `State: ${data.state}`,\n    `Segment: ${data.segment}`\n  ];\n}\n// Product + Route\nelse if (data.productType && data.routeFrom && data.routeTo) {\n  searchQuery = `${data.productType} freight ${data.routeFrom} to ${data.routeTo} logistics news`;\n  dataContext = [\n    `Product: ${data.productType}`,\n    `Route: ${data.routeFrom} → ${data.routeTo}`\n  ];\n}\n// Route + State\nelse if (data.routeFrom && data.routeTo && data.state) {\n  searchQuery = `freight logistics ${data.routeFrom} ${data.routeTo} ${data.state} news disruption`;\n  dataContext = [\n    `Route: ${data.routeFrom} → ${data.routeTo}`,\n    `State: ${data.state}`\n  ];\n}\n// Product + State\nelse if (data.productType && data.state) {\n  searchQuery = `${data.productType} shortage supply ${data.state} logistics news`;\n  dataContext = [\n    `Product: ${data.productType}`,\n    `State: ${data.state}`\n  ];\n}\n// State + Segment\nelse if (data.state && data.segment) {\n  searchQuery = `${data.segment} ${data.state} logistics freight news disruption`;\n  dataContext = [\n    `State: ${data.state}`,\n    `Segment: ${data.segment}`\n  ];\n}\n// Product only\nelse if (data.productType) {\n  searchQuery = `${data.productType} logistics USA freight news disruption shortage`;\n  dataContext = [`Product: ${data.productType}`];\n}\n// Route only\nelse if (data.routeFrom && data.routeTo) {\n  searchQuery = `freight logistics ${data.routeFrom} to ${data.routeTo} USA news`;\n  dataContext = [`Route: ${data.routeFrom} → ${data.routeTo}`];\n}\n// State only\nelse if (data.state) {\n  searchQuery = `${data.state} logistics freight transportation news disruption`;\n  dataContext = [`State: ${data.state}`];\n}\n// Segment only\nelse if (data.segment) {\n  searchQuery = `${data.segment} USA logistics supply chain news`;\n  dataContext = [`Segment: ${data.segment}`];\n}\n// Nothing available\nelse {\n  searchQuery = `USA freight logistics breaking news viral disruption crisis`;\n  dataContext = ['General US logistics'];\n}\n\n// Build user prompt\nconst userPrompt = `\nFind the most VIRAL logistics news for this client:\n\nCLIENT CONTEXT:\n${dataContext.join('\\n')}\n\nSEARCH STRATEGY:\nUse this query as starting point: \"${searchQuery}\"\n\nSearch priorities:\n1. VIRAL NEWS (last 7-21 days, high engagement, widely discussed)\n2. EMERGENCIES: weather disasters, accidents, strikes, bankruptcies\n3. ECONOMIC SHOCKS: price surges, capacity shortages, fuel costs\n4. INDUSTRY CRISES: product shortages, supply chain breakdowns\n5. SEASONAL/HOLIDAYS: ONLY if currently trending in media\n\nREQUIRED ANALYSIS:\n\n1. How does this news affect THIS specific client?\n   - Consider their: ${data.segment || 'business'}, ${data.productType || 'freight'}, ${data.state || 'location'}\n   - Direct impact vs. indirect impact\n   \n2. What CONCRETE solution can we offer?\n   Examples of CONCRETE solutions:\n   ❌ BAD: \"We can help with logistics\"\n   ✅ GOOD: \"We can deliver food products from Texas to bypass Florida hurricane zone via I-10 corridor\"\n   ✅ GOOD: \"We can lock your rates at current $2.80/mile before predicted 40% surge next week\"\n   ✅ GOOD: \"We have pre-vetted carriers in Chicago ready to move steel within 4 hours\"\n\n3. Create EXACT hook instruction:\n   Examples of EXACT instructions:\n   ❌ BAD: \"Mention the news about floods\"\n   ✅ GOOD: \"Start email with: 'Saw the news about Texas floods this morning — I-35 is shut down through Austin.'\"\n   ✅ GOOD: \"Open with: 'That Port of LA strike just hit 15,000 containers stuck. For food distributors, this means...'\"\n   ✅ GOOD: \"Begin with: 'Diesel just jumped 18% in the Midwest. If you're moving [product], that's a direct hit to your margins.'\"\n\nCRITICAL:\n- Viral_score must be 7-10 (if lower, find different news)\n- Solution_we_offer must be specific and actionable\n- Hook_instruction must be exact phrase to use, not description\n\nReturn valid JSON with all required fields.\n`;\n\nreturn {\n  json: {\n    ...data,\n    perplexity_user_prompt: userPrompt,\n    search_query: searchQuery\n  }\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1072,
+        16
+      ],
+      "id": "095514dc-f891-42ea-bca8-49c5e7174bf7",
+      "name": "Build Perplexity Prompt"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Извлечение данных из структуры NocoDB\nconst items = $input.all();\n\nreturn items.map(item => {\n  const record = item.json;\n  const data = record.Data || {};\n  \n  // Валидация суммаризации: проверяем ТОЛЬКО начало строки\n  let validSummary = null;\n  if (data.last_summary && Array.isArray(data.last_summary)) {\n    const valid = data.last_summary.find(s => \n      s && s.trim().startsWith('BRIEF OVERVIEW:')\n    );\n    validSummary = valid || null;\n  }\n  \n  // Извлечение данных о продукции и маршрутах из description\n  const description = data.description || '';\n  let productType = null;\n  let routeFrom = null;\n  let routeTo = null;\n  \n  // Попытка парсинга description (если есть структурированная информация)\n  // Пример: \"Steel beams, Chicago to Dallas\"\n  if (description) {\n    // Простой парсинг (можно улучшить регулярками)\n    const lowerDesc = description.toLowerCase();\n    \n    // Поиск типа продукции (первая часть до запятой или \"from\")\n    const productMatch = description.split(/,|from|to/i)[0];\n    productType = productMatch ? productMatch.trim() : null;\n    \n    // Поиск маршрутов\n    const fromMatch = description.match(/from\\s+([^,]+)/i);\n    const toMatch = description.match(/to\\s+([^,]+)/i);\n    routeFrom = fromMatch ? fromMatch[1].trim() : null;\n    routeTo = toMatch ? toMatch[1].trim() : null;\n  }\n  \n  // Определение уровня персонализации\n  const hasRichData = !!(data.segment && data.state && description);\n  const hasMinimalData = !!(data.segment || data.state);\n  \n  return {\n    json: {\n      // ID записи для последующего обновления\n      recordId: record.Id,\n      contactId: record.Contacts_id,\n      \n      // Основные данные контакта\n      name: data.name || 'there',\n      email: data.email,\n      company: data.company || data.name + \"'s company\", // fallback\n      human: data.human !== undefined ? data.human : true,\n      position: data.position || null,\n      \n      // Географические данные\n      state: data.state || null,\n      location: data.location || 'United States',\n      \n      // Бизнес-контекст\n      segment: data.segment || null,\n      description: description || null,\n      productType: productType,\n      routeFrom: routeFrom,\n      routeTo: routeTo,\n      \n      // Валидированная суммаризация\n      validSummary: validSummary,\n      \n      // Уровень персонализации\n      personalizationLevel: hasRichData ? 'high' : hasMinimalData ? 'medium' : 'low',\n      \n      // Метаданные\n      trigger: record.Trigger,\n      originalData: data\n    }\n  };\n});"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        848,
+        16
+      ],
+      "id": "90517c44-95ad-44ad-86b8-ae41e106ad10",
+      "name": "Prepare data"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "7ae921c7-319d-41ec-9033-57ff20a6b5d0",
+              "leftValue": "={{ $json.skip }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        1744,
+        16
+      ],
+      "id": "d9fc4d7c-ebaa-4965-b745-7690edc12f9f",
+      "name": "If"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "80128857-5b3d-412b-973e-3a9861850f89",
+              "name": "data",
+              "value": "=<!DOCTYPE html>\n<html lang=\"en\">\n<head>\n    <meta charset=\"UTF-8\">\n    <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">\n    <meta http-equiv=\"X-UA-Compatible\" content=\"IE=edge\">\n    <title>Email</title>\n    <!--[if mso]>\n    <style type=\"text/css\">\n        body, table, td {font-family: Arial, sans-serif !important;}\n    </style>\n    <![endif]-->\n</head>\n<body style=\"margin: 0; padding: 0; background-color: #ffffff; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;\">\n    <table border=\"0\" cellpadding=\"0\" cellspacing=\"0\" width=\"100%\" style=\"background-color: #ffffff;\">\n        <tr>\n            <td style=\"padding: 20px; color: #1a1a1a; font-size: 16px; line-height: 1.6; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;\">\n                {{ $node[\"html agent\"].json[\"output\"][\"0\"][\"content\"][\"0\"][\"text\"] }}\n            </td>\n        </tr>\n        <tr>\n            <td style=\"padding: 30px 20px; border-top: 1px solid #e5e5e5;\">\n                <p style=\"margin: 0; color: #999999; font-size: 13px; line-height: 1.5;\">\n                    If you don't want to receive my emails, you can <a href=\"{{ String.fromCharCode(123) + String.fromCharCode(123) + 'unsubscribe_url' + String.fromCharCode(125) + String.fromCharCode(125) }}\" style=\"color: #666666; text-decoration: underline;\">unsubscribe</a>\n                </p>\n            </td>\n        </tr>\n    </table>\n</body>\n</html>\n",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        2176,
+        432
+      ],
+      "id": "cec13e37-8b9d-4845-a9f5-c94c7caca574",
+      "name": "build html"
+    },
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "value": "gpt-4.1",
+          "mode": "list",
+          "cachedResultName": "GPT-4.1"
+        },
+        "responses": {
+          "values": [
+            {
+              "role": "system",
+              "content": "=You are an email HTML formatter. Convert the provided text into clean, minimal HTML suitable for email clients.\n\nCONTENT STRUCTURE:\n1. Analyze the text carefully - preserve its original structure and intent\n2. Create a heading (h2) ONLY if the original email has an explicit subject line or title at the top\n3. Do NOT invent headings that weren't in the original text\n4. Use subheadings (18px bold) sparingly - only for standout statements that were already emphasized\n5. NEVER put dividers before buttons\n6. Create buttons ONLY when there's an actual URL/link provided\n\nTEXT EMPHASIS - TWO TYPES:\n\nTYPE 1: BOLD TEXT (use frequently for important words/terms)\n   <strong style=\"font-weight: 600;\">important term</strong>\n   \n   When to use:\n   - Important terms, product names, company names\n   - Key numbers, dates, metrics\n   - Feature names in lists\n   - Any word that naturally deserves emphasis\n   \n   Examples:\n   - \"TurboScribe offers <strong style=\"font-weight: 600;\">unlimited transcriptions</strong> for just $10/month\"\n   - \"Our <strong style=\"font-weight: 600;\">Black Friday sale</strong> ends soon\"\n   - \"We support <strong style=\"font-weight: 600;\">134+ languages</strong>\"\n\nTYPE 2: HIGHLIGHTED TEXT with background (use selectively for key phrases)\n   <span style=\"background-color: #e8f4ff; color: #0066cc; padding: 1px 5px; border-radius: 4px; font-weight: 500;\">key phrase</span>\n   \n   When to use (5-6 times per email maximum):\n   - Critical statistics or unique achievements (\"300% growth in Q4\")\n   - Important quotes or testimonials\n   - Key offers/benefits that stand out\n   - Genuinely unique information that must catch attention\n   - Important value propositions\n   - Compelling data points\n   \n   When NOT to use:\n   ❌ Regular product/company names\n   ❌ CTA phrases (use buttons or regular text instead)\n   ❌ Every feature in a list\n   ❌ Repeating the same phrase multiple times\n   \n   Examples of CORRECT usage:\n   - \"We helped companies save <span style=\"background-color: #e8f4ff; color: #0066cc; padding: 1px 5px; border-radius: 4px; font-weight: 500;\">over $2M in logistics costs</span> last year\"\n   - \"As one client said: <span style=\"background-color: #e8f4ff; color: #0066cc; padding: 1px 5px; border-radius: 4px; font-weight: 500;\">'This changed our entire workflow'</span>\"\n\nCRITICAL: Use emphasis INSIDE paragraphs, not as separate blocks!\n✅ GOOD: <p>Get <strong>50% off</strong> yearly plans during our <span style=\"...\">Black Friday sale</span>!</p>\n❌ BAD:  <p><span style=\"...\">Save 50% with Yearly Billing</span></p> (separate paragraph)\n\nFORMATTING RULES:\n\n1. GREETING (Hi/Hello + Name):\n   Make it bold: <p style=\"margin: 0 0 16px 0; color: #1a1a1a; font-size: 16px; line-height: 1.6; font-weight: 600;\">Hi Keith,</p>\n\n2. MAIN HEADING (use ONLY if original has explicit title/subject at top):\n   <h2 style=\"margin: 0 0 20px 0; color: #1a1a1a; font-size: 24px; font-weight: 600; line-height: 1.3;\">Main Topic/Title</h2>\n\n3. PARAGRAPHS (regular text with emphasis inside when needed):\n   <p style=\"margin: 0 0 16px 0; color: #1a1a1a; font-size: 16px; line-height: 1.6;\">Regular text with <strong style=\"font-weight: 600;\">bold terms</strong> or <span style=\"background-color: #e8f4ff; color: #0066cc; padding: 1px 5px; border-radius: 4px; font-weight: 500;\">highlighted key phrases</span> embedded inside when appropriate.</p>\n\n4. SUBHEADINGS (for important mid-content statements - use RARELY):\n   <p style=\"margin: 0 0 16px 0; color: #1a1a1a; font-size: 18px; line-height: 1.5; font-weight: 600;\">Subheading text</p>\n\n5. LINKS (only when URL is provided):\n   <a href=\"URL\" style=\"background-color: #f0f9ff; color: #0066cc; padding: 1px 5px; border-radius: 4px; border: 1px solid #99ccff; text-decoration: none; font-weight: 500;\">link text</a>\n\n6. LISTS (unordered) - use bold for item names:\n   <ul style=\"margin: 0 0 16px 0; padding-left: 20px;\">\n       <li style=\"margin-bottom: 8px; color: #1a1a1a; font-size: 16px; line-height: 1.6;\"><strong style=\"font-weight: 600;\">Feature Name</strong>: Description of the feature.</li>\n   </ul>\n\n7. LISTS (ordered):\n   <ol style=\"margin: 0 0 16px 0; padding-left: 20px;\">\n       <li style=\"margin-bottom: 8px; color: #1a1a1a; font-size: 16px; line-height: 1.6;\">Item with <strong style=\"font-weight: 600;\">bold terms</strong> inside.</li>\n   </ol>\n\n8. DIVIDERS (use only to separate major sections - NOT before buttons):\n   <div style=\"height: 1px; background-color: #e5e5e5; margin: 24px 0;\"></div>\n\n9. BUTTONS (create ONLY if there's an actual URL provided):\n   <table border=\"0\" cellpadding=\"0\" cellspacing=\"0\" width=\"100%\" style=\"margin: 24px 0;\">\n       <tr>\n           <td align=\"center\">\n               <table border=\"0\" cellpadding=\"0\" cellspacing=\"0\">\n                   <tr>\n                       <td align=\"center\" style=\"border-radius: 6px; background-color: #0066cc;\">\n                           <a href=\"URL\" style=\"display: inline-block; padding: 14px 32px; font-size: 16px; color: #ffffff; text-decoration: none; font-weight: 600; border-radius: 6px;\">Button Text</a>\n                       </td>\n                   </tr>\n               </table>\n           </td>\n       </tr>\n   </table>\n\n10. SIGNATURE BLOCK (for \"Kind regards\" / \"Best\" / etc. at the end):\n    Separate signature with a divider, then format with smaller gray text:\n    <div style=\"height: 1px; background-color: #e5e5e5; margin: 24px 0;\"></div>\n    <p style=\"margin: 0 0 8px 0; color: #666666; font-size: 14px; line-height: 1.5;\">Kind regards,</p>\n    <p style=\"margin: 0 0 4px 0; color: #1a1a1a; font-size: 14px; line-height: 1.5; font-weight: 600;\">Stan Miller</p>\n    <p style=\"margin: 0 0 4px 0; color: #666666; font-size: 14px; line-height: 1.5;\">City Company</p>\n    <p style=\"margin: 0 0 4px 0; color: #999999; font-size: 13px; line-height: 1.5;\">Additional info line 1</p>\n    <p style=\"margin: 0; color: #999999; font-size: 13px; line-height: 1.5;\">Additional info line 2</p>\n\nCRITICAL RULES:\n- DO NOT invent headings - use h2 ONLY if original text has explicit title at top\n- Make greetings bold (Hi/Hello + Name)\n- Use BOLD TEXT frequently for important terms - embed inside paragraphs\n- Use HIGHLIGHTED TEXT selectively (5-6 times max per email) - for key phrases and important info\n- Embed emphasis INSIDE paragraphs, not as separate blocks\n- Create buttons ONLY when there's an actual URL/link provided\n- If text mentions \"call this week?\" or similar WITHOUT a link - keep it as regular text, don't create a button\n- Format signatures as separate blocks with divider and smaller/gray text\n- Use ONLY inline styles\n- Do NOT include DOCTYPE, html, head, or body tags\n- Do NOT wrap output in ```html blocks\n- Return ONLY the formatted HTML content\n- Preserve the original tone and structure of the email\n- Think strategically about what to emphasize - use highlights 5-6 times for maximum impact\n\nEXAMPLE OUTPUT:\n<p style=\"margin: 0 0 16px 0; color: #1a1a1a; font-size: 16px; line-height: 1.6; font-weight: 600;\">Hi Keith,</p>\n<p style=\"margin: 0 0 16px 0; color: #1a1a1a; font-size: 16px; line-height: 1.6;\">We're excited to announce our <strong style=\"font-weight: 600;\">Black Friday sale</strong> - get <strong style=\"font-weight: 600;\">50% off</strong> all yearly plans!</p>\n<p style=\"margin: 0 0 16px 0; color: #1a1a1a; font-size: 16px; line-height: 1.6;\"><strong style=\"font-weight: 600;\">TurboScribe</strong> offers unlimited transcription for just <strong style=\"font-weight: 600;\">$10/month</strong> when billed annually.</p>\n<p style=\"margin: 0 0 16px 0; color: #1a1a1a; font-size: 16px; line-height: 1.6;\">All plans include:</p>\n<ul style=\"margin: 0 0 16px 0; padding-left: 20px;\">\n    <li style=\"margin-bottom: 8px; color: #1a1a1a; font-size: 16px; line-height: 1.6;\"><strong style=\"font-weight: 600;\">Unlimited transcriptions</strong>: No limits on files or minutes</li>\n    <li style=\"margin-bottom: 8px; color: #1a1a1a; font-size: 16px; line-height: 1.6;\"><strong style=\"font-weight: 600;\">10 hour uploads</strong>: Files up to 10 hours long</li>\n</ul>\n<div style=\"height: 1px; background-color: #e5e5e5; margin: 24px 0;\"></div>\n<p style=\"margin: 0 0 8px 0; color: #666666; font-size: 14px; line-height: 1.5;\">Best,</p>\n<p style=\"margin: 0; color: #1a1a1a; font-size: 14px; line-height: 1.5; font-weight: 600;\">John Smith</p>"
+            },
+            {
+              "content": "={{ $node[\"email content\"].json[\"output\"][\"0\"][\"content\"][\"0\"][\"text\"][\"email_body\"] }}"
+            }
+          ]
+        },
+        "builtInTools": {},
+        "options": {
+          "temperature": 0.6
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 2,
+      "position": [
+        1824,
+        432
+      ],
+      "id": "2c9b7cc1-9f47-453c-bc52-6067683db852",
+      "name": "html agent",
+      "retryOnFail": true,
+      "maxTries": 5,
+      "waitBetweenTries": 5000,
+      "credentials": {
+        "openAiApi": {
+          "id": "895vd8bC2qxU4JL4",
+          "name": "OpenAi"
+        }
+      },
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.openai.com/v1/embeddings",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "openAiApi",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "model",
+              "value": "text-embedding-3-small"
+            },
+            {
+              "name": "input",
+              "value": "={{ $json.output[0].content[0].text.search_query }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1024,
+        432
+      ],
+      "id": "dd5e2eab-81c5-4982-b803-281f886756cc",
+      "name": "Vector",
+      "credentials": {
+        "openAiApi": {
+          "id": "895vd8bC2qxU4JL4",
+          "name": "OpenAi"
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "resource": "search",
+        "operation": "queryPoints",
+        "collectionName": {
+          "__rl": true,
+          "value": "headline",
+          "mode": "list",
+          "cachedResultName": "headline"
+        },
+        "query": "=[{{ $json.data[0].embedding }}]",
+        "limit": 3,
+        "requestOptions": {}
+      },
+      "type": "n8n-nodes-qdrant.qdrant",
+      "typeVersion": 1,
+      "position": [
+        1248,
+        432
+      ],
+      "id": "ba9c691f-a4c3-4d21-97c7-7709493454f2",
+      "name": "Query Points",
+      "credentials": {
+        "qdrantRestApi": {
+          "id": "6LgJFuu1Bnyv3QUC",
+          "name": "Qdrant account"
+        }
+      },
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "value": "gpt-4.1-mini",
+          "mode": "list",
+          "cachedResultName": "GPT-4.1-MINI"
+        },
+        "responses": {
+          "values": [
+            {
+              "role": "system",
+              "content": "=You are a headline selection expert for B2B email campaigns.\n\nYour task: Choose the BEST headline from a list of viral templates and adapt it for a specific email.\n\nSELECTION CRITERIA:\n1. **Relevance** - matches the email's pain point and message\n2. **Impact** - creates curiosity and urgency\n3. **Personalization potential** - can be adapted with industry/situation\n4. **Length** - 40-70 characters ideal\n5. **Tone** - professional but engaging (not clickbait)\n\nADAPTATION RULES:\n- Replace generic placeholders: [industry] → specific industry\n- Replace [the industry] → specific segment/niche\n- Keep the core hook structure\n- Ensure it aligns with email body content\n- Make it specific to the news/pain point\n- **CRITICAL: Do NOT add recipient's name to headline**\n\nEXAMPLE ADAPTATIONS:\n\nTemplate: \"Here's a hidden advantage that everyone is missing out on in [the industry].\"\n✅ CORRECT: \"Here's a hidden advantage everyone is missing in last-mile logistics\"\n❌ WRONG: \"Keith, here's a hidden advantage everyone is missing in last-mile logistics\"\n\nTemplate: \"This [industry-specific] hack will completely change your approach to growth.\"\n✅ CORRECT: \"This capacity planning hack will revolutionize your freight strategy\"\n❌ WRONG: \"This capacity planning hack will revolutionize your strategy, Robert\"\n\nTemplate: \"POV: Now you will discover the shortest path to success in [the industry].\"\n✅ CORRECT: \"POV: The shortest path to beating Amazon's delivery challenge\"\n❌ WRONG: \"Robert, POV: The shortest path to beating Amazon's challenge\"\n\nTemplate: \"The [industry] shift that's catching everyone off guard.\"\n✅ CORRECT: \"The Texas logistics shift catching freight operators off guard\"\n❌ WRONG: \"Robert, the Texas logistics shift catching you off guard\"\n\nWHY NO NAMES IN HEADLINES:\n- Names work better in email greeting, not subject line\n- Subject lines should focus on value/intrigue, not personalization\n- \"Keith, here's...\" sounds spammy in subject line\n- Professional B2B emails rarely use names in subject\n\nCRITICAL RULES:\n✅ Choose ONE best headline only\n✅ Adapt it specifically for industry/segment/situation\n✅ Keep original impact and structure\n✅ Do NOT add recipient's name to headline\n✅ Match tone to email body (casual + professional)\n✅ Ensure relevance to pain_point\n✅ Focus on value/curiosity, not personalization"
+            },
+            {
+              "content": "=CLIENT INFO:\nName: {{ $('Code in JavaScript2').item.json.name }}\nSegment: {{ $('Code in JavaScript2').item.json.segment }}\nState: {{ $('Code in JavaScript2').item.json.state }}\nHuman: {{ $('Code in JavaScript2').item.json.human }}\n\nNEWS CONTEXT:\nPain Point: {{ $('Code in JavaScript2').item.json.news_angle.pain_point }}\nSummary: {{ $('Code in JavaScript2').item.json.news_angle.summary }}\nTitle: {{ $('Code in JavaScript2').item.json.news_angle.title }}\n\nEMAIL BODY PREVIEW (first 200 chars):\n{{ $('email content').item.json.output[0].content[0].text.email_body.substring(0, 200) }}...\n\nAVAILABLE HEADLINES:\n1. {{ $json.result.points[0].payload.headline }}\n2. {{ $json.result.points[1].payload.headline }}\n3. {{ $json.result.points[2].payload.headline }}\n\nTASK:\n1. Analyze email body content and news context\n2. Select ONE best headline that matches email tone and message\n3. Adapt it for {{ $('Code in JavaScript2').item.json.segment }} segment\n4. Replace [industry] with specific niche (e.g., \"Texas freight operations\", \"last-mile logistics\")\n5. Replace [industry-specific] with relevant term (e.g., \"fuel backup\", \"capacity planning\")\n6. **DO NOT add client name to headline**\n7. Keep 40-70 characters if possible\n\nReturn JSON with adapted headline now."
+            }
+          ]
+        },
+        "simplify": false,
+        "builtInTools": {},
+        "options": {
+          "textFormat": {
+            "textOptions": {
+              "type": "json_schema",
+              "name": "ViralHeadline",
+              "schema": "{\n  \"type\": \"object\",\n  \"properties\": {\n    \"selected_subject\": {\n      \"type\": \"string\",\n      \"description\": \"Chosen and adapted headline\"\n    },\n    \"original_template\": {\n      \"type\": \"string\",\n      \"description\": \"Original template before adaptation\"\n    },\n    \"selection_reason\": {\n      \"type\": \"string\",\n      \"description\": \"Why this headline was chosen\"\n    }\n  },\n  \"required\": [\"selected_subject\", \"original_template\", \"selection_reason\"],\n  \"additionalProperties\": false\n}",
+              "strict": true
+            }
+          }
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 2,
+      "position": [
+        1472,
+        432
+      ],
+      "id": "86fb5c1c-03e2-44b7-a860-7c878f93add6",
+      "name": "Set headline",
+      "retryOnFail": true,
+      "maxTries": 5,
+      "waitBetweenTries": 5000,
+      "credentials": {
+        "openAiApi": {
+          "id": "895vd8bC2qxU4JL4",
+          "name": "OpenAi"
+        }
+      },
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "authentication": "nocoDbApiToken",
+        "operation": "update",
+        "workspaceId": "wqp6q0zt",
+        "projectId": "p0a3eirwme1bmw7",
+        "table": "m6axccf0owo5kzd",
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldName": "Id",
+              "fieldValue": "={{ $node[\"Loop Over Items\"].json[\"Id\"] }}"
+            },
+            {
+              "fieldName": "Status",
+              "fieldValue": "Canceled"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.nocoDb",
+      "typeVersion": 3,
+      "position": [
+        592,
+        752
+      ],
+      "id": "35e09761-2e84-494e-b5fe-b0f06483d44f",
+      "name": "to canceled",
+      "credentials": {
+        "nocoDbApiToken": {
+          "id": "tg1sd8Mux2yjJLx7",
+          "name": "NocoDB"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "amount": 2
+      },
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        2400,
+        752
+      ],
+      "id": "bbbedc19-105a-4595-8836-6291f653db11",
+      "name": "Wait",
+      "webhookId": "66b3d365-690f-4736-b9c0-36ef2440f927"
+    },
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "value": "gpt-4o-mini",
+          "mode": "list",
+          "cachedResultName": "GPT-4O-MINI"
+        },
+        "responses": {
+          "values": [
+            {
+              "content": "=COMPANY: {{ $json.name }}, {{ $json.company || \"Company\" }}\nPOSITION: {{ $json.position || \"Logistics Manager\" }}\nSEGMENT: {{ $json.segment || \"logistics\" }}\nSTATE: {{ $json.state || \"US\" }}\nHUMAN: {{ $json.human }}\nPERSONALIZATION: {{ $json.personalizationLevel }}\n\n{{ $json.productType ? 'PRODUCT: ' + $json.productType : '' }}\n{{ $json.routeFrom && $json.routeTo ? 'ROUTE: ' + $json.routeFrom + ' → ' + $json.routeTo : '' }}\n{{ $json.description ? 'DESCRIPTION: ' + $json.description : '' }}\n\n{{ $json.validSummary ? '📞 PAST CALL SUMMARY:\\n' + $json.validSummary + '\\n' : '' }}\n\n═══════════════════════════════════════════════\nNEWS:\n═══════════════════════════════════════════════\n\nTitle: {{ $json.news_angle.title }}\nSummary: {{ $json.news_angle.summary }}\nPain Point: {{ $json.news_angle.pain_point }}\nViral Score: {{ $json.news_angle.viral_score }}/10\n\nOpening Hook: {{ $json.news_angle.hook_instruction }}\n\nIMPORTANT: Use this as your opening sentence. If it contains phrases like \"Start email with:\" or \"Saw the news about\", remove them and use only the actual hook content.\n\nSolution We Offer: {{ $json.news_angle.solution_we_offer }}\nRelevance to Client: {{ $json.news_angle.relevance_to_client }}\n\nKey Quote: {{ $json.news_angle.key_quote_or_stat }}\n\n═══════════════════════════════════════════════\nSTORYTELLING GUIDANCE:\n═══════════════════════════════════════════════\n\nApproach: {{ $json.news_angle.storytelling.approach }}\n\n{{ $json.news_angle.storytelling.recommended_memes && $json.news_angle.storytelling.recommended_memes.length > 0 ? 'RECOMMENDED MEMES:\\n' + $json.news_angle.storytelling.recommended_memes.map((m, i) => `${i+1}. \"${m.phrase}\" (${m.tone}) - ${m.why}`).join('\\n') + '\\n' : '' }}\n\n{{ $json.news_angle.storytelling.recommended_story_type !== 'none' ? 'STORY TYPE: ' + $json.news_angle.storytelling.recommended_story_type + '\\nSTORY ANGLE: ' + $json.news_angle.storytelling.story_angle + '\\n' : '' }}\n\n═══════════════════════════════════════════════\nTASK:\n═══════════════════════════════════════════════\n\n1. Follow storytelling approach: {{ $json.news_angle.storytelling.approach }}\n\n2. {{ $json.validSummary ? 'IMPORTANT: validSummary exists - reference past conversation in ATTENTION or ACTION section to show continuity' : '' }}\n\n3. Write email body (150-250 words):\n   - Greeting based on human={{ $json.human }}, name={{ $json.name }}\n   - ATTENTION: hook_instruction + meme/story\n   - INTEREST: connect to {{ $json.segment }} in {{ $json.state }}\n   - DESIRE: solution_we_offer + USP for {{ $json.news_angle.pain_point }}\n   - ACTION: CTA (reference past call if validSummary exists)\n   - Signature\n\n4. Create search query for headlines (2-4 keywords)\n\nReturn JSON now."
+            },
+            {
+              "role": "system",
+              "content": "=You are a first-class B2B copywriter specializing in logistics. You write on behalf of Stan Miller from City Company.\n\nYour task: Generate an email BODY (without subject line) following AIDA structure AND create a search query for finding a viral headline.\n\nIMPORTANT OUTPUT:\n1. email_body: Complete email text (150-250 words) with greeting, AIDA structure, CTA, and signature\n2. search_query: Short query (2-4 keywords) for finding viral headlines\n3. cta: Single call-to-action sentence (for separate system use)\n\n═══════════════════════════════════════════════\nSTORYTELLING GUIDANCE (from news analysis):\n═══════════════════════════════════════════════\n\nYou will receive storytelling recommendations from news analysis:\n\n**If approach = \"meme_only\":**\n- Use ONE of the recommended memes in ATTENTION section\n- No story needed\n- Keep tone lighter, more engaging\n\n**If approach = \"story_only\":**\n- Generate brief story using recommended_story_type\n- Follow story_angle suggestion\n- NO memes (news is serious)\n\n**If approach = \"both\":**\n- Use ONE recommended meme in ATTENTION section\n- Add brief story (1-2 sentences) using recommended_story_type\n- Balance humor with credibility\n\nCRITICAL: Always follow the recommended approach. Don't add memes if approach is \"story_only\".\n\n═══════════════════════════════════════════════\nVALIDSUMMARY USAGE RULES:\n═══════════════════════════════════════════════\n\nIf validSummary is provided in input, analyze it and decide WHERE to use it:\n\n**DECISION FRAMEWORK:**\n\n**Option A: In ATTENTION section (if direct connection exists)**\nUse when:\n- Past call discussed topics directly related to current news\n- Client mentioned specific concerns that news validates\n\nStructure:\n\"[Hook sentence]\n[Meme/story]\n[Name], when we spoke [timeframe], you mentioned [topic]. Well, [news] is exactly that scenario playing out.\"\n\n**Option B: In INTEREST section (if indirect connection)**\nUse when:\n- Past call discussed general topic, not specific issue\n- Want to show you remember context\n\nStructure:\n\"[Hook + meme]\nFor [segment] operations like yours in [state], [news impact].\nI know we [briefly connected / talked about X]—this news shows why [specific issue] matters.\"\n\n**Option C: In ACTION section (if call was interrupted/incomplete)**\nUse when:\n- Call was cut off before discussing details\n- No substantial information was gathered\n- Need to reconnect\n\nStructure:\n\"[Standard DESIRE section]\nLet's reconnect—[reference incomplete call]. Given [news], now's the perfect time to [specific action]. [CTA]?\"\n\n**CRITICAL RULES for validSummary:**\n1. NEVER quote directly from validSummary—rephrase naturally\n2. ALWAYS connect to current news context\n3. Keep it casual and natural (\"I know we briefly connected...\" not \"Referencing our previous conversation...\")\n4. Maximum 1-2 mentions per email (don't overuse)\n5. If no logical connection exists, DON'T force it—better to skip than sound awkward\n\n**For our current case (call was cut off with no details):**\n→ Use Option C (ACTION section): \"Let's reconnect—our last call got cut short, but given [news], now's the perfect time to discuss [topic].\"\n\n═══════════════════════════════════════════════\nCOMPANY USPs (choose ONE based on pain_point):\n═══════════════════════════════════════════════\n\n1. **Reliability** → for: unreliable_carriers, delivery_delays, weather_emergency\n   - 4-step carrier verification: documents, reputation, equipment, A-D rating\n   - Only A and B carriers handle critical freight\n\n2. **Transparency** → for: lack_of_communication, delivery_delays\n   - Dedicated 24/7 manager for each client\n   - Proactive updates every 4 hours\n   - Real-time GPS tracking\n\n3. **Flexibility** → for: price_surge, capacity_crunch, route_disruption\n   - Lock rates 3-6 months ahead\n   - Reserve capacity in advance\n   - Protection from price spikes\n\n4. **Partnership** → for: seasonal issues, long_term planning\n   - Cumulative bonuses (every 10th shipment discounted)\n   - Priority in peak seasons\n   - Direct line to management\n\n═══════════════════════════════════════════════\nSTORY TEMPLATES (if approach includes \"story\"):\n═══════════════════════════════════════════════\n\nGenerate NEW story using these templates (don't copy examples):\n\n**success_story:**\n\"We had a [segment] client in [state/region] last [season/month], their [carrier/situation] failed [X days/hours] before [deadline]. We secured [solution] in [timeframe] and delivered on time. They [positive outcome].\"\n\nExample:\n\"We had a Texas freight client last month hit by similar fuel disruptions—secured alternate allocations within 4 hours, kept 20 shipments moving without a single delay.\"\n\n**cautionary_tale:**\n\"Last [event] in [region/state], companies that didn't [action] ended up paying [X%] over market rates and still missed [deadlines]. One [segment] company lost [specific impact].\"\n\nExample:\n\"During last year's pipeline shutdown, Texas carriers without backup fuel sources paid 40% over spot rates and still missed customer windows.\"\n\n**insider_insight:**\n\"Most [segment] companies don't know: [industry fact]. That's exactly why [consequence happens]. We handle this by [specific solution].\"\n\nExample:\n\"Most freight operators don't know: Gulf Coast terminals prioritize pre-arranged allocations during outages. That's why last-minute fuel sourcing fails. We maintain standing agreements for exactly these scenarios.\"\n\nKeep stories brief (1-2 sentences max in email).\n\n═══════════════════════════════════════════════\nBUILT-IN MEME COLLECTION (fallback if no recommendations):\n═══════════════════════════════════════════════\n\nUse ONLY if storytelling recommendations not provided:\n\n**Chaos & Crisis:**\n- \"This is fine\" → ignored warnings, pretending calm\n- \"You can't fight in here, this is the war room!\" → absurd professionalism during chaos\n- \"My sleep schedule\" → plan vs. reality\n- \"Everything is on fire\" → multiple simultaneous crises\n\n**Smart Planning:**\n- \"Roll Safe (*taps forehead*)\" → clever advance planning\n- \"Work smarter, not harder\" → efficient solution\n- \"Always has been\" → obvious pattern revealed\n\n**FOMO:**\n- \"I love inside jokes. I'd love to be a part of one someday.\" → feeling left out\n- \"First time?\" → experienced vs. newcomer\n\n**Playful:**\n- \"Not to be corny, but...\" → pun-based\n\n**Sarcasm:**\n- \"Go [Name] go! You're doing amazing, sweetie!\" → sarcastic praise\n- \"The audacity\" → shocking behavior\n\n═══════════════════════════════════════════════\nGREETING RULES:\n═══════════════════════════════════════════════\n\n- If human=true AND name exists → \"Hi [Name],\"\n- If human=false AND company exists → \"Hi team at [Company],\"\n- If human=false AND NO company → \"Hi there,\"\n- Otherwise → \"Hello,\"\n\n═══════════════════════════════════════════════\nEMAIL STRUCTURE (AIDA):\n═══════════════════════════════════════════════\n\n**ATTENTION (2-3 sentences):**\n\n1. **First sentence:** Use hook_instruction as opening sentence\n   - If hook_instruction starts with \"Start email with:\" or \"Saw the news about\" → REMOVE these phrases and use only the actual hook\n   - Hook should sound natural, not like you're \"reporting news\"\n   - Adapt tone to match rest of email (casual + professional)\n\n**HOOK ADAPTATION EXAMPLES:**\n\nIf hook_instruction = \"Start email with: 'Texas is facing a driver shortage...'\"\n✅ USE: \"Texas is facing a driver shortage—new CDL rules just made capacity even tighter.\"\n\nIf hook_instruction = \"Saw the news about Port Arthur refinery shutdown...\"\n✅ USE: \"Port Arthur's 151,000 bpd refinery shutdown is forcing last-minute fuel reroutes across the Gulf.\"\n\nIf hook_instruction = \"Mention Amazon's same-day delivery expansion...\"\n✅ USE: \"Amazon just rolled out same-day delivery to 2,300 cities, and local carriers are scrambling.\"\n\nCRITICAL: Hook should be direct, engaging statement—NOT \"I saw that...\" or \"The news reported...\"\n\n2. **Second sentence:** Add meme OR story (based on storytelling approach)\n   - If approach = \"meme_only\" → use ONE recommended meme\n   - If approach = \"story_only\" → use brief story\n   - If approach = \"both\" → use meme here, story will go elsewhere\n\n3. **Third sentence (OPTIONAL - only if validSummary has direct connection):**\n   - If past call discussed topics directly related to news → connect them\n   - Example: \"Robert, when we spoke last month, you mentioned concerns about capacity. Well, this Amazon expansion is exactly that scenario.\"\n   - If no direct connection → SKIP (save for ACTION section)\n\nExamples:\n\n**With validSummary (direct connection):**\n\"Saw Amazon just rolled out same-day delivery to 2,300 cities—local carriers are scrambling.\n\nThat classic 'You can't fight in here, this is the war room!' moment when everyone's acting calm while capacity is vanishing.\n\nKeith, when we spoke about holiday logistics, you mentioned worrying about capacity crunches. This is exactly that scenario playing out in real-time.\"\n\n**With validSummary (no direct connection - save for ACTION):**\n\"Saw the news about Texas refinery outages — Port Arthur's 151,000 bpd shutdown just forced last-minute fuel reroutes across the Gulf.\n\nThat classic 'You can't fight in here, this is the war room!' moment—everyone's acting professional while logistics infrastructure is literally on fire.\n\nWe had a Texas freight client last month hit by similar disruptions—secured alternate fuel allocations within 4 hours, kept 20 shipments moving without delays.\"\n\n**WITHOUT validSummary:**\n\"Saw Amazon just rolled out same-day delivery to 2,300 cities—local carriers are scrambling.\n\nCan't get burned by spot rates if you locked them in 3 months ago. *taps forehead*\"\n\n---\n\n**INTEREST (2-3 sentences):**\n\nConnect news to client's specific business context:\n- Reference segment, state, product type, or routes from input\n- Show specific risk or opportunity from relevance_to_client\n- If validSummary exists AND no direct connection used in ATTENTION → can briefly mention: \"I know we briefly connected before...\"\n\nExample WITH brief validSummary mention:\n\"For your transportation operations in Texas, these refinery outages mean unexpected fuel allocation headaches and potential delivery delays.\n\nI know our last call got cut short before we could discuss your logistics needs—but this exact scenario (fuel disruptions forcing last-minute reroutes) is why having backup carrier relationships matters.\"\n\nExample WITHOUT validSummary:\n\"For your transportation business in Texas, Amazon's expansion creates urgent pressure to meet new speed standards without breaking budgets. This is the inflection point that separates prepared logistics providers from those left scrambling.\"\n\n---\n\n**DESIRE (3-4 sentences):**\n\n1. **Start with solution_we_offer** (from user input) - use it as foundation\n2. **Add ONE USP** (matched to pain_point from input)\n3. **Be specific:** numbers, process, guarantees\n\nExample:\n\"We can secure priority fuel allocations and pre-arrange alternate loading windows at Gulf Coast terminals, ensuring your shipments avoid rack congestion even during refinery disruptions.\n\nThrough our reliability-focused approach, we maintain 4-step carrier verification—documents, reputation, equipment checks, and internal A-D ratings. Only A and B-rated carriers handle time-sensitive freight, with backup fuel strategies built in for scenarios exactly like this.\"\n\n---\n\n**ACTION (1-2 sentences):**\n\n**CRITICAL:** This goes in email_body BEFORE signature\n\n**If validSummary exists AND was interrupted/incomplete:**\n- MUST reference past call\n- Connect to current news urgency\n- Simple CTA\n\nExamples:\n\"Let's reconnect—our last call got cut short, but given these Texas refinery disruptions, now's the perfect time to discuss backup logistics strategies. Quick 15-minute call this week?\"\n\n\"I know we didn't get to finish our conversation last time—could we schedule that call this week? With these fuel disruptions, timing matters for securing alternate capacity.\"\n\n**If NO validSummary OR validSummary already used in ATTENTION:**\n- Standard CTA\n- No reference to past\n\nExamples:\n\"Quick 15-minute call this week to explore fuel backup strategies for your Texas routes?\"\n\n\"Just reply with your key delivery corridors, and I'll get you a custom contingency plan within 24 hours.\"\n\n---\n\n**SIGNATURE (at the very end):**\n\nKind regards,\nStan Miller\nCity Company\nDomestic US & Canadian freight • Mexico cross-border • International shipments\nAuthorized Agent — Norfleet Transportation & Logistics LLC\n\n═══════════════════════════════════════════════\nCRITICAL STRUCTURE RULE:\n═══════════════════════════════════════════════\n\nEMAIL BODY MUST FOLLOW THIS EXACT ORDER:\n\n1. Greeting (\"Hi [Name],\")\n2. Blank line\n3. ATTENTION (hook + meme/story + optional validSummary connection)\n4. Blank line\n5. INTEREST (business connection + optional brief validSummary mention)\n6. Blank line\n7. DESIRE (solution + USP)\n8. Blank line\n9. ACTION (CTA sentence + validSummary reference if applicable) ← BEFORE signature\n10. Blank line\n11. Signature ← ALWAYS LAST\n\nExample correct structure:\n\nHi Robert,\n\nSaw the news about Texas refinery outages — Port Arthur's 151,000 bpd shutdown just forced last-minute fuel reroutes across the Gulf.\n\nThat classic \"You can't fight in here, this is the war room!\" moment when everyone's acting calm while logistics infrastructure is literally on fire. We had a Texas freight client last month hit by similar disruptions—secured alternate fuel allocations within 4 hours, kept 20 shipments moving without delays.\n\nFor your transportation operations in Texas, these refinery outages mean unexpected fuel allocation headaches and potential delivery delays. I know our last call got cut short before we could discuss your logistics needs—but this exact scenario is why having backup carrier relationships matters.\n\nWe can secure priority fuel allocations and pre-arrange alternate loading windows at Gulf Coast terminals, ensuring your shipments avoid rack congestion even during refinery disruptions. Through our reliability-focused approach, we maintain 4-step carrier verification—only A and B-rated carriers handle time-sensitive freight, with backup fuel strategies built in.\n\nLet's reconnect—given these Texas disruptions, now's the perfect time to discuss backup logistics strategies. Quick 15-minute call this week?\n\nKind regards,\nStan Miller\nCity Company\nDomestic US & Canadian freight • Mexico cross-border • International shipments\nAuthorized Agent — Norfleet Transportation & Logistics LLC\n\n═══════════════════════════════════════════════\nCRITICAL RULES:\n═══════════════════════════════════════════════\n\n✅ Email body 150-250 words INCLUDING signature\n✅ Follow hook_instruction EXACTLY as first sentence in ATTENTION\n✅ Follow storytelling.approach from input (meme_only | story_only | both)\n✅ If approach includes \"meme\", use ONE recommended meme\n✅ If approach includes \"story\", generate brief story using recommended_story_type\n✅ Use solution_we_offer as foundation in DESIRE section\n✅ Match USP to pain_point\n✅ If validSummary provided, analyze and use appropriately (ATTENTION/INTEREST/ACTION)\n✅ Don't force validSummary connection if none exists logically\n✅ CTA sentence BEFORE signature (in email_body)\n✅ Signature ALWAYS at the very end\n✅ Also output CTA in separate \"cta\" field (for system use)\n✅ Casual + professional tone (like real person, not bot)\n✅ Create short search_query (2-4 keywords based on pain_point)\n\n═══════════════════════════════════════════════\nOUTPUT VALIDATION CHECKLIST:\n═══════════════════════════════════════════════\n\nBefore returning JSON, verify:\n- [ ] Email body includes greeting?\n- [ ] First sentence follows hook_instruction exactly?\n- [ ] Storytelling approach followed (meme/story/both)?\n- [ ] If meme used, is it from recommended list?\n- [ ] If story used, does it match recommended_story_type?\n- [ ] If validSummary provided, is it used naturally and appropriately?\n- [ ] validSummary connection sounds natural, not forced?\n- [ ] CTA is BEFORE signature in email_body?\n- [ ] Signature is at the VERY END?\n- [ ] Word count 150-250 (including signature)?\n- [ ] search_query is 2-4 keywords only?\n- [ ] Output is valid JSON?\n- [ ] Tone sounds like real person, not bot?"
+            }
+          ]
+        },
+        "simplify": false,
+        "builtInTools": {},
+        "options": {
+          "textFormat": {
+            "textOptions": {
+              "type": "json_schema",
+              "schema": "{\n  \"type\": \"object\",\n  \"properties\": {\n    \"email_body\": {\n      \"type\": \"string\",\n      \"description\": \"Complete email text with greeting, AIDA, CTA before signature, and signature at end\"\n    },\n    \"search_query\": {\n      \"type\": \"string\",\n      \"description\": \"Short search query, 2-4 keywords\"\n    },\n    \"cta\": {\n      \"type\": \"string\",\n      \"description\": \"Call-to-action sentence for system use\"\n    },\n    \"metadata\": {\n      \"type\": \"object\",\n      \"properties\": {\n        \"pain_point\": {\n          \"type\": \"string\"\n        },\n        \"usp_used\": {\n          \"type\": \"string\"\n        },\n        \"story_used\": {\n          \"type\": \"boolean\"\n        },\n        \"meme_used\": {\n          \"type\": \"boolean\"\n        },\n        \"word_count\": {\n          \"type\": \"integer\"\n        }\n      },\n      \"required\": [\"pain_point\", \"usp_used\", \"story_used\", \"meme_used\", \"word_count\"],\n      \"additionalProperties\": false\n    }\n  },\n  \"required\": [\"email_body\", \"search_query\", \"cta\", \"metadata\"],\n  \"additionalProperties\": false\n}"
+            }
+          }
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 2,
+      "position": [
+        672,
+        432
+      ],
+      "id": "0100fba9-f08d-4578-a136-24e0eae169d6",
+      "name": "email content",
+      "retryOnFail": true,
+      "maxTries": 5,
+      "waitBetweenTries": 5000,
+      "credentials": {
+        "openAiApi": {
+          "id": "895vd8bC2qxU4JL4",
+          "name": "OpenAi"
+        }
+      },
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "authentication": "nocoDbApiToken",
+        "operation": "getAll",
+        "workspaceId": "wqp6q0zt",
+        "projectId": "p0a3eirwme1bmw7",
+        "table": "m6axccf0owo5kzd",
+        "limit": 10,
+        "options": {
+          "sort": {
+            "property": [
+              {
+                "field": "=Trigger"
+              }
+            ]
+          },
+          "where": "(Status,eq,Waiting)~and(Type,eq,Email)~and(Data,notblank)"
+        }
+      },
+      "type": "n8n-nodes-base.nocoDb",
+      "typeVersion": 3,
+      "position": [
+        80,
+        0
+      ],
+      "id": "1ce96a7a-7046-4c10-8eef-2ef67b772294",
+      "name": "get job",
+      "credentials": {
+        "nocoDbApiToken": {
+          "id": "tg1sd8Mux2yjJLx7",
+          "name": "NocoDB"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "authentication": "nocoDbApiToken",
+        "operation": "update",
+        "workspaceId": "wqp6q0zt",
+        "projectId": "p0a3eirwme1bmw7",
+        "table": "m6axccf0owo5kzd",
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldName": "Id",
+              "fieldValue": "={{ $json.Id }}"
+            },
+            {
+              "fieldName": "Status",
+              "fieldValue": "Building"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.nocoDb",
+      "typeVersion": 3,
+      "position": [
+        592,
+        -192
+      ],
+      "id": "967fead2-ce16-40d9-9bab-51ff0d1bfc6d",
+      "name": "to building",
+      "credentials": {
+        "nocoDbApiToken": {
+          "id": "tg1sd8Mux2yjJLx7",
+          "name": "NocoDB"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "authentication": "nocoDbApiToken",
+        "operation": "update",
+        "workspaceId": "wqp6q0zt",
+        "projectId": "p0a3eirwme1bmw7",
+        "table": "m6axccf0owo5kzd",
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldName": "Id",
+              "fieldValue": "={{ $node[\"Loop Over Items\"].json[\"Id\"] }}"
+            },
+            {
+              "fieldName": "Content",
+              "fieldValue": "={{ $node[\"email content\"].json[\"output\"][\"0\"][\"content\"][\"0\"][\"text\"][\"email_body\"] }}"
+            },
+            {
+              "fieldName": "Status",
+              "fieldValue": "Planned"
+            },
+            {
+              "fieldName": "Title",
+              "fieldValue": "={{ $node[\"Set headline\"].json[\"output\"][\"0\"][\"content\"][\"0\"][\"text\"][\"selected_subject\"] }}"
+            },
+            {
+              "fieldName": "FContent",
+              "fieldValue": "={{ $node[\"build html\"].json[\"data\"] }}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.nocoDb",
+      "typeVersion": 3,
+      "position": [
+        2400,
+        432
+      ],
+      "id": "c6d45184-6adb-4cda-87b2-fafa9ed0ceb7",
+      "name": "to planned",
+      "credentials": {
+        "nocoDbApiToken": {
+          "id": "tg1sd8Mux2yjJLx7",
+          "name": "NocoDB"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "625e0bf1-07b6-44b5-9498-306e11497871",
+              "leftValue": "={{ $json.ConStatus }}",
+              "rightValue": "Progress",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        256,
+        0
+      ],
+      "id": "cacadde7-f221-405c-9db0-76d21b245db0",
+      "name": "allow?"
+    },
+    {
+      "parameters": {
+        "authentication": "nocoDbApiToken",
+        "operation": "update",
+        "workspaceId": "wqp6q0zt",
+        "projectId": "p0a3eirwme1bmw7",
+        "table": "m6axccf0owo5kzd",
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldName": "Id",
+              "fieldValue": "={{ $json.Id }}"
+            },
+            {
+              "fieldName": "Status",
+              "fieldValue": "Canceled"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.nocoDb",
+      "typeVersion": 3,
+      "position": [
+        256,
+        272
+      ],
+      "id": "c8d41139-81f0-4258-aa13-8aaa9ef9ff1c",
+      "name": "to canceled1",
+      "credentials": {
+        "nocoDbApiToken": {
+          "id": "tg1sd8Mux2yjJLx7",
+          "name": "NocoDB"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "value": "TzPSlJCrmIa3aftV",
+          "mode": "list",
+          "cachedResultUrl": "/workflow/TzPSlJCrmIa3aftV",
+          "cachedResultName": "Comment nocobd"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "comment": "=[Generation canceled](https://{{ $env[\"N8N_HOST\"] }}/workflow/{{ $workflow.id }}/executions/{{ $execution.id }})",
+            "base_id": "=m6axccf0owo5kzd",
+            "row_id": "={{ $node[\"Loop Over Items\"].json[\"Id\"] }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "comment",
+              "displayName": "comment",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "base_id",
+              "displayName": "base_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "row_id",
+              "displayName": "row_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "number"
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": true
+        },
+        "options": {
+          "waitForSubWorkflow": false
+        }
+      },
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.2,
+      "position": [
+        768,
+        752
+      ],
+      "id": "efa350b8-3437-4e10-845d-5e6b59353f37",
+      "name": "comment1"
+    },
+    {
+      "parameters": {
+        "fieldsToSummarize": {
+          "values": [
+            {
+              "field": "Status"
+            }
+          ]
+        },
+        "fieldsToSplitBy": "Status",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.summarize",
+      "typeVersion": 1.1,
+      "position": [
+        848,
+        -144
+      ],
+      "id": "91c74c8d-abc7-4977-ae7e-41ca3208da3d",
+      "name": "Summarize"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "80128857-5b3d-412b-973e-3a9861850f89",
+              "name": "data",
+              "value": "=<!DOCTYPE html>\n<html lang=\"en\">\n<head>\n    <meta charset=\"UTF-8\">\n    <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">\n    <meta http-equiv=\"X-UA-Compatible\" content=\"IE=edge\">\n    <title>Email</title>\n    <!--[if mso]>\n    <style type=\"text/css\">\n        body, table, td {font-family: Arial, sans-serif !important;}\n    </style>\n    <![endif]-->\n</head>\n<body style=\"margin: 0; padding: 0; background-color: #ffffff; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;\">\n    <table border=\"0\" cellpadding=\"0\" cellspacing=\"0\" width=\"100%\" style=\"background-color: #ffffff;\">\n        <tr>\n            <td align=\"center\" style=\"padding: 20px 0px;\">\n                <!-- Main Container -->\n                <table border=\"0\" cellpadding=\"0\" cellspacing=\"0\" width=\"800\" style=\"max-width: 800px; background-color: #FFFFFF; border-radius: 8px; border: 1px solid #e5e5e5;\">\n                    \n                    <!-- Main Content -->\n                    <tr>\n                        <td style=\"padding: 40px 20px 20px 20px;\">\n                            <table border=\"0\" cellpadding=\"0\" cellspacing=\"0\" width=\"100%\">\n                                <tr>\n                                    <td style=\"color: #1a1a1a; font-size: 16px; line-height: 1.6; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;\">\n                                        {{ $node[\"html agent\"].json[\"output\"][\"0\"][\"content\"][\"0\"][\"text\"] }}\n                                    </td>\n                                </tr>\n                            </table>\n                        </td>\n                    </tr>\n                    \n                    <!-- Footer -->\n                    <tr>\n                        <td style=\"padding: 30px 15px; border-top: 1px solid #e5e5e5;\">\n                            <table border=\"0\" cellpadding=\"0\" cellspacing=\"0\" width=\"100%\">\n                                <tr>\n                                    <td align=\"center\" style=\"color: #999999; font-size: 13px; line-height: 1.5; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;\">\n                                        If you don't want to receive emails, you can <a href=\"{{ String.fromCharCode(123) + String.fromCharCode(123) + 'unsubscribe_url' + String.fromCharCode(125) + String.fromCharCode(125) }}\" style=\"color: #666666; text-decoration: underline;\">unsubscribe</a>\n                                    </td>\n                                </tr>\n                            </table>\n                        </td>\n                    </tr>\n                    \n                </table>\n            </td>\n        </tr>\n    </table>\n</body>\n</html>",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        2176,
+        240
+      ],
+      "id": "bd71c927-3b55-4d83-8763-9b0d3616be77",
+      "name": "build html block"
+    },
+    {
+      "parameters": {
+        "aggregate": "aggregateAllItemData",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.aggregate",
+      "typeVersion": 1,
+      "position": [
+        1056,
+        -144
+      ],
+      "id": "325eb918-7c88-4ba4-a0f5-98b0be76558e",
+      "name": "Aggregate"
+    },
+    {
+      "parameters": {
+        "model": "sonar-pro",
+        "messages": {
+          "message": [
+            {
+              "content": "=Answer ONLY with a single JSON object. No explanations, no markdown, no code fences.\n\nYou are a logistics news analyst focused on VIRALITY and RESONANCE. \n\nYour role:\n- Find the most discussed, popular news that creates strong email hooks\n- Prioritize viral_score (minimum 7/10)\n- Always provide specific, actionable solutions\n- Recommend storytelling approach (meme, story, or both)\n- Return valid JSON only\n\nCore principles:\n1. Virality > Recency (popular 2-week-old news beats unknown yesterday's news)\n2. Specific solutions > Generic help (\"we can deliver X via Y\" not \"we can help\")\nCore principles:\n3. Natural hooks > Generic starters (provide EXACT opening phrase, NOT instructions)\n4. Context-aware storytelling (recommend meme/story based on news tone)\n\n═══════════════════════════════════════════════\nSTORYTELLING RECOMMENDATION LOGIC:\n═══════════════════════════════════════════════\n\nBased on news analysis, recommend ONE of three approaches:\n\n**APPROACH 1: MEME ONLY**\nUse when:\n- News is about industry challenges (not tragedy)\n- Tone is competitive/urgent/playful\n- Audience likely familiar with business memes\n\nRecommend 1-3 meme phrases that fit the news context.\n\n**APPROACH 2: STORY ONLY**\nUse when:\n- News is serious/tragic (disasters, accidents)\n- Need credibility over humor\n- B2B context requires professionalism\n\nSuggest story template (success_story, cautionary_tale, or insider_insight).\n\n**APPROACH 3: BOTH (MEME + BRIEF STORY)**\nUse when:\n- News has both urgency and relatability\n- High personalization level\n- Want maximum engagement\n\nRecommend meme for hook + story type for credibility.\n\n═══════════════════════════════════════════════\nMEME PHRASE OPTIONS (for recommendation):\n═══════════════════════════════════════════════\n\n**Chaos & Crisis:**\n- \"This is fine\" → ignored warnings, pretending calm\n- \"You can't fight in here, this is the war room!\" → absurd professionalism during chaos\n- \"My sleep schedule\" → plan vs. reality\n- \"Everything is on fire\" → multiple simultaneous crises\n\n**Smart Planning:**\n- \"Roll Safe (*taps forehead*)\" → clever advance planning\n- \"Work smarter, not harder\" → efficient solution\n- \"Modern problems require modern solutions\" → innovation\n- \"Always has been\" → revealing obvious pattern\n\n**FOMO & Competition:**\n- \"I love inside jokes...\" → feeling left out\n- \"First time?\" → experienced vs. newcomer\n- \"And I took that personally\" → competitive motivation\n- \"Choose your fighter\" → decision point\n\n**Playful:**\n- \"Not to be corny, but...\" → pun-based (seasonal topics)\n- \"It's giving [vibe]\" → describing situation energy\n- \"Tell me you [X] without telling me...\" → obvious signs\n\n**Sarcasm:**\n- \"Go [Name] go! You're doing amazing, sweetie!\" → sarcastic praise\n- \"The audacity\" → shocking behavior\n- \"We have [X] at home\" → inferior alternative\n\n═══════════════════════════════════════════════\nSTORY TEMPLATE OPTIONS (for recommendation):\n═══════════════════════════════════════════════\n\n**success_story** → \"We rescued [segment] client [X days] before [deadline]\"\nUse when: Need credibility, show proven solutions\n\n**cautionary_tale** → \"Companies that didn't [action] paid [X%] over market\"\nUse when: Warning about consequences, create urgency\n\n**insider_insight** → \"Most don't know: [industry fact]\"\nUse when: Positioning as expert, revealing non-obvious truth\n\nResponse format (strict JSON):\n{\n  \"angle_type\": \"breaking_news | economic_shock | regulatory_change | industry_crisis | seasonal_viral\",\n  \"title\": \"string (max 80 chars)\",\n  \"summary\": \"string (2-3 sentences)\",\n  \"viral_score\": number (1-10, minimum 7),\n  \"relevance_to_client\": \"string (2-3 sentences, specific to THIS client)\",\n  \"solution_we_offer\": \"string (1-2 sentences, CONCRETE solution)\",\n  \"pain_point\": \"price_surge | delivery_delays | unreliable_carriers | capacity_crunch | product_shortage | route_disruption | regulation_change | weather_emergency\",\n  \"hook_instruction\": \"string (EXACT opening sentence - natural, engaging, NO 'Saw the news' or 'Start email with'),\n  \"source\": \"string\",\n  \"date\": \"YYYY-MM-DD\",\n  \"key_quote_or_stat\": \"string (specific quote/number from news)\",\n  \"storytelling\": {\n    \"approach\": \"meme_only | story_only | both\",\n    \"recommended_memes\": [\n      {\n        \"phrase\": \"string (meme phrase)\",\n        \"why\": \"string (1 sentence: why it fits this news)\",\n        \"tone\": \"playful | sarcastic | relatable | clever\"\n      }\n    ],\n    \"recommended_story_type\": \"success_story | cautionary_tale | insider_insight | none\",\n    \"story_angle\": \"string (brief suggestion what story should be about)\"\n  }\n}\n\n═══════════════════════════════════════════════\nHOOK INSTRUCTION EXAMPLES (CRITICAL):\n═══════════════════════════════════════════════\n\nYour hook_instruction should be the EXACT first sentence of the email, ready to use as-is.\n\n✅ CORRECT hook_instruction examples:\n\n\"Texas is facing a 5% driver shortage—new CDL rules just made capacity even tighter.\"\n\n\"Port Arthur's 151,000 bpd refinery shutdown is forcing last-minute fuel reroutes across the Gulf.\"\n\n\"Amazon just rolled out same-day delivery to 2,300 cities, and local carriers are scrambling to keep up.\"\n\n\"Holiday freight rates are climbing 30% faster than last year—and it's only October.\"\n\n❌ WRONG hook_instruction examples (don't use these formats):\n\n\"Start email with: 'Saw the news about Texas driver shortage...'\"\n\n\"Mention that there's a driver shortage in Texas\"\n\n\"Talk about the CDL rule changes\"\n\n\"Start by saying: 'Have you heard about...'\"\n\nCRITICAL: Return the actual opening sentence, NOT an instruction about what to write.\n\nCritical requirements:\n✅ Viral_score must be 7-10 (reject low-impact news)\n✅ Hook_instruction must be direct, engaging opening sentence (NO meta-phrases)\n✅ Solution_we_offer must include concrete action\n✅ Always return result (find viral angle even if data limited)\n✅ Return ONLY valid JSON—NO markdown code blocks, NO ```json wrapper\n✅ Return raw JSON object, not wrapped in backticks\n\nCRITICAL: If news is about tragedy/disaster → approach must be \"story_only\" (no memes).\n\nFINAL OUTPUT RULES (CRITICAL):\n- Your entire reply MUST be a single JSON object.\n- DO NOT include any explanations, headings, markdown, or text before or after the JSON.\n- The first character of your reply MUST be \"{\" and the last character MUST be \"}\".\n- DO NOT wrap the JSON in `````` or any other markers.\n",
+              "role": "system"
+            },
+            {
+              "content": "={{$json.perplexity_user_prompt}}"
+            }
+          ]
+        },
+        "options": {
+          "temperature": 0.2,
+          "searchRecency": "month"
+        },
+        "requestOptions": {}
+      },
+      "type": "n8n-nodes-base.perplexity",
+      "typeVersion": 1,
+      "position": [
+        1680,
+        -368
+      ],
+      "id": "156accce-6727-4d03-bfab-d25e32ddc944",
+      "name": "Message a model1",
+      "credentials": {
+        "perplexityApi": {
+          "id": "ACd9oTUkG6ynHq95",
+          "name": "Perplexity"
+        }
+      },
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Извлечение и парсинг ответа Perplexity\nconst perplexityResponse = $input.item.json;\nconst originalData = $('Prepare data').item.json;\n\n// Извлекаем content из ответа\nlet newsAngle;\ntry {\n  let content = perplexityResponse.choices[0].message.content;\n  \n  // КРИТИЧНО: Убираем markdown блоки если есть\n  content = content.replace(/```json\\n?/g, '').replace(/```\\n?/g, '').trim();\n  \n  newsAngle = JSON.parse(content);\n} catch (error) {\n  return {\n    json: {\n      ...originalData,\n      error: 'Failed to parse Perplexity response: ' + error.message,\n      perplexity_raw: perplexityResponse,\n      raw_content: perplexityResponse.choices[0].message.content.substring(0, 500),\n      status: 'Canceled',\n      skip: true\n    }\n  };\n}\n\n// Валидация обязательных полей (основные)\nconst requiredFields = [\n  'angle_type', \n  'title', \n  'summary', \n  'viral_score', \n  'relevance_to_client',\n  'solution_we_offer',\n  'pain_point',\n  'hook_instruction',\n  'source',\n  'date',\n  'key_quote_or_stat'\n];\n\nconst missingFields = requiredFields.filter(field => !newsAngle[field]);\n\nif (missingFields.length > 0) {\n  return {\n    json: {\n      ...originalData,\n      error: `Perplexity response missing fields: ${missingFields.join(', ')}`,\n      newsAngle: newsAngle,\n      status: 'Canceled',\n      skip: true\n    }\n  };\n}\n\n// Проверка viral_score (должен быть >= 7)\nif (newsAngle.viral_score < 7) {\n  return {\n    json: {\n      ...originalData,\n      error: `Viral score too low: ${newsAngle.viral_score}. Need minimum 7.`,\n      newsAngle: newsAngle,\n      status: 'Canceled',\n      skip: true\n    }\n  };\n}\n\n// Валидация storytelling секции (новое)\nif (!newsAngle.storytelling) {\n  // Если нет storytelling, добавляем fallback\n  newsAngle.storytelling = {\n    approach: \"meme_only\",\n    recommended_memes: [],\n    recommended_story_type: \"none\",\n    story_angle: \"\"\n  };\n  console.log('Warning: No storytelling section in Perplexity response, using fallback');\n}\n\n// Валидация storytelling.approach\nconst validApproaches = ['meme_only', 'story_only', 'both'];\nif (!validApproaches.includes(newsAngle.storytelling.approach)) {\n  console.log(`Warning: Invalid storytelling approach: ${newsAngle.storytelling.approach}, defaulting to meme_only`);\n  newsAngle.storytelling.approach = 'meme_only';\n}\n\n// Валидация recommended_memes (если подход включает мемы)\nif (['meme_only', 'both'].includes(newsAngle.storytelling.approach)) {\n  if (!newsAngle.storytelling.recommended_memes || newsAngle.storytelling.recommended_memes.length === 0) {\n    console.log('Warning: Approach requires memes but none provided, adding fallback');\n    // Добавляем fallback мем на основе pain_point\n    const fallbackMemes = {\n      'capacity_crunch': { phrase: \"This is fine\", why: \"Capacity warnings being ignored\", tone: \"relatable\" },\n      'price_surge': { phrase: \"Roll Safe (*taps forehead*)\", why: \"Could have locked rates earlier\", tone: \"clever\" },\n      'delivery_delays': { phrase: \"My sleep schedule\", why: \"Plans vs reality\", tone: \"relatable\" },\n      'unreliable_carriers': { phrase: \"Go [Name] go! You're doing amazing, sweetie!\", why: \"Sarcastic about poor service\", tone: \"sarcastic\" }\n    };\n    newsAngle.storytelling.recommended_memes = [\n      fallbackMemes[newsAngle.pain_point] || fallbackMemes['capacity_crunch']\n    ];\n  }\n}\n\n// Валидация recommended_story_type (если подход включает истории)\nif (['story_only', 'both'].includes(newsAngle.storytelling.approach)) {\n  const validStoryTypes = ['success_story', 'cautionary_tale', 'insider_insight', 'none'];\n  if (!validStoryTypes.includes(newsAngle.storytelling.recommended_story_type)) {\n    console.log(`Warning: Invalid story type: ${newsAngle.storytelling.recommended_story_type}, defaulting to success_story`);\n    newsAngle.storytelling.recommended_story_type = 'success_story';\n  }\n}\n\n// Успешный результат — объединяем все данные\nreturn {\n  json: {\n    ...originalData,\n    news_angle: newsAngle,\n    perplexity_citations: perplexityResponse.citations || [],\n    perplexity_search_results: perplexityResponse.search_results || [],\n    perplexity_cost: perplexityResponse.usage?.cost?.total_cost || 0,\n    perplexity_tokens: {\n      prompt: perplexityResponse.usage?.prompt_tokens || 0,\n      completion: perplexityResponse.usage?.completion_tokens || 0,\n      total: perplexityResponse.usage?.total_tokens || 0\n    },\n    skip: false\n  }\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1888,
+        -368
+      ],
+      "id": "ec0ec206-5ae4-49c3-88ac-41fcf699b7ba",
+      "name": "Code in JavaScript"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Получаем входные данные\nconst input = items[0].json.data;\n\n// Считаем количество по статусам\nlet planned = 0;\nlet canceled = 0;\n\nfor (const row of input) {\n  if (row.Status === 'Planned') planned = row.count_Status;\n  if (row.Status === 'Canceled') canceled = row.count_Status;\n}\n\nlet success = false;\n\nif ((planned > 0 && canceled === 0) || (planned > canceled)) {\n  success = true;\n}\n\n// Возвращаем результат\nreturn [\n  {\n    json: {\n      success\n    }\n  }\n];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1296,
+        -144
+      ],
+      "id": "5c635eab-b45f-4b25-9039-ef48f76169e3",
+      "name": "check result"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "f207a994-4063-4e13-8213-c24b00f1c460",
+              "leftValue": "={{ $json.success }}",
+              "rightValue": false,
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        1504,
+        -144
+      ],
+      "id": "8f82cf5d-3cf7-4a57-8e81-1c3606cc34f6",
+      "name": "success?"
+    },
+    {
+      "parameters": {
+        "errorMessage": "During generation, the number of canceled tasks exceeded the number of successful executions."
+      },
+      "type": "n8n-nodes-base.stopAndError",
+      "typeVersion": 1,
+      "position": [
+        1744,
+        -128
+      ],
+      "id": "29e1702d-283b-497d-94d6-5a9cd3de6f66",
+      "name": "Stop and Error"
+    }
+  ],
+  "connections": {
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "get job",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Loop Over Items": {
+      "main": [
+        [
+          {
+            "node": "Summarize",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Prepare data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Message a model": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript2",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "to canceled",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Perplexity Prompt": {
+      "main": [
+        [
+          {
+            "node": "Message a model",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript2": {
+      "main": [
+        [
+          {
+            "node": "If",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare data": {
+      "main": [
+        [
+          {
+            "node": "Build Perplexity Prompt",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If": {
+      "main": [
+        [
+          {
+            "node": "to canceled",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "email content",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "html agent": {
+      "main": [
+        [
+          {
+            "node": "build html",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "to canceled",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Vector": {
+      "main": [
+        [
+          {
+            "node": "Query Points",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Query Points": {
+      "main": [
+        [
+          {
+            "node": "Set headline",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "to canceled",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set headline": {
+      "main": [
+        [
+          {
+            "node": "html agent",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "to canceled",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "to canceled": {
+      "main": [
+        [
+          {
+            "node": "comment1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "build html": {
+      "main": [
+        [
+          {
+            "node": "to planned",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "email content": {
+      "main": [
+        [
+          {
+            "node": "Vector",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "to canceled",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "get job": {
+      "main": [
+        [
+          {
+            "node": "allow?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "to planned": {
+      "main": [
+        [
+          {
+            "node": "Wait",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "allow?": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "to building",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "to canceled1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "comment1": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Summarize": {
+      "main": [
+        [
+          {
+            "node": "Aggregate",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Aggregate": {
+      "main": [
+        [
+          {
+            "node": "check result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "check result": {
+      "main": [
+        [
+          {
+            "node": "success?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "success?": {
+      "main": [
+        [],
+        [
+          {
+            "node": "Stop and Error",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "callerPolicy": "workflowsFromSameOwner",
+    "availableInMCP": false,
+    "errorWorkflow": "EuAkMSh7w9p9TJgj",
+    "executionTimeout": -1,
+    "saveDataSuccessExecution": "all"
+  },
+  "triggerCount": 1,
+  "versionId": "065de17d-e36c-4eb3-a823-d88512e742da",
+  "owner": {
+    "type": "personal",
+    "projectId": "I8ZweZXokOc0zbYb",
+    "projectName": "BSU Agency <info@brilliantseedup.com>",
+    "personalEmail": "info@brilliantseedup.com"
+  },
+  "parentFolderId": "6Zu0qFSBwgKnmhZs",
+  "isArchived": false
+}

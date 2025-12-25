@@ -1,0 +1,76 @@
+{
+  "id": "e1cXOw7iz7uk8NO6",
+  "name": "Controller",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "triggerAtHour": 2
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        0,
+        -192
+      ],
+      "id": "022ebe17-60b6-44ba-be50-6f74811d46b2",
+      "name": "Schedule Trigger"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "UPDATE {{ $vars.ncdbid }}.\"Contacts\"\nSET \"Campagin\" = 'Done'\nWHERE \"Campagin\" = 'Progress'\n  AND created_at < NOW() - INTERVAL '6 months';",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        224,
+        -192
+      ],
+      "id": "1ed2609a-7f9c-4c94-83a0-77199155cbe2",
+      "name": "to done",
+      "credentials": {
+        "postgres": {
+          "id": "oZABCHH2vjfMvXoi",
+          "name": "nocodb"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "to done",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "callerPolicy": "workflowsFromSameOwner",
+    "executionTimeout": -1,
+    "availableInMCP": false,
+    "errorWorkflow": "EuAkMSh7w9p9TJgj"
+  },
+  "triggerCount": 1,
+  "versionId": "919194ae-fb77-4895-8835-7660ae5419d7",
+  "owner": {
+    "type": "personal",
+    "projectId": "I8ZweZXokOc0zbYb",
+    "projectName": "BSU Agency <info@brilliantseedup.com>",
+    "personalEmail": "info@brilliantseedup.com"
+  },
+  "parentFolderId": null,
+  "isArchived": true
+}

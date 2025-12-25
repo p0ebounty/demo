@@ -1,0 +1,561 @@
+{
+  "id": "62U9TpnVE069KWeh",
+  "name": "To emails",
+  "nodes": [
+    {
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "value": "6dPZqsWMQJRoCqJH",
+          "mode": "list",
+          "cachedResultUrl": "/workflow/6dPZqsWMQJRoCqJH",
+          "cachedResultName": "Credentials"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "type": "sendpulse"
+          },
+          "matchingColumns": [
+            "type"
+          ],
+          "schema": [
+            {
+              "id": "type",
+              "displayName": "type",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": true
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.2,
+      "position": [
+        -800,
+        144
+      ],
+      "id": "74ff5c92-0178-4822-8fba-6e10dd845808",
+      "name": "cred sp"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://api.sendpulse.com/addressbooks/{{ $node[\"start\"].json[\"campagin\"] }}/emails",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $item(\"0\").$node[\"cred sp\"].json[\"key\"] }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify($json) }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        992,
+        144
+      ],
+      "id": "1daba020-805c-4d4d-b5de-5d506a92daab",
+      "name": "to emails"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "b228ff9a-5164-45d8-8e9a-7a28a642d575",
+              "leftValue": "={{ $json.Email }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.filter",
+      "typeVersion": 2.2,
+      "position": [
+        96,
+        144
+      ],
+      "id": "dc060064-421d-43f3-92ef-74a61aa2204f",
+      "name": "Filter"
+    },
+    {
+      "parameters": {
+        "workflowInputs": {
+          "values": [
+            {
+              "name": "campagin"
+            },
+            {
+              "name": "contact_id",
+              "type": "number"
+            },
+            {
+              "name": "group",
+              "type": "number"
+            },
+            {
+              "name": "data",
+              "type": "array"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        -1024,
+        144
+      ],
+      "id": "5d4b679e-239e-4f7e-ab8f-f5bfd3ecc8d7",
+      "name": "start"
+    },
+    {
+      "parameters": {
+        "fieldToSplitOut": "data",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.splitOut",
+      "typeVersion": 1,
+      "position": [
+        -128,
+        144
+      ],
+      "id": "0ba8345b-914e-4b57-9255-66d4037ac6f1",
+      "name": "split"
+    },
+    {
+      "parameters": {
+        "jsCode": "return $node['start'].json;"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -576,
+        144
+      ],
+      "id": "77219308-fa6c-4805-af87-162197dd1758",
+      "name": "back"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "1679b1cf-7683-4803-8c07-b34de5a43af3",
+              "name": "email",
+              "value": "={{ $json[\"Email\"] }}",
+              "type": "string"
+            },
+            {
+              "id": "f64bc1a0-3cba-4a5c-b09c-981370200f7e",
+              "name": "variables",
+              "value": "={\n\"name\":{{ JSON.stringify($json[\"Name\"]) }}\n}",
+              "type": "object"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        544,
+        144
+      ],
+      "id": "c4ace025-75bc-4ee0-a912-4e1c8d8279fd",
+      "name": "to scruct"
+    },
+    {
+      "parameters": {
+        "aggregate": "aggregateAllItemData",
+        "destinationFieldName": "emails",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.aggregate",
+      "typeVersion": 1,
+      "position": [
+        768,
+        144
+      ],
+      "id": "f958c0bc-58f9-4d18-b097-5625fa2c5135",
+      "name": "Aggregate"
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.limit",
+      "typeVersion": 1,
+      "position": [
+        320,
+        144
+      ],
+      "id": "de2b33c3-71f5-438b-a569-7e4f2f3e9adc",
+      "name": "Limit",
+      "disabled": true
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.contact_id }}",
+                    "rightValue": "",
+                    "operator": {
+                      "type": "number",
+                      "operation": "notEmpty",
+                      "singleValue": true
+                    },
+                    "id": "e3d76332-3c36-428e-b409-b46d95992122"
+                  }
+                ],
+                "combinator": "and"
+              }
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "b446fe5f-f0a6-49ce-833e-b0407ee8d088",
+                    "leftValue": "={{ $json.data }}",
+                    "rightValue": "",
+                    "operator": {
+                      "type": "array",
+                      "operation": "notEmpty",
+                      "singleValue": true
+                    }
+                  }
+                ],
+                "combinator": "and"
+              }
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "3d71792a-508a-4d43-83f1-556c63deb46c",
+                    "leftValue": "={{ $json.segment }}",
+                    "rightValue": "",
+                    "operator": {
+                      "type": "number",
+                      "operation": "notEmpty",
+                      "singleValue": true
+                    }
+                  }
+                ],
+                "combinator": "and"
+              }
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.3,
+      "position": [
+        -352,
+        128
+      ],
+      "id": "6b04443f-0dc1-42d3-9e1f-cfb295247127",
+      "name": "Switch"
+    },
+    {
+      "parameters": {
+        "authentication": "nocoDbApiToken",
+        "workspaceId": "wqp6q0zt",
+        "projectId": "p0a3eirwme1bmw7",
+        "table": "meyq439syguvqhb",
+        "id": "={{ $json.contact_id }}"
+      },
+      "type": "n8n-nodes-base.nocoDb",
+      "typeVersion": 3,
+      "position": [
+        -128,
+        -48
+      ],
+      "id": "cea10b19-cf3b-4c45-9e60-16b1c3679d8c",
+      "name": "get contact",
+      "credentials": {
+        "nocoDbApiToken": {
+          "id": "tg1sd8Mux2yjJLx7",
+          "name": "NocoDB"
+        }
+      },
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "authentication": "nocoDbApiToken",
+        "operation": "getAll",
+        "workspaceId": "wqp6q0zt",
+        "projectId": "p0a3eirwme1bmw7",
+        "table": "meyq439syguvqhb",
+        "returnAll": true,
+        "options": {
+          "where": "=(Group,eq,{{ $json.group || -1 }})~and(Email,notblank)"
+        }
+      },
+      "type": "n8n-nodes-base.nocoDb",
+      "typeVersion": 3,
+      "position": [
+        -128,
+        336
+      ],
+      "id": "aca0eb6d-c939-4924-86bf-c7d43f94d3ea",
+      "name": "group",
+      "credentials": {
+        "nocoDbApiToken": {
+          "id": "tg1sd8Mux2yjJLx7",
+          "name": "NocoDB"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "authentication": "nocoDbApiToken",
+        "operation": "create",
+        "workspaceId": "wqp6q0zt",
+        "projectId": "p0a3eirwme1bmw7",
+        "table": "m3gkcorj95359wn",
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldName": "Note",
+              "fieldValue": "=Submitted to campaign no.{{ $('start').item.json.campagin }}"
+            },
+            {
+              "fieldName": "Type",
+              "fieldValue": "=Email campagin"
+            },
+            {
+              "fieldName": "Contacts_id",
+              "fieldValue": "={{ $json.Id }}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.nocoDb",
+      "typeVersion": 3,
+      "position": [
+        144,
+        448
+      ],
+      "id": "a229c2bd-a312-4b5d-abad-fb92b769b679",
+      "name": "Note Event",
+      "credentials": {
+        "nocoDbApiToken": {
+          "id": "tg1sd8Mux2yjJLx7",
+          "name": "NocoDB"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "cred sp": {
+      "main": [
+        [
+          {
+            "node": "back",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Filter": {
+      "main": [
+        [
+          {
+            "node": "Note Event",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Limit",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "start": {
+      "main": [
+        [
+          {
+            "node": "cred sp",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "split": {
+      "main": [
+        [
+          {
+            "node": "Filter",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "back": {
+      "main": [
+        [
+          {
+            "node": "Switch",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "to scruct": {
+      "main": [
+        [
+          {
+            "node": "Aggregate",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Aggregate": {
+      "main": [
+        [
+          {
+            "node": "to emails",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Limit": {
+      "main": [
+        [
+          {
+            "node": "to scruct",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Switch": {
+      "main": [
+        [
+          {
+            "node": "get contact",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "split",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "group",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "get contact": {
+      "main": [
+        [
+          {
+            "node": "Filter",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "group": {
+      "main": [
+        [
+          {
+            "node": "Filter",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "callerPolicy": "workflowsFromSameOwner",
+    "availableInMCP": false,
+    "errorWorkflow": "EuAkMSh7w9p9TJgj"
+  },
+  "triggerCount": 0,
+  "versionId": "9378a610-5521-4d1f-a55a-f19a5cf9e036",
+  "owner": {
+    "type": "personal",
+    "projectId": "I8ZweZXokOc0zbYb",
+    "projectName": "BSU Agency <info@brilliantseedup.com>",
+    "personalEmail": "info@brilliantseedup.com"
+  },
+  "parentFolderId": "MZvrqXX7l9tZBFs4",
+  "isArchived": false
+}

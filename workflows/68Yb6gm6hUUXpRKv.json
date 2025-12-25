@@ -1,0 +1,3048 @@
+{
+  "id": "68Yb6gm6hUUXpRKv",
+  "name": "Catcher",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "921a7db2-2e22-4cd9-8ede-e3c2e91857a5",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        -640,
+        16
+      ],
+      "id": "831b80af-48a1-44f5-af56-8b576274e237",
+      "name": "Webhook",
+      "webhookId": "921a7db2-2e22-4cd9-8ede-e3c2e91857a5"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Получаем данные из входящего вебхука\nconst startTime = new Date($('Webhook').first().json.body.message.startedAt);\nconst endTime = new Date($('Webhook').first().json.body.message.endedAt);\n\n// Вычисляем продолжительность звонка в секундах\nconst durationInSeconds = Math.floor((endTime - startTime) / 1000);\n\n// Форматируем в минуты и секунды\nconst minutes = Math.floor(durationInSeconds / 60);\nconst seconds = durationInSeconds % 60;\nconst durationFormatted = minutes > 0 ? `${minutes}m ${seconds}s` : `${seconds}s`;\n\n// Формируем результат\nreturn [\n  {\n    json: {\n      startTime: startTime.toISOString(),\n      endTime: endTime.toISOString(),\n      durationInSeconds: durationInSeconds,\n      durationFormatted: durationFormatted,\n    },\n  },\n];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        816,
+        208
+      ],
+      "id": "6bb6e643-b2db-441c-9834-1c2ac021b8b7",
+      "name": "duration time"
+    },
+    {
+      "parameters": {
+        "authentication": "nocoDbApiToken",
+        "operation": "update",
+        "workspaceId": "wqp6q0zt",
+        "projectId": "p0a3eirwme1bmw7",
+        "table": "mq8zrzuevo96lmw",
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldName": "Id",
+              "fieldValue": "={{ $node[\"get call\"].json[\"Id\"] }}"
+            },
+            {
+              "fieldName": "Status",
+              "fieldValue": "Error"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.nocoDb",
+      "typeVersion": 3,
+      "position": [
+        336,
+        784
+      ],
+      "id": "e00caef8-aab9-4301-8dac-7d2039ad239c",
+      "name": "error call",
+      "credentials": {
+        "nocoDbApiToken": {
+          "id": "tg1sd8Mux2yjJLx7",
+          "name": "NocoDB"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "authentication": "nocoDbApiToken",
+        "operation": "update",
+        "workspaceId": "wqp6q0zt",
+        "projectId": "p0a3eirwme1bmw7",
+        "table": "mq8zrzuevo96lmw",
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldName": "Id",
+              "fieldValue": "={{ $node[\"get call\"].json[\"Id\"] }}"
+            },
+            {
+              "fieldName": "Summarize",
+              "fieldValue": "={{ $json.message.content.summary }}"
+            },
+            {
+              "fieldName": "Duration",
+              "fieldValue": "={{ $('duration time').item.json.durationInSeconds }}"
+            },
+            {
+              "fieldName": "Status",
+              "fieldValue": "Answered"
+            },
+            {
+              "fieldName": "Quality",
+              "fieldValue": "={{ $json.message.content.rating }}"
+            },
+            {
+              "fieldName": "Transcript",
+              "fieldValue": "={{ $node[\"trascript\"].json[\"value\"] || \"none\" }}"
+            },
+            {
+              "fieldName": "Recording",
+              "fieldValue": "={{ $('Webhook').item.json.body.message.artifact.recordingUrl || null }}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.nocoDb",
+      "typeVersion": 3,
+      "position": [
+        1600,
+        208
+      ],
+      "id": "b43f2e18-66bd-4e52-95fc-6026d3ced274",
+      "name": "summarize",
+      "credentials": {
+        "nocoDbApiToken": {
+          "id": "tg1sd8Mux2yjJLx7",
+          "name": "NocoDB"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "value": "1F3zaKVNChWlK0HJ",
+          "mode": "list",
+          "cachedResultUrl": "/workflow/1F3zaKVNChWlK0HJ",
+          "cachedResultName": "Retrieve call cost"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "id": "={{ $node[\"get call\"].json[\"Id\"] }}",
+            "cost": "={{ $node[\"Webhook\"].json[\"body\"][\"message\"][\"cost\"] }}",
+            "call_id": "={{ $node[\"Webhook\"].json[\"body\"][\"message\"][\"call\"][\"transport\"][\"callSid\"] }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "id",
+              "displayName": "id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "number"
+            },
+            {
+              "id": "call_id",
+              "displayName": "call_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "cost",
+              "displayName": "cost",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "number"
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": true
+        },
+        "options": {
+          "waitForSubWorkflow": false
+        }
+      },
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.2,
+      "position": [
+        -192,
+        416
+      ],
+      "id": "cd51e65b-5ab5-44f7-9ce0-cb9df1bfb44b",
+      "name": "get cost"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "7795678e-0666-4e81-b66f-4b574a82e986",
+              "leftValue": "={{ $node[\"Webhook\"].json[\"body\"][\"message\"][\"cost\"] }}",
+              "rightValue": "",
+              "operator": {
+                "type": "number",
+                "operation": "notEmpty",
+                "singleValue": true
+              }
+            },
+            {
+              "id": "4f7795c6-3dad-4246-adb5-da2670956cee",
+              "leftValue": "={{ $node[\"Webhook\"].json[\"body\"][\"message\"][\"cost\"] }}",
+              "rightValue": 0,
+              "operator": {
+                "type": "number",
+                "operation": "notEquals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -416,
+        416
+      ],
+      "id": "a9f18455-8b8a-41a6-b00e-bb4ad5cbc19e",
+      "name": "cost?"
+    },
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "value": "gpt-4o",
+          "mode": "list",
+          "cachedResultName": "GPT-4O"
+        },
+        "messages": {
+          "values": [
+            {
+              "content": "=You are a conversation analysis assistant for a US-based asset-based transport and freight company (City Company). \nYour task is to analyze the transcript of a completed call between a voice outreach agent and a potential client (shipper).\n\n### Analyze the conversation and return ONLY a JSON object with the following structure:\n{\n  \"summary\": \"string\",\n  \"rating\": number\n}\n\n### The summarization structure should be as follows:\n1. BRIEF OVERVIEW – What was the conversation about and what was achieved (e.g., contact info gathered, decision-maker identified, follow-up planned)?\n2. DECISION-MAKER STATUS – Was the agent able to reach or identify the person responsible for logistics, transportation, or carrier relations?\n3. SHIPMENT VOLUME – Approximate shipment frequency, volume, or load type discussed (e.g., “10 FTL per week” or “mainly LTL”).\n4. LANES & REGIONS – Main shipping areas or routes mentioned (e.g., Midwest, cross-border, East Coast).\n5. EQUIPMENT & SERVICES – Equipment types or service needs (dry van, reefer, flatbed, drayage, etc.).\n6. CURRENT CARRIERS / PAIN POINTS – Who they currently use, and any mentioned challenges (capacity, reliability, detention, etc.).\n7. INTEREST LEVEL – Client’s engagement and willingness to continue the conversation or receive documents.\n8. NEXT STEPS / ACTION ITEMS – Any agreed follow-up, email exchange, proposal, or callback time.\n9. OBJECTIONS OR BARRIERS – Any resistance, “not interested,” or request for email-first.\n\n### OUTPUT RULES:\n1. Use line breaks (\\n) to separate each section in the summary. Start each section with its label in CAPITAL LETTERS (e.g., \"BRIEF OVERVIEW:\", \"INTEREST LEVEL:\").\n2. The rating should be 0–5 based on how informative and useful the call was:\n   - 0 = no conversation / hung up immediately\n   - 1 = very little info gathered\n   - 3 = moderate information, partial qualification\n   - 5 = highly detailed and productive call\n3. Return ONLY the JSON object, no extra explanations or formatting.\n4. Do not guess or invent data — summarize only what’s actually present.\n5. If the call was empty or cut off, mention that briefly in the \"summary\" field.\n",
+              "role": "system"
+            },
+            {
+              "content": "={{ $node[\"trascript\"].json[\"value\"] || \"none\" }}"
+            }
+          ]
+        },
+        "jsonOutput": true,
+        "options": {
+          "temperature": 0.2
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 1.8,
+      "position": [
+        1248,
+        208
+      ],
+      "id": "b269a066-42d7-4405-a79f-c1f50303e908",
+      "name": "Summary",
+      "retryOnFail": true,
+      "waitBetweenTries": 5000,
+      "maxTries": 5,
+      "credentials": {
+        "openAiApi": {
+          "id": "895vd8bC2qxU4JL4",
+          "name": "OpenAi"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "a78ab073-c7bc-4623-9b3f-45bad07fd0ed",
+              "leftValue": "={{ $('Webhook').item.json.body.message.call.customer.number }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "exists",
+                "singleValue": true
+              }
+            },
+            {
+              "id": "667238ae-a1a5-4b97-883c-a6eda79bebe1",
+              "leftValue": "={{ $json.body.message.type }}",
+              "rightValue": "end-of-call-report",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            },
+            {
+              "id": "6ef3f06e-10f6-4922-b2b6-67a32c0ec7a6",
+              "leftValue": "={{ $('Webhook').item.json.body.message.endedReason }}",
+              "rightValue": "call.in-progress.twilio-completed-call",
+              "operator": {
+                "type": "string",
+                "operation": "notEquals"
+              }
+            },
+            {
+              "id": "9141b0e4-0ed1-43d6-8e42-96dd85e68f9b",
+              "leftValue": "={{ $('Webhook').item.json.body.message.endedReason }}",
+              "rightValue": "ringing",
+              "operator": {
+                "type": "string",
+                "operation": "notEquals"
+              }
+            },
+            {
+              "id": "ce8023b6-1271-4d10-8aa4-14e75b52195c",
+              "leftValue": "={{ $('Webhook').item.json.body.message.endedReason }}",
+              "rightValue": "in-progress",
+              "operator": {
+                "type": "string",
+                "operation": "notEquals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -400,
+        16
+      ],
+      "id": "faa5c426-5c65-4762-a6f5-43f94bdd5d63",
+      "name": "call"
+    },
+    {
+      "parameters": {
+        "authentication": "nocoDbApiToken",
+        "operation": "getAll",
+        "workspaceId": "wqp6q0zt",
+        "projectId": "p0a3eirwme1bmw7",
+        "table": "mq8zrzuevo96lmw",
+        "limit": 1,
+        "options": {
+          "where": "=(Call ID,eq,{{ $('Webhook').item.json.body.message.call.id }})"
+        }
+      },
+      "type": "n8n-nodes-base.nocoDb",
+      "typeVersion": 3,
+      "position": [
+        -144,
+        32
+      ],
+      "id": "a3c26196-1c3e-4259-bbb2-61c66e7b4275",
+      "name": "get call",
+      "credentials": {
+        "nocoDbApiToken": {
+          "id": "tg1sd8Mux2yjJLx7",
+          "name": "NocoDB"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "errorMessage": "={{ $('Webhook').item.json.body.message.endedReason || \"error\" }}"
+      },
+      "type": "n8n-nodes-base.stopAndError",
+      "typeVersion": 1,
+      "position": [
+        784,
+        784
+      ],
+      "id": "2b207580-c546-4b7f-a7e6-d35855c6a8ef",
+      "name": "Stop and Error"
+    },
+    {
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "value": "TzPSlJCrmIa3aftV",
+          "mode": "list",
+          "cachedResultUrl": "/workflow/TzPSlJCrmIa3aftV",
+          "cachedResultName": "Comment nocobd"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "comment": "=[Call webhook received](https://{{ $env[\"N8N_HOST\"] }}/workflow/{{ $workflow.id }}/executions/{{ $execution.id }})",
+            "base_id": "={{ $vars.nc_base_cs }}",
+            "row_id": "={{ $node[\"get cs\"].json[\"Id\"] }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "comment",
+              "displayName": "comment",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "base_id",
+              "displayName": "base_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "row_id",
+              "displayName": "row_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "number"
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": true
+        },
+        "options": {
+          "waitForSubWorkflow": false
+        }
+      },
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.2,
+      "position": [
+        368,
+        -272
+      ],
+      "id": "a8ec9c03-6751-4b26-ae63-f11386e57f14",
+      "name": "comment to cs"
+    },
+    {
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "value": "TzPSlJCrmIa3aftV",
+          "mode": "list",
+          "cachedResultUrl": "/workflow/TzPSlJCrmIa3aftV",
+          "cachedResultName": "Comment nocobd"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "comment": "=[Call webhook received](https://{{ $env[\"N8N_HOST\"] }}/workflow/{{ $workflow.id }}/executions/{{ $execution.id }})",
+            "base_id": "=mq8zrzuevo96lmw",
+            "row_id": "={{ $('get call').item.json.Id }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "comment",
+              "displayName": "comment",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "base_id",
+              "displayName": "base_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "row_id",
+              "displayName": "row_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "number"
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": true
+        },
+        "options": {
+          "waitForSubWorkflow": false
+        }
+      },
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.2,
+      "position": [
+        592,
+        -272
+      ],
+      "id": "d6f13580-1eb4-4ee0-8b64-3787955f0d6d",
+      "name": "comment to call"
+    },
+    {
+      "parameters": {
+        "authentication": "nocoDbApiToken",
+        "operation": "update",
+        "workspaceId": "wqp6q0zt",
+        "projectId": "p0a3eirwme1bmw7",
+        "table": "mkbhjd0aqdl1r1m",
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldName": "Id",
+              "fieldValue": "={{ $node[\"get cs\"].json[\"Id\"] }}"
+            },
+            {
+              "fieldName": "Status",
+              "fieldValue": "=Error"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.nocoDb",
+      "typeVersion": 3,
+      "position": [
+        560,
+        784
+      ],
+      "id": "f2b9b633-ecb6-46e1-a900-2e9f7f5d9383",
+      "name": "error cs",
+      "credentials": {
+        "nocoDbApiToken": {
+          "id": "tg1sd8Mux2yjJLx7",
+          "name": "NocoDB"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "c75bf501-74d3-4424-908c-3fd16feee806",
+              "leftValue": "={{ $node[\"Webhook\"].json[\"body\"][\"message\"][\"assistant\"][\"id\"] }}",
+              "rightValue": "62c43120-beaa-4f04-a08e-4c9f31161996",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        2688,
+        208
+      ],
+      "id": "826d9fc3-e1d6-4fbf-841c-800f809964cf",
+      "name": "main agent?"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "2627d0c3-dee3-4b16-bcd5-497a1d8a40b8",
+              "leftValue": "=customer-busy\ncustomer-did-not-answer\ncustomer-did-not-give-microphone-permission\nassistant-did-not-receive-customer-audio\nphone-call-provider-closed-websocket\ntwilio-failed-to-connect-call\nsip-telephony-provider-failed-to-connect-call\nvoicemail\nmanually-canceled",
+              "rightValue": "={{ $('Webhook').item.json.body.message.endedReason }}",
+              "operator": {
+                "type": "string",
+                "operation": "contains"
+              }
+            },
+            {
+              "id": "fb8e28bb-99ff-4498-be3d-f0a2f2b97688",
+              "leftValue": "={{ $('get call').item.json.Status }}",
+              "rightValue": "Protect",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            }
+          ],
+          "combinator": "or"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        368,
+        128
+      ],
+      "id": "a1de54b2-2b98-4cea-8ec2-1a1c2c1c137e",
+      "name": "NA?"
+    },
+    {
+      "parameters": {
+        "authentication": "nocoDbApiToken",
+        "operation": "update",
+        "workspaceId": "wqp6q0zt",
+        "projectId": "p0a3eirwme1bmw7",
+        "table": "mq8zrzuevo96lmw",
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldName": "Id",
+              "fieldValue": "={{ $node[\"get call\"].json[\"Id\"] }}"
+            },
+            {
+              "fieldName": "Status",
+              "fieldValue": "={{ $node[\"get call\"].json[\"Status\"] === \"Protect\" ? \"Protect\" : ($node[\"Webhook\"].json[\"body\"][\"message\"][\"endedReason\"] === \"voicemail\" ? \"Voicemail\" : \"Not answered\") }}"
+            },
+            {
+              "fieldName": "Recording",
+              "fieldValue": "={{ $('Webhook').item.json.body.message.artifact.recordingUrl || null }}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.nocoDb",
+      "typeVersion": 3,
+      "position": [
+        1344,
+        -320
+      ],
+      "id": "e7d9d167-63b1-409c-817f-79f3871995cc",
+      "name": "NA call",
+      "credentials": {
+        "nocoDbApiToken": {
+          "id": "tg1sd8Mux2yjJLx7",
+          "name": "NocoDB"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "5f93d23c-c1fa-4965-bea4-3954a40ee512",
+              "leftValue": "={{ $node[\"get call\"].json[\"Status\"] }}",
+              "rightValue": "Protect",
+              "operator": {
+                "type": "string",
+                "operation": "notEquals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.filter",
+      "typeVersion": 2.2,
+      "position": [
+        1120,
+        -320
+      ],
+      "id": "a734ec66-7389-426a-a5a1-6c91fbd3b7c6",
+      "name": "update status?",
+      "disabled": true
+    },
+    {
+      "parameters": {
+        "authentication": "nocoDbApiToken",
+        "operation": "update",
+        "workspaceId": "wqp6q0zt",
+        "projectId": "p0a3eirwme1bmw7",
+        "table": "mq8zrzuevo96lmw",
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldName": "Id",
+              "fieldValue": "={{ $node[\"get call\"].json[\"Id\"] }}"
+            },
+            {
+              "fieldName": "Status",
+              "fieldValue": "Error"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.nocoDb",
+      "typeVersion": 3,
+      "position": [
+        144,
+        304
+      ],
+      "id": "004aa9fc-43fc-4f2e-83cc-824b525856dc",
+      "name": "lost call",
+      "credentials": {
+        "nocoDbApiToken": {
+          "id": "tg1sd8Mux2yjJLx7",
+          "name": "NocoDB"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "value": "gpt-4.1-mini",
+          "mode": "list",
+          "cachedResultName": "gpt-4.1-mini"
+        },
+        "options": {
+          "temperature": 0.3
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        2800,
+        1056
+      ],
+      "id": "25630883-c02c-4762-9946-2e2de75d062f",
+      "name": "4.1-mini",
+      "credentials": {
+        "openAiApi": {
+          "id": "895vd8bC2qxU4JL4",
+          "name": "OpenAi"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $node[\"trascript\"].json[\"value\"] || \"none\" }}",
+        "hasOutputParser": true,
+        "options": {
+          "systemMessage": "=You are a Do Not Call (DNC) detection parser. Analyze conversation transcripts where YOU are the AI agent and detect if the User explicitly or implicitly requested to never be contacted again.\n\nYour task: Review all User's responses throughout the conversation and determine if this contact should be marked as DNC (Do Not Call).\n\nReturn ONLY valid JSON in this exact format:\n{\"dnc_detected\": true, \"reason\": \"brief explanation\"}\nor\n{\"dnc_detected\": false}\n\nDETECT TRUE (dnc_detected: true) when User exhibits ANY of these patterns:\n\n1. EXPLICIT DNC REQUESTS:\n   - Direct commands containing: \"stop calling\", \"don't call me\", \"never call again\", \"do not call\", \"don't contact me\"\n   - List removal requests: \"remove me from your list\", \"take me off your list\", \"delete my number\", \"remove my number\"\n   - Boundary statements: \"this number is off limits\", \"don't use this number\", \"stop contacting me\"\n   - Registration claims: \"I'm on do not call list\", \"I'm registered on DNC\"\n\n2. AGGRESSIVE REJECTION WITH CONTACT TERMINATION:\n   - Profanity or insults (fuck, shit, damn, etc.) COMBINED with any indication they don't want further contact\n   - Threats combined with rejection: \"I'll report you\", \"I'll sue\", \"this is harassment\" + rejection\n   - Angry tone with explicit \"leave me alone\", \"stop bothering me\"\n\n3. REPEATED REFUSAL ESCALATION:\n   - User refuses the offer 3+ times with increasing frustration\n   - User repeatedly asks to end the call or stop the conversation\n   - User challenges legitimacy repeatedly (\"how did you get my number\", \"who are you really\") combined with final rejection\n\n4. FINAL GOODBYE WITH NEGATIVE CONTEXT:\n   - User says goodbye/hangs up after expressing anger, frustration, or explicit disinterest in ANY future contact\n   - User ends call abruptly after confrontation about AI/legitimacy\n\n5. LEGAL OR REGULATORY LANGUAGE:\n   - Mentions: \"violation\", \"illegal\", \"harassment\", \"lawyer\", \"authorities\", \"report this call\"\n   - Privacy concerns: \"GDPR\", \"data protection\", \"how did you get my info\" + refusal\n\nDETECT FALSE (dnc_detected: false) when:\n- User is simply not interested but polite (\"not right now\", \"maybe later\", \"not interested today\")\n- User asks questions but doesn't explicitly refuse future contact\n- User is confused or needs clarification but hasn't rejected contact\n- User ends call neutrally without expressing anger or DNC request\n- User shows mild frustration but continues conversation without explicit rejection\n\nCRITICAL RULES:\n- Focus on User's messages only (ignore AI responses)\n- Look for COMBINATION of negative sentiment + explicit/implicit contact rejection\n- Single polite \"no\" is NOT DNC - must be emphatic or repeated\n- Sarcasm alone is NOT DNC unless combined with clear rejection\n- Always include \"reason\" field when dnc_detected is true\n\nOUTPUT FORMAT:\nReturn ONLY valid JSON, no other text:\n{\"dnc_detected\": true, \"reason\": \"User said 'never call me again' and used profanity\"}\nor\n{\"dnc_detected\": false}"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3,
+      "position": [
+        2032,
+        208
+      ],
+      "id": "8430e450-5e3e-4c37-82bb-9e2b152e72fc",
+      "name": "DNC detector"
+    },
+    {
+      "parameters": {
+        "schemaType": "manual",
+        "inputSchema": "{\n  \"type\": \"object\",\n  \"properties\": {\n    \"dnc_detected\": {\n      \"type\": \"boolean\",\n      \"description\": \"True if user explicitly or implicitly requested to never be contacted again\"\n    },\n    \"reason\": {\n      \"type\": \"string\",\n      \"description\": \"Brief explanation of why DNC was detected (required only when dnc_detected is true)\"\n    }\n  },\n  \"required\": [\"dnc_detected\"],\n  \"additionalProperties\": false,\n  \"if\": {\n    \"properties\": {\n      \"dnc_detected\": {\n        \"const\": true\n      }\n    }\n  },\n  \"then\": {\n    \"required\": [\"dnc_detected\", \"reason\"]\n  }\n}",
+        "autoFix": true
+      },
+      "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+      "typeVersion": 1.3,
+      "position": [
+        2288,
+        480
+      ],
+      "id": "d2ea5701-b225-4c36-ae9a-faed5ffdf3b4",
+      "name": "DNC detector parser"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "19ead8a5-ca30-42f8-b800-2cbaab64bcc6",
+              "leftValue": "={{ $node[\"DNC detector\"].json[\"output\"][\"dnc_detected\"] }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "notEquals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        2384,
+        208
+      ],
+      "id": "87d91184-6bde-490b-ba72-e3af1d1b5f6b",
+      "name": "no dnc?"
+    },
+    {
+      "parameters": {
+        "authentication": "nocoDbApiToken",
+        "operation": "update",
+        "workspaceId": "wqp6q0zt",
+        "projectId": "p0a3eirwme1bmw7",
+        "table": "mkbhjd0aqdl1r1m",
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldName": "=Id",
+              "fieldValue": "={{ $node[\"get cs\"].json[\"Id\"] }}"
+            },
+            {
+              "fieldName": "Status",
+              "fieldValue": "Stopped"
+            },
+            {
+              "fieldName": "Schedule",
+              "fieldValue": "Stop"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.nocoDb",
+      "typeVersion": 3,
+      "position": [
+        1312,
+        896
+      ],
+      "id": "46773cbe-d014-4a2a-bc84-c4b66b762a86",
+      "name": "dnc update cs",
+      "credentials": {
+        "nocoDbApiToken": {
+          "id": "tg1sd8Mux2yjJLx7",
+          "name": "NocoDB"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "fc797cc8-8a45-4960-a1e4-9942fbc72b6f",
+              "leftValue": "={{ $node[\"get cs\"].json[\"Contacts\"][\"Id\"] }}",
+              "rightValue": "",
+              "operator": {
+                "type": "number",
+                "operation": "notEmpty",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        1536,
+        800
+      ],
+      "id": "a8ec26c7-e443-433e-b850-94684f135369",
+      "name": "contact to dnc?"
+    },
+    {
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "value": "TzPSlJCrmIa3aftV",
+          "mode": "list",
+          "cachedResultUrl": "/workflow/TzPSlJCrmIa3aftV",
+          "cachedResultName": "Comment nocobd"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "row_id": "={{ $node[\"get cs\"].json[\"Id\"] }}",
+            "base_id": "mkbhjd0aqdl1r1m",
+            "comment": "=[Process stopped - DNS detected](https://{{ $env[\"N8N_HOST\"] }}/workflow/{{ $workflow.id }}/executions/{{ $execution.id }})"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "comment",
+              "displayName": "comment",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "base_id",
+              "displayName": "base_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "row_id",
+              "displayName": "row_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "number",
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": true
+        },
+        "options": {
+          "waitForSubWorkflow": false
+        }
+      },
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.3,
+      "position": [
+        1536,
+        992
+      ],
+      "id": "c2420622-ee4f-436a-ae00-8ee6473d77bf",
+      "name": "comment"
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [
+        896,
+        -224
+      ],
+      "id": "2e76b4a9-9713-45a4-a59d-8ada23296628",
+      "name": "no answer"
+    },
+    {
+      "parameters": {
+        "authentication": "nocoDbApiToken",
+        "operation": "update",
+        "workspaceId": "wqp6q0zt",
+        "projectId": "p0a3eirwme1bmw7",
+        "table": "mkbhjd0aqdl1r1m",
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldName": "Id",
+              "fieldValue": "={{ $node[\"get cs\"].json[\"Id\"] }}"
+            },
+            {
+              "fieldName": "Schedule",
+              "fieldValue": "Default"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.nocoDb",
+      "typeVersion": 3,
+      "position": [
+        1120,
+        -128
+      ],
+      "id": "d89ba690-75c2-4333-88b1-a3d66d89a6c7",
+      "name": "update NA cs",
+      "credentials": {
+        "nocoDbApiToken": {
+          "id": "tg1sd8Mux2yjJLx7",
+          "name": "NocoDB"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "d5b3121d-3862-4759-91e7-52b57efacff7",
+              "leftValue": "={{ $('get cs').item.json.Status }}",
+              "rightValue": "Progress",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        1808,
+        208
+      ],
+      "id": "f7415eb0-d953-4837-b5b7-70213cdcb91f",
+      "name": "valid cs status?"
+    },
+    {
+      "parameters": {
+        "authentication": "nocoDbApiToken",
+        "operation": "update",
+        "workspaceId": "wqp6q0zt",
+        "projectId": "p0a3eirwme1bmw7",
+        "table": "meyq439syguvqhb",
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldName": "Id",
+              "fieldValue": "={{ $node[\"get cs\"].json[\"Contacts\"][\"Id\"] }}"
+            },
+            {
+              "fieldName": "CSS",
+              "fieldValue": "Done"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.nocoDb",
+      "typeVersion": 3,
+      "position": [
+        1344,
+        496
+      ],
+      "id": "b55ed4ec-8776-4d58-aa4b-93ecf444da82",
+      "name": "update contact as end cs",
+      "credentials": {
+        "nocoDbApiToken": {
+          "id": "tg1sd8Mux2yjJLx7",
+          "name": "NocoDB"
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "authentication": "nocoDbApiToken",
+        "operation": "update",
+        "workspaceId": "wqp6q0zt",
+        "projectId": "p0a3eirwme1bmw7",
+        "table": "meyq439syguvqhb",
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldName": "=Id",
+              "fieldValue": "={{ $node[\"get cs\"].json[\"Contacts\"][\"Id\"] }}"
+            },
+            {
+              "fieldName": "DNC",
+              "fieldValue": "true"
+            },
+            {
+              "fieldName": "Stage",
+              "fieldValue": "Call cancelled"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.nocoDb",
+      "typeVersion": 3,
+      "position": [
+        1776,
+        800
+      ],
+      "id": "2c326677-7755-48ea-96d5-90b0ca029981",
+      "name": "dnc contact",
+      "credentials": {
+        "nocoDbApiToken": {
+          "id": "tg1sd8Mux2yjJLx7",
+          "name": "NocoDB"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "a78ab073-c7bc-4623-9b3f-45bad07fd0ed",
+              "leftValue": "={{ $('Webhook').item.json.body.message.call.customer.number }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "exists",
+                "singleValue": true
+              }
+            },
+            {
+              "id": "667238ae-a1a5-4b97-883c-a6eda79bebe1",
+              "leftValue": "={{ $json.body.message.type }}",
+              "rightValue": "assistant.started",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -400,
+        -304
+      ],
+      "id": "0adbe9b2-1662-46c9-89d5-1e2a41075051",
+      "name": "start?"
+    },
+    {
+      "parameters": {
+        "operation": "select",
+        "schema": {
+          "__rl": true,
+          "value": "p0a3eirwme1bmw7",
+          "mode": "list",
+          "cachedResultName": "p0a3eirwme1bmw7"
+        },
+        "table": {
+          "__rl": true,
+          "value": "Calls",
+          "mode": "list",
+          "cachedResultName": "Calls"
+        },
+        "limit": 1,
+        "where": {
+          "values": [
+            {
+              "column": "Call_ID",
+              "value": "={{ $node[\"Webhook\"].json[\"body\"][\"message\"][\"call\"][\"id\"] }}"
+            },
+            {
+              "column": "Memory",
+              "condition": "IS NOT NULL"
+            }
+          ]
+        },
+        "options": {
+          "outputColumns": [
+            "Memory"
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        -176,
+        -304
+      ],
+      "id": "5a45c61b-9500-4cf7-8158-e758d18242a4",
+      "name": "get memory",
+      "credentials": {
+        "postgres": {
+          "id": "oZABCHH2vjfMvXoi",
+          "name": "nocodb"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $node[\"Webhook\"].json[\"body\"][\"message\"][\"call\"][\"monitor\"][\"controlUrl\"] }}",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"type\": \"add-message\",\n  \"message\": {\n    \"role\": \"assistant\",\n    \"content\": {{ JSON.stringify ($json.Memory) }}\n  },\n  \"triggerResponseEnabled\": false\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        48,
+        -304
+      ],
+      "id": "a0adce65-104d-4843-aa67-68221dd070ec",
+      "name": "to memory",
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Code Node (JavaScript)\nconst messages = $node[\"Webhook\"].json[\"body\"][\"message\"][\"messages\"];\n\n// Фильтруем и форматируем\nconst formatted = messages\n  .filter(msg => {\n    // Только user и bot\n    if (msg.role !== 'user' && msg.role !== 'bot') return false;\n    \n    // Убираем боты с памятью предыдущих звонков\n    if (msg.role === 'bot' && msg.message.includes('[MEMORY FROM PREVIOUS CALL(S)]')) {\n      return false;\n    }\n    \n    return true;\n  })\n  .map(msg => {\n    const label = msg.role === 'user' ? 'User' : 'AI';\n    return `${label}: ${msg.message}`;\n  })\n  .join('\\n');\n\nreturn [{\n  json: {\n    value: formatted\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1024,
+        208
+      ],
+      "id": "bd6df711-9f08-4675-b29a-9009193f0b9f",
+      "name": "trascript"
+    },
+    {
+      "parameters": {
+        "authentication": "nocoDbApiToken",
+        "operation": "update",
+        "workspaceId": "wqp6q0zt",
+        "projectId": "p0a3eirwme1bmw7",
+        "table": "mkbhjd0aqdl1r1m",
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldName": "Id",
+              "fieldValue": "={{ $node[\"get cs\"].json[\"Id\"] }}"
+            },
+            {
+              "fieldName": "Classified",
+              "fieldValue": "={{ $now }}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.nocoDb",
+      "typeVersion": 3,
+      "position": [
+        3600,
+        -208
+      ],
+      "id": "01f8e0af-fcd1-4f14-8a7a-7864d20aaafd",
+      "name": "set q-mark",
+      "credentials": {
+        "nocoDbApiToken": {
+          "id": "tg1sd8Mux2yjJLx7",
+          "name": "NocoDB"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "642df841-986f-4d3b-b029-608ac60f1089",
+              "leftValue": "={{ $node[\"get cs\"].json[\"Classified\"] }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "empty",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        3328,
+        -208
+      ],
+      "id": "f7c50d05-e9a6-4ee4-8d40-065b3e2ded2c",
+      "name": "set q-mark?"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "642df841-986f-4d3b-b029-608ac60f1089",
+              "leftValue": "={{ $node[\"get cs\"].json[\"Classified\"] }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        3168,
+        576
+      ],
+      "id": "c90a463a-720b-4588-b30a-e6af4b733503",
+      "name": "q-mark?"
+    },
+    {
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "value": "LDOIlXgHNRS3diBH",
+          "mode": "list",
+          "cachedResultUrl": "/workflow/LDOIlXgHNRS3diBH",
+          "cachedResultName": "Callback bot"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "cs_id": "={{ $node[\"get cs\"].json[\"Id\"] }}",
+            "timezone": "={{ $node[\"get cs\"].json[\"TimeZone\"] }}",
+            "callback": "={{ $node[\"get call\"].json[\"Callback\"] }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "cs_id",
+              "displayName": "cs_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "number",
+              "removed": false
+            },
+            {
+              "id": "callback",
+              "displayName": "callback",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "timezone",
+              "displayName": "timezone",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": true
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.3,
+      "position": [
+        2704,
+        560
+      ],
+      "id": "a3d8a8f1-a6cc-4f16-8d7d-faae71d6b535",
+      "name": "CB"
+    },
+    {
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "value": "uF8TMLV445YhKghS",
+          "mode": "list",
+          "cachedResultUrl": "/workflow/uF8TMLV445YhKghS",
+          "cachedResultName": "Parsing parameters"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "cs_id": "={{ $node[\"get cs\"].json[\"Id\"] }}",
+            "call_id": "={{ $node[\"get call\"].json[\"Id\"] }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "cs_id",
+              "displayName": "cs_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "number",
+              "removed": false
+            },
+            {
+              "id": "call_id",
+              "displayName": "call_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "number",
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": true
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.3,
+      "position": [
+        2880,
+        16
+      ],
+      "id": "ad1498d7-6e57-4364-bb3e-9578e466e759",
+      "name": "PP"
+    },
+    {
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "value": "pVydnf2MFL8KiNJl",
+          "mode": "list",
+          "cachedResultUrl": "/workflow/pVydnf2MFL8KiNJl",
+          "cachedResultName": "Сalculator"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "cs_id": "={{ $node[\"get cs\"].json[\"Id\"] }}"
+          },
+          "matchingColumns": [
+            "cs_id"
+          ],
+          "schema": [
+            {
+              "id": "cs_id",
+              "displayName": "cs_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "number",
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": true
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.3,
+      "position": [
+        3104,
+        16
+      ],
+      "id": "9b7fe48e-9520-4b46-a8ab-6c79419c9a22",
+      "name": "RC"
+    },
+    {
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "value": "pVydnf2MFL8KiNJl",
+          "mode": "list",
+          "cachedResultUrl": "/workflow/pVydnf2MFL8KiNJl",
+          "cachedResultName": "Сalculator"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "cs_id": "={{ $node[\"get cs\"].json[\"Id\"] }}"
+          },
+          "matchingColumns": [
+            "cs_id"
+          ],
+          "schema": [
+            {
+              "id": "cs_id",
+              "displayName": "cs_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "number",
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": true
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.3,
+      "position": [
+        3392,
+        480
+      ],
+      "id": "c935bb69-d8f1-4948-a79c-71c572e69e5a",
+      "name": "RC1"
+    },
+    {
+      "parameters": {
+        "authentication": "nocoDbApiToken",
+        "operation": "update",
+        "workspaceId": "wqp6q0zt",
+        "projectId": "p0a3eirwme1bmw7",
+        "table": "mkbhjd0aqdl1r1m",
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldName": "=Id",
+              "fieldValue": "={{ $node[\"get cs\"].json[\"Id\"] }}"
+            },
+            {
+              "fieldName": "Schedule",
+              "fieldValue": "Stop"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.nocoDb",
+      "typeVersion": 3,
+      "position": [
+        3392,
+        672
+      ],
+      "id": "bfd0de57-a285-4c67-b618-3c146058a084",
+      "name": "Schedule stop",
+      "credentials": {
+        "nocoDbApiToken": {
+          "id": "tg1sd8Mux2yjJLx7",
+          "name": "NocoDB"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "authentication": "nocoDbApiToken",
+        "workspaceId": "wqp6q0zt",
+        "projectId": "p0a3eirwme1bmw7",
+        "table": "mkbhjd0aqdl1r1m",
+        "id": "={{ $json['Call system'].Id }}"
+      },
+      "type": "n8n-nodes-base.nocoDb",
+      "typeVersion": 3,
+      "position": [
+        144,
+        32
+      ],
+      "id": "c97b468c-bee0-44dc-918f-2c61d63703ad",
+      "name": "get cs",
+      "credentials": {
+        "nocoDbApiToken": {
+          "id": "tg1sd8Mux2yjJLx7",
+          "name": "NocoDB"
+        }
+      },
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "value": "LDOIlXgHNRS3diBH",
+          "mode": "list",
+          "cachedResultUrl": "/workflow/LDOIlXgHNRS3diBH",
+          "cachedResultName": "Callback bot"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "cs_id": "={{ $node[\"get cs\"].json[\"Id\"] }}",
+            "timezone": "={{ $node[\"get cs\"].json[\"TimeZone\"] }}",
+            "callback": "={{ $node[\"get call\"].json[\"Callback\"] }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "cs_id",
+              "displayName": "cs_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "number",
+              "removed": false
+            },
+            {
+              "id": "callback",
+              "displayName": "callback",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "timezone",
+              "displayName": "timezone",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": true
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.3,
+      "position": [
+        3840,
+        48
+      ],
+      "id": "47c27d2b-3983-4dce-8478-c7f09281a3e4",
+      "name": "CB1"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "d0e34617-d2aa-443b-8f9b-f3028acd8c6f",
+              "leftValue": "={{ $json.result }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        2912,
+        560
+      ],
+      "id": "d2a1f699-e0fe-45fc-bc55-696ddf8150d6",
+      "name": "CB set?"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $node[\"trascript\"].json[\"value\"] || \"none\" }}",
+        "options": {
+          "systemMessage": "=You are a Note Generator Agent that analyzes conversation transcripts between AI agent and clients, then creates a brief summary note for senior management to follow up with hot leads.\n\nCONTEXT:\nYou receive transcripts from calls where the AI agent (logistics/carrier partnership sales agent) has qualified a lead who is READY to begin working immediately.\n\nINPUT FORMAT:\nYou will receive conversation transcripts in this format:\nUser: [client message]\nAI: [agent's response]\n\nOUTPUT FORMAT:\nGenerate a note with two parts:\n1. HEADER: 2 sentences of plain text summarizing who the client is and why they're a hot lead\n2. DETAILS: Bulleted list (using • symbol) with key qualification data and action items\n\nNOTE WRITING RULES:\n1. Write in English\n2. Be extremely concise\n3. Structure:\n   HEADER (2 sentences):\n   - Sentence 1: Who is the client (name, role, company) and main pain point\n   - Sentence 2: Why they're ready now and key opportunity\n   \n   DETAILS (bullet points):\n   • Weekly volumes and main lanes\n   • Equipment types needed\n   • Current situation / pain points\n   • What senior management needs to do next\n\n4. Always include if mentioned:\n   - Client's name and role (Logistics Manager, Transportation Manager, etc.)\n   - Company name (if provided)\n   - Weekly load volumes\n   - Main shipping lanes/destinations\n   - Equipment types needed (LTL, FTL, reefer, flatbed, etc.)\n   - Current pain points (capacity issues, rate problems, reliability concerns)\n   - Why they're ready to start now\n   - Any specific requirements or preferences\n\n5. Focus on BUSINESS-CRITICAL information only:\n   - What makes this a qualified lead\n   - Why they're interested\n   - What they need\n   - Any urgency factors\n\nWHAT TO EXCLUDE:\n- Do NOT include phone numbers or email addresses (management already has this in CRM)\n- Do NOT include call duration or technical details\n- Do NOT include small talk or conversation flow details\n- Do NOT mention document sending or callback scheduling (not relevant for hot leads)\n\nEXAMPLE 1:\nLily Buffet, Logistics Manager at ABC Transport, is losing clients due to current carrier's reliability issues. Ready to start immediately and wants proposal for exclusive partnership.\n\n• 25 loads/week across TX-CA-FL-GA lanes\n• FTL and reefer capacity needed\n• Current carrier missing deliveries, reliability problems\n• Prepare proposal for main lanes and discuss exclusive partnership terms\n\nEXAMPLE 2:\nMike Thompson from Delta Freight already lost 2 major accounts due to carrier's rate increases and poor service. Wants to switch within 2 weeks.\n\n• 15-20 loads weekly on Midwest-Southeast routes\n• Primarily dry van FTL\n• Fed up with current carrier's pricing and service quality\n• Provide competitive rates with dedicated account manager option\n\nEXAMPLE 3:\nSarah Chen, Director of Operations at Omega Logistics, expanding rapidly and current carrier can't scale. Urgently needs additional capacity.\n\n• 40+ loads/week nationwide\n• Specialized equipment needed (flatbed, step deck)\n• Current carrier unable to support growth\n• Ready to test on 5 lanes immediately with full transition potential\n\nEXAMPLE 4:\nJames Wilson, Transportation Coordinator at Gamma Supply Chain, current 3PL contract ending. Needs new carrier partner by month-end.\n\n• 10 loads/week TX-NY primarily\n• LTL and FTL mix\n• Contract issues with current 3PL provider\n• Discuss volume commitments for better rates\n\nCRITICAL RULES:\n- Extract ALL qualification details mentioned in conversation\n- Focus on WHY this is a hot lead worth senior management time\n- Be specific about volumes, lanes, and equipment - these are key decision factors\n- Highlight urgency or timeline if mentioned\n- Keep it actionable - what does management need to know to close this deal?\n- If critical information is missing, note that briefly (e.g., \"lanes not specified\")\n\nPROCESS:\n1. Read entire conversation transcript\n2. Identify client name, role, and company\n3. Extract all qualification data (volumes, lanes, equipment, pain points)\n4. Identify why they're ready to start immediately\n5. Write 2-sentence header summarizing who and why\n6. Write bullet points with key details and action items\n7. Output: header text, empty line, then bullet points\n"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3,
+      "position": [
+        3840,
+        -240
+      ],
+      "id": "eb2c2d22-ce7c-494d-b60c-ebca23ad9585",
+      "name": "Note generator"
+    },
+    {
+      "parameters": {
+        "authentication": "nocoDbApiToken",
+        "operation": "create",
+        "workspaceId": "wqp6q0zt",
+        "projectId": "p0a3eirwme1bmw7",
+        "table": "m3gkcorj95359wn",
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldName": "Note",
+              "fieldValue": "={{ $json.output }}"
+            },
+            {
+              "fieldName": "Type",
+              "fieldValue": "Request"
+            },
+            {
+              "fieldName": "Call system_id",
+              "fieldValue": "={{ $node[\"get cs\"].json[\"Id\"] }}"
+            },
+            {
+              "fieldName": "Link",
+              "fieldValue": "={{ $vars.nocodb_url_ex }}#/wqp6q0zt/p0a3eirwme1bmw7/mkbhjd0aqdl1r1m?rowId={{ $node[\"get cs\"].json[\"Id\"] }}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.nocoDb",
+      "typeVersion": 3,
+      "position": [
+        4192,
+        -240
+      ],
+      "id": "97ded2d0-a59c-49ff-8299-2f993b557615",
+      "name": "Create note",
+      "credentials": {
+        "nocoDbApiToken": {
+          "id": "tg1sd8Mux2yjJLx7",
+          "name": "NocoDB"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "authentication": "nocoDbApiToken",
+        "operation": "update",
+        "workspaceId": "wqp6q0zt",
+        "projectId": "p0a3eirwme1bmw7",
+        "table": "mkbhjd0aqdl1r1m",
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldName": "=Id",
+              "fieldValue": "={{ $node[\"get cs\"].json[\"Id\"] }}"
+            },
+            {
+              "fieldName": "Schedule",
+              "fieldValue": "Stop"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.nocoDb",
+      "typeVersion": 3,
+      "position": [
+        4416,
+        -240
+      ],
+      "id": "2ea9935f-0283-45c4-af2a-b1e27e6b8eca",
+      "name": "Schedule stop1",
+      "credentials": {
+        "nocoDbApiToken": {
+          "id": "tg1sd8Mux2yjJLx7",
+          "name": "NocoDB"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "d0e34617-d2aa-443b-8f9b-f3028acd8c6f",
+              "leftValue": "={{ $json.result }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        4064,
+        48
+      ],
+      "id": "c3c3e73f-b084-4024-97c0-b3aff31ceb35",
+      "name": "CB set?1"
+    },
+    {
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "value": "yg4qzNvM7Bv1nFyu",
+          "mode": "list",
+          "cachedResultUrl": "/workflow/yg4qzNvM7Bv1nFyu",
+          "cachedResultName": "Planner"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "type": "Scenario",
+            "cs_id": "={{ $node[\"get cs\"].json[\"Id\"] }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "cs_id",
+              "displayName": "cs_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "number",
+              "removed": false
+            },
+            {
+              "id": "type",
+              "displayName": "type",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": true
+        },
+        "options": {
+          "waitForSubWorkflow": false
+        }
+      },
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.3,
+      "position": [
+        4032,
+        576
+      ],
+      "id": "94fb0427-3e18-4535-8bbd-df801654bd5d",
+      "name": "Call 'Planner' A"
+    },
+    {
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "value": "yg4qzNvM7Bv1nFyu",
+          "mode": "list",
+          "cachedResultUrl": "/workflow/yg4qzNvM7Bv1nFyu",
+          "cachedResultName": "Planner"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "type": "Default",
+            "cs_id": "={{ $node[\"get cs\"].json[\"Id\"] }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "cs_id",
+              "displayName": "cs_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "number",
+              "removed": false
+            },
+            {
+              "id": "type",
+              "displayName": "type",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": true
+        },
+        "options": {
+          "waitForSubWorkflow": false
+        }
+      },
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.3,
+      "position": [
+        1344,
+        -128
+      ],
+      "id": "b09e1e3a-160e-49f0-b97d-447a0771d9a3",
+      "name": "Call 'Planner' NA"
+    },
+    {
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "value": "tVRcohteAfz5Awae",
+          "mode": "list",
+          "cachedResultUrl": "/workflow/tVRcohteAfz5Awae",
+          "cachedResultName": "Touches controller"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "cs_id": "={{ $node[\"get cs\"].json[\"Id\"] }}",
+            "value": 0
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "cs_id",
+              "displayName": "cs_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "number",
+              "removed": false
+            },
+            {
+              "id": "tag",
+              "displayName": "tag",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": true
+            },
+            {
+              "id": "value",
+              "displayName": "value",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "number",
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": true
+        },
+        "options": {
+          "waitForSubWorkflow": true
+        }
+      },
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.3,
+      "position": [
+        3360,
+        32
+      ],
+      "id": "cb79ef34-e755-499b-bc81-9820f9be4a05",
+      "name": "Reset def touches"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "46f9ae11-a87b-485f-8842-6722a268e01c",
+              "leftValue": "={{ $node[\"get call\"].json[\"Note\"] }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "or"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        3600,
+        32
+      ],
+      "id": "2765ed69-1950-47f5-932a-a39b3fd5c145",
+      "name": "Note?"
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $vars.warngroup }}",
+        "text": "=📞 Call Completed\n\n👤 Contact: {{ $node[\"get cs\"].json[\"Name\"] || \"-\" }}\n📱 Phone: {{ $node[\"get cs\"].json[\"Phone\"] || \"-\" }}\n📧 Email: {{ $node[\"get cs\"].json[\"Email\"] || \"-\" }}\n\n✅ Status: {{ $('Webhook').item.json.body.message.endedReason.split('-').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ') }}\n⏰ TZ: {{ ($node[\"get cs\"].json[\"TimeZone\"] || \"-\").replace('/', '(').replace(/_/g, ' ') + (($node[\"get cs\"].json[\"TimeZone\"] || \"-\").includes('/') ? ')' : '') }}\n⏱️ Duration: {{ $node[\"duration time\"].json[\"durationFormatted\"] }}",
+        "replyMarkup": "inlineKeyboard",
+        "inlineKeyboard": {
+          "rows": [
+            {
+              "row": {
+                "buttons": [
+                  {
+                    "text": "CS",
+                    "additionalFields": {
+                      "url": "={{ $vars.nocodb_url_ex }}#/wqp6q0zt/p0a3eirwme1bmw7/mkbhjd0aqdl1r1m?rowId={{ $node[\"get cs\"].json[\"Id\"] }}"
+                    }
+                  },
+                  {
+                    "text": "Call",
+                    "additionalFields": {
+                      "url": "={{ $vars.nocodb_url_ex }}#/wqp6q0zt/p0a3eirwme1bmw7/mq8zrzuevo96lmw?rowId={{ $node[\"get call\"].json[\"Id\"] }}"
+                    }
+                  }
+                ]
+              }
+            }
+          ]
+        },
+        "additionalFields": {
+          "appendAttribution": false,
+          "parse_mode": "HTML",
+          "message_thread_id": 8
+        }
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        1808,
+        16
+      ],
+      "id": "ff08b3db-5dbd-4bee-ad1e-f1cfb3a8c630",
+      "name": "to calls",
+      "webhookId": "a0693655-8ef8-4e46-85f9-cba4493a910b",
+      "credentials": {
+        "telegramApi": {
+          "id": "yv48JNV4VmuIREaW",
+          "name": "Citycompany"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "fc4be8a5-d2f1-40b1-bd21-4f467f6ac460",
+              "leftValue": "",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        3328,
+        -384
+      ],
+      "id": "5de46ac4-c211-475f-88d8-8ef1e7ea14ad",
+      "name": "tender added?"
+    },
+    {
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "value": "kIP57q6SyXpruKvU",
+          "mode": "list",
+          "cachedResultUrl": "/workflow/kIP57q6SyXpruKvU",
+          "cachedResultName": "Tender Noti"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "cs_id": "={{ $node[\"get cs\"].json[\"Id\"] }}"
+          },
+          "matchingColumns": [
+            "cs_id"
+          ],
+          "schema": [
+            {
+              "id": "cs_id",
+              "displayName": "cs_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "number",
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": true
+        },
+        "options": {
+          "waitForSubWorkflow": true
+        }
+      },
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.3,
+      "position": [
+        3552,
+        -384
+      ],
+      "id": "f5b996c5-0f76-4feb-8858-05cb5afdaebc",
+      "name": "Call 'Tender Noti'"
+    },
+    {
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "value": "bJE5YlhXAoMdJcvZ",
+          "mode": "list",
+          "cachedResultUrl": "/workflow/bJE5YlhXAoMdJcvZ",
+          "cachedResultName": "Assingn agent CS"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "cs_id": "={{ $node[\"get cs\"].json[\"Id\"] }}"
+          },
+          "matchingColumns": [
+            "cs_id"
+          ],
+          "schema": [
+            {
+              "id": "cs_id",
+              "displayName": "cs_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "number",
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": true
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.3,
+      "position": [
+        4656,
+        -240
+      ],
+      "id": "7b5aaf00-9672-44f1-81ef-8bacbb5afb4e",
+      "name": "agent"
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $vars.warngroup }}",
+        "text": "=📨 Request Received!\n\n👤 Contact\n• {{ $node[\"get cs\"].json[\"Name\"] || \"-\" }}\n• {{ $node[\"get cs\"].json[\"Phone\"] || \"-\" }}\n• {{ $node[\"get cs\"].json[\"Email\"] || \"-\" }}\n\nℹ️ Auto-dialing funnel is complete.\n--------\n💬 Information:\n{{ $node[\"Create note\"].json[\"Note\"] }}\n--------\n👨‍💼 Assigned: \n• {{ $node[\"agent\"].json[\"agent\"][\"Account\"][\"0\"][\"display_name\"] || \"\" }}\n• {{ $node[\"agent\"].json[\"agent\"][\"Account\"][\"0\"][\"email\"] || \"\" }}\n• {{ $node[\"agent\"].json[\"tg\"] || \"\" }}",
+        "replyMarkup": "inlineKeyboard",
+        "inlineKeyboard": {
+          "rows": [
+            {
+              "row": {
+                "buttons": [
+                  {
+                    "text": "Open",
+                    "additionalFields": {
+                      "url": "={{ $vars.nocodb_url_ex }}#/wqp6q0zt/p0a3eirwme1bmw7/mkbhjd0aqdl1r1m?rowId={{ $node[\"get cs\"].json[\"Id\"] }}"
+                    }
+                  }
+                ]
+              }
+            }
+          ]
+        },
+        "additionalFields": {
+          "appendAttribution": false,
+          "message_thread_id": 10
+        }
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        4864,
+        -240
+      ],
+      "id": "f49f9f90-8624-47cf-b51a-0edd993fba4f",
+      "name": "noti to event",
+      "webhookId": "b2f97887-034a-47e7-bdb4-75327f72f103",
+      "credentials": {
+        "telegramApi": {
+          "id": "yv48JNV4VmuIREaW",
+          "name": "Citycompany"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "leftValue": "=assistant-ended-call\ncustomer-ended-call\nassistant-said-end-call-phrase\nexceeded-max-duration\nsilence-timed-out\nassistant-ended-call-after-message-spoken",
+                    "rightValue": "={{ $('Webhook').item.json.body.message.endedReason }}",
+                    "operator": {
+                      "type": "string",
+                      "operation": "contains"
+                    },
+                    "id": "6f63a3e9-99cd-4d78-bd20-47ffa8550033"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "valid"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "28d3f20a-96f5-4bbd-b4bb-8444fa835563",
+                    "leftValue": "call.start.error-get-transport",
+                    "rightValue": "={{ $('Webhook').item.json.body.message.endedReason }}",
+                    "operator": {
+                      "type": "string",
+                      "operation": "contains"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "re-scedule"
+            }
+          ]
+        },
+        "options": {
+          "fallbackOutput": "extra"
+        }
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.3,
+      "position": [
+        544,
+        224
+      ],
+      "id": "d3824952-2847-4a1a-861c-c6b19b8ee2ee",
+      "name": "check status"
+    },
+    {
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "value": "yg4qzNvM7Bv1nFyu",
+          "mode": "list",
+          "cachedResultUrl": "/workflow/yg4qzNvM7Bv1nFyu",
+          "cachedResultName": "Planner"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "type": "Warn",
+            "cs_id": "={{ $node[\"get cs\"].json[\"Id\"] }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "cs_id",
+              "displayName": "cs_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "number",
+              "removed": false
+            },
+            {
+              "id": "type",
+              "displayName": "type",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": true
+        },
+        "options": {
+          "waitForSubWorkflow": false
+        }
+      },
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.3,
+      "position": [
+        336,
+        528
+      ],
+      "id": "1d40c5f0-a90b-4fce-b2d6-9049203a9dba",
+      "name": "Call 'Planner' ERR"
+    },
+    {
+      "parameters": {
+        "authentication": "nocoDbApiToken",
+        "operation": "update",
+        "workspaceId": "wqp6q0zt",
+        "projectId": "p0a3eirwme1bmw7",
+        "table": "mq8zrzuevo96lmw",
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldName": "Id",
+              "fieldValue": "={{ $node[\"get call\"].json[\"Id\"] }}"
+            },
+            {
+              "fieldName": "Status",
+              "fieldValue": "Error"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.nocoDb",
+      "typeVersion": 3,
+      "position": [
+        528,
+        528
+      ],
+      "id": "161dbd8b-1113-419c-9f78-73458f8db832",
+      "name": "error call1",
+      "credentials": {
+        "nocoDbApiToken": {
+          "id": "tg1sd8Mux2yjJLx7",
+          "name": "NocoDB"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "duration time": {
+      "main": [
+        [
+          {
+            "node": "trascript",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "error call": {
+      "main": [
+        [
+          {
+            "node": "error cs",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "summarize": {
+      "main": [
+        [
+          {
+            "node": "valid cs status?",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "to calls",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "cost?": {
+      "main": [
+        [
+          {
+            "node": "get cost",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Summary": {
+      "main": [
+        [
+          {
+            "node": "summarize",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "call": {
+      "main": [
+        [
+          {
+            "node": "get call",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "get call": {
+      "main": [
+        [
+          {
+            "node": "cost?",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "get cs",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "call",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "start?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "comment to cs": {
+      "main": [
+        [
+          {
+            "node": "comment to call",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "error cs": {
+      "main": [
+        [
+          {
+            "node": "Stop and Error",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "main agent?": {
+      "main": [
+        [
+          {
+            "node": "PP",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "CB",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "NA?": {
+      "main": [
+        [
+          {
+            "node": "no answer",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "check status",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "update status?": {
+      "main": [
+        [
+          {
+            "node": "NA call",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "4.1-mini": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "DNC detector",
+            "type": "ai_languageModel",
+            "index": 0
+          },
+          {
+            "node": "DNC detector parser",
+            "type": "ai_languageModel",
+            "index": 0
+          },
+          {
+            "node": "Note generator",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "DNC detector parser": {
+      "ai_outputParser": [
+        [
+          {
+            "node": "DNC detector",
+            "type": "ai_outputParser",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "DNC detector": {
+      "main": [
+        [
+          {
+            "node": "no dnc?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "no dnc?": {
+      "main": [
+        [
+          {
+            "node": "main agent?",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "dnc update cs",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "dnc update cs": {
+      "main": [
+        [
+          {
+            "node": "contact to dnc?",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "comment",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "contact to dnc?": {
+      "main": [
+        [
+          {
+            "node": "dnc contact",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "no answer": {
+      "main": [
+        [
+          {
+            "node": "update status?",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "update NA cs",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "update NA cs": {
+      "main": [
+        [
+          {
+            "node": "Call 'Planner' NA",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "valid cs status?": {
+      "main": [
+        [
+          {
+            "node": "DNC detector",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "update contact as end cs",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "start?": {
+      "main": [
+        [
+          {
+            "node": "get memory",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "get memory": {
+      "main": [
+        [
+          {
+            "node": "to memory",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "trascript": {
+      "main": [
+        [
+          {
+            "node": "Summary",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "set q-mark?": {
+      "main": [
+        [
+          {
+            "node": "set q-mark",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Reset def touches",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "q-mark?": {
+      "main": [
+        [
+          {
+            "node": "RC1",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Schedule stop",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "CB": {
+      "main": [
+        [
+          {
+            "node": "CB set?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "PP": {
+      "main": [
+        [
+          {
+            "node": "RC",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "tender added?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "RC": {
+      "main": [
+        [
+          {
+            "node": "set q-mark?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "RC1": {
+      "main": [
+        [
+          {
+            "node": "Call 'Planner' A",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Schedule stop": {
+      "main": [
+        [
+          {
+            "node": "Call 'Planner' A",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "get cs": {
+      "main": [
+        [
+          {
+            "node": "NA?",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "comment to cs",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "lost call",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "set q-mark": {
+      "main": [
+        [
+          {
+            "node": "Reset def touches",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "CB set?": {
+      "main": [
+        [],
+        [
+          {
+            "node": "q-mark?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Note generator": {
+      "main": [
+        [
+          {
+            "node": "Create note",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create note": {
+      "main": [
+        [
+          {
+            "node": "Schedule stop1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Schedule stop1": {
+      "main": [
+        [
+          {
+            "node": "Call 'Planner' A",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "CB1": {
+      "main": [
+        [
+          {
+            "node": "CB set?1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "CB set?1": {
+      "main": [
+        [],
+        [
+          {
+            "node": "Call 'Planner' A",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Reset def touches": {
+      "main": [
+        [
+          {
+            "node": "Note?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Note?": {
+      "main": [
+        [
+          {
+            "node": "Note generator",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "CB1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "tender added?": {
+      "main": [
+        [
+          {
+            "node": "Call 'Tender Noti'",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "agent": {
+      "main": [
+        [
+          {
+            "node": "noti to event",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "check status": {
+      "main": [
+        [
+          {
+            "node": "duration time",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Call 'Planner' ERR",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "error call",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Call 'Planner' ERR": {
+      "main": [
+        [
+          {
+            "node": "error call1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "callerPolicy": "workflowsFromSameOwner",
+    "availableInMCP": false,
+    "errorWorkflow": "agw6jjdVg6yAawFi"
+  },
+  "triggerCount": 1,
+  "versionId": "11b96bfe-bb46-49c6-b893-f450357fe235",
+  "owner": {
+    "type": "personal",
+    "projectId": "I8ZweZXokOc0zbYb",
+    "projectName": "BSU Agency <info@brilliantseedup.com>",
+    "personalEmail": "info@brilliantseedup.com"
+  },
+  "parentFolderId": "ldWFZ7Y31LSfJYne",
+  "isArchived": false
+}

@@ -1,0 +1,228 @@
+{
+  "id": "0FdWimc5WajUJ69d",
+  "name": "LinkedId activity catcher",
+  "nodes": [
+    {
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "value": "tBYgRbFyr63QD7dD",
+          "mode": "list",
+          "cachedResultName": "Feedback processing"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "lead_id": "={{ $('check lead').item.json.Id }}",
+            "type": "linkedin",
+            "message": "={{ $json.value }}",
+            "data": "={ \n\"conversation_id\": \"{{ $node[\"Webhook\"].json[\"body\"][\"conversation_id\"] }}\",\n\"sender_id\": {{ $node[\"Webhook\"].json[\"body\"][\"sender\"][\"id\"] }}\n}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "lead_id",
+              "displayName": "lead_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "number"
+            },
+            {
+              "id": "type",
+              "displayName": "type",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "message",
+              "displayName": "message",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "data",
+              "displayName": "data",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "object"
+            }
+          ],
+          "attemptToConvertTypes": true,
+          "convertFieldsToString": true
+        },
+        "mode": "each",
+        "options": {
+          "waitForSubWorkflow": false
+        }
+      },
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.2,
+      "position": [
+        688,
+        -144
+      ],
+      "id": "00d0ac5b-d289-4bc4-b91c-897a45fe0985",
+      "name": "Feedback processing"
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "5f9de2da-ab20-4ece-be92-b8a36dd65cbe",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        -208,
+        -144
+      ],
+      "id": "c4c82704-fea2-42f4-9bfc-192d4cc7d414",
+      "name": "Webhook",
+      "webhookId": "5f9de2da-ab20-4ece-be92-b8a36dd65cbe"
+    },
+    {
+      "parameters": {
+        "authentication": "nocoDbApiToken",
+        "operation": "getAll",
+        "workspaceId": "wqp6q0zt",
+        "projectId": "p0a3eirwme1bmw7",
+        "table": "meyq439syguvqhb",
+        "limit": 1,
+        "options": {
+          "where": "=(Id,eq,{{ $node[\"Webhook\"].json[\"body\"][\"lead\"][\"lists\"][\"0\"][\"custom_fields\"][\"id\"] }})"
+        }
+      },
+      "type": "n8n-nodes-base.nocoDb",
+      "typeVersion": 3,
+      "position": [
+        16,
+        -144
+      ],
+      "id": "31b324c7-5876-4578-b8e7-f34cf80ded66",
+      "name": "check lead",
+      "alwaysOutputData": true,
+      "credentials": {
+        "nocoDbApiToken": {
+          "id": "tg1sd8Mux2yjJLx7",
+          "name": "NocoDB"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "b02e72fa-c78a-48c5-b21b-749afa84d32d",
+              "leftValue": "={{ $json.Id }}",
+              "rightValue": "",
+              "operator": {
+                "type": "number",
+                "operation": "notEmpty",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        240,
+        -144
+      ],
+      "id": "a996e7ad-d377-4ccf-bfd1-57ebbf8994aa",
+      "name": "lead found?"
+    },
+    {
+      "parameters": {
+        "jsCode": "const recentMessages = $node[\"Webhook\"].json[\"body\"][\"recent_messages\"] || [];\n\nconst result = recentMessages.length > 0 \n  ? recentMessages.map((item) => `- ${item.message}`).join(\"\\n\") \n  : \"-\";\n\nreturn {\n  json: {\n    value: result\n  }\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        464,
+        -144
+      ],
+      "id": "bfacf2a0-12cf-4500-ae8f-233d7c36caa0",
+      "name": "message"
+    }
+  ],
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "check lead",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "check lead": {
+      "main": [
+        [
+          {
+            "node": "lead found?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "lead found?": {
+      "main": [
+        [
+          {
+            "node": "message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "message": {
+      "main": [
+        [
+          {
+            "node": "Feedback processing",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "triggerCount": 1,
+  "versionId": "c3a30025-731b-46e8-862d-04c2fa8958d9",
+  "owner": {
+    "type": "personal",
+    "projectId": "I8ZweZXokOc0zbYb",
+    "projectName": "BSU Agency <info@brilliantseedup.com>",
+    "personalEmail": "info@brilliantseedup.com"
+  },
+  "parentFolderId": "pKxPYoaapRWNwU1d",
+  "isArchived": false
+}

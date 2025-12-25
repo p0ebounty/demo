@@ -1,0 +1,230 @@
+{
+  "id": "tVRcohteAfz5Awae",
+  "name": "Touches controller",
+  "nodes": [
+    {
+      "parameters": {
+        "workflowInputs": {
+          "values": [
+            {
+              "name": "cs_id",
+              "type": "number"
+            },
+            {
+              "name": "tag"
+            },
+            {
+              "name": "value",
+              "type": "number"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        -160,
+        -16
+      ],
+      "id": "96c996c7-0e77-4204-aaa6-f8ae6a8a3545",
+      "name": "start"
+    },
+    {
+      "parameters": {
+        "authentication": "nocoDbApiToken",
+        "workspaceId": "wqp6q0zt",
+        "projectId": "p0a3eirwme1bmw7",
+        "table": "mkbhjd0aqdl1r1m",
+        "id": "={{ $node[\"start\"].json[\"cs_id\"] }}"
+      },
+      "type": "n8n-nodes-base.nocoDb",
+      "typeVersion": 3,
+      "position": [
+        64,
+        -16
+      ],
+      "id": "32f46e77-0608-4668-82a7-eb57592a8100",
+      "name": "get cs",
+      "credentials": {
+        "nocoDbApiToken": {
+          "id": "tg1sd8Mux2yjJLx7",
+          "name": "NocoDB"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Получаем исходные данные\nconst touches = $node[\"get cs\"].json[\"Touches\"] || {};\nconst tagString = $node[\"schedule type\"].json[\"value\"] || \"\";\nconst value = $node[\"start\"].json[\"value\"] || 0;\n\n// Создаем копию объекта для изменений\nconst updatedTouches = { ...touches };\n\n// Определяем теги для обработки\nlet tags = [];\nif (tagString && tagString.trim() !== \"\") {\n  // Разделяем по запятой, убираем пробелы\n  tags = tagString.split(\",\").map(tag => tag.trim()).filter(tag => tag !== \"\");\n} else {\n  // Если тег не указан - используем Default\n  tags = [\"Default\"];\n}\n\n// Обрабатываем каждый тег\ntags.forEach(tag => {\n  if (value === 0) {\n    // value = 0 → обнуляем тег\n    updatedTouches[tag] = 0;\n  } else {\n    // Добавляем value к существующему значению (или создаем с value)\n    updatedTouches[tag] = (updatedTouches[tag] || 0) + value;\n  }\n});\n\n// Возвращаем обновленный объект\nreturn [{ json: { Touches: updatedTouches } }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        736,
+        -16
+      ],
+      "id": "e64c6c07-fbcd-445f-82ea-19283281f42d",
+      "name": "editor"
+    },
+    {
+      "parameters": {
+        "authentication": "nocoDbApiToken",
+        "operation": "update",
+        "workspaceId": "wqp6q0zt",
+        "projectId": "p0a3eirwme1bmw7",
+        "table": "mkbhjd0aqdl1r1m",
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldName": "=Id",
+              "fieldValue": "={{ $node[\"get cs\"].json[\"Id\"] }}"
+            },
+            {
+              "fieldName": "Touches",
+              "fieldValue": "={{ $json.Touches }}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.nocoDb",
+      "typeVersion": 3,
+      "position": [
+        960,
+        -16
+      ],
+      "id": "162a3e84-cdd2-4a0f-83fa-be572c8b96dd",
+      "name": "update touches",
+      "credentials": {
+        "nocoDbApiToken": {
+          "id": "tg1sd8Mux2yjJLx7",
+          "name": "NocoDB"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "get",
+        "dataTableId": {
+          "__rl": true,
+          "value": "h5VyLRYdTqANq405",
+          "mode": "list",
+          "cachedResultName": "Sheduler settings",
+          "cachedResultUrl": "/projects/Lz2EaMLn9ckxxJx0/datatables/h5VyLRYdTqANq405"
+        },
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "Type",
+              "keyValue": "={{ $node[\"start\"].json[\"tag\"] || \"Default\" }}"
+            }
+          ]
+        },
+        "limit": 1
+      },
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "position": [
+        288,
+        -16
+      ],
+      "id": "c17ed9fe-a7ee-4df6-9b72-46df3b0a6669",
+      "name": "check schedule",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "f05181f4-003c-4451-8537-3572d768ecb9",
+              "name": "value",
+              "value": "={{ $json.Type }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        512,
+        -16
+      ],
+      "id": "bc4fd3f1-2143-4620-b008-af9eba683b3b",
+      "name": "schedule type"
+    }
+  ],
+  "connections": {
+    "start": {
+      "main": [
+        [
+          {
+            "node": "get cs",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "get cs": {
+      "main": [
+        [
+          {
+            "node": "check schedule",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "editor": {
+      "main": [
+        [
+          {
+            "node": "update touches",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "check schedule": {
+      "main": [
+        [
+          {
+            "node": "schedule type",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "schedule type": {
+      "main": [
+        [
+          {
+            "node": "editor",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "callerPolicy": "workflowsFromSameOwner",
+    "availableInMCP": false,
+    "errorWorkflow": "agw6jjdVg6yAawFi"
+  },
+  "triggerCount": 0,
+  "versionId": "6863e158-b2ff-4601-829e-d36e1a56e7f9",
+  "owner": {
+    "type": "personal",
+    "projectId": "I8ZweZXokOc0zbYb",
+    "projectName": "BSU Agency <info@brilliantseedup.com>",
+    "personalEmail": "info@brilliantseedup.com"
+  },
+  "parentFolderId": "ldWFZ7Y31LSfJYne",
+  "isArchived": false
+}

@@ -1,0 +1,344 @@
+{
+  "id": "r8iFGyQZgNDdeazO",
+  "name": "Setter",
+  "nodes": [
+    {
+      "parameters": {
+        "workflowInputs": {
+          "values": [
+            {
+              "name": "next"
+            },
+            {
+              "name": "cs_id",
+              "type": "number"
+            },
+            {
+              "name": "type"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        -208,
+        -112
+      ],
+      "id": "54e2a0a1-22fb-4e09-a7c4-6a9cf3432c7c",
+      "name": "start"
+    },
+    {
+      "parameters": {
+        "authentication": "nocoDbApiToken",
+        "operation": "create",
+        "workspaceId": "wqp6q0zt",
+        "projectId": "p0a3eirwme1bmw7",
+        "table": "my3mge2lsx8utvk",
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldName": "Trigger",
+              "fieldValue": "={{ $json.result }}"
+            },
+            {
+              "fieldName": "Type",
+              "fieldValue": "={{ $('start').item.json.type || \"Default\" }}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.nocoDb",
+      "typeVersion": 3,
+      "position": [
+        688,
+        -16
+      ],
+      "id": "1fafd8ec-569b-4dbb-90ed-15f4bd571fc2",
+      "name": "Create Shedule",
+      "credentials": {
+        "nocoDbApiToken": {
+          "id": "tg1sd8Mux2yjJLx7",
+          "name": "NocoDB"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const input = $node[\"start\"].json[\"next\"];  // Получаем значение из поля next ноды start\n\n// Функция форматирования даты\nfunction formatDate(date) {\n    const year = date.getFullYear();\n    const month = String(date.getMonth() + 1).padStart(2, '0'); \n    const day = String(date.getDate()).padStart(2, '0'); \n    const hours = String(date.getHours()).padStart(2, '0'); \n    const minutes = String(date.getMinutes()).padStart(2, '0'); \n    const seconds = String(date.getSeconds()).padStart(2, '0'); \n    \n    return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;\n}\n\nconst minutesToAdd = Number(input);\n\nif (isNaN(minutesToAdd)) {\n    throw new Error('Некорректный формат входного значения. Ожидалось число минут.');\n}\n\nconst currentDate = new Date();\nconst futureDate = new Date(currentDate.getTime() + minutesToAdd * 60000);\nconst result = formatDate(futureDate);\n\nreturn [ { json: { result } } ];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        464,
+        -112
+      ],
+      "id": "4fb49f7a-dcca-49d4-92d1-97a6df838133",
+      "name": "calc timer"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "c0769a34-37d4-4c07-baa7-824e7e4b9848",
+              "leftValue": "={{ /^\\d+$/.test( $node[\"start\"].json[\"next\"] ) }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        240,
+        -16
+      ],
+      "id": "30f940e2-596b-4e7e-96b4-7289ecd82c6b",
+      "name": "If"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "5ae5b79f-eba9-4c47-bab7-8be1bc2c811f",
+              "name": "result",
+              "value": "={{ $node[\"start\"].json[\"next\"] }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        464,
+        80
+      ],
+      "id": "752c0099-25a2-44d0-b23e-87607aae22ad",
+      "name": "get"
+    },
+    {
+      "parameters": {
+        "fieldToSplitOut": "list",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.splitOut",
+      "typeVersion": 1,
+      "position": [
+        240,
+        -304
+      ],
+      "id": "ea47ec4f-6ef7-42ec-ba86-2ad1659ff3ae",
+      "name": "Split Out"
+    },
+    {
+      "parameters": {
+        "url": "={{$vars.nocodb_url}}api/v2/tables/mkbhjd0aqdl1r1m/links/cni7insi31m2uih/records/{{ $json.cs_id }}",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "nocoDbApiToken",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "where",
+              "value": "(Type,neq,Outdated)"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        16,
+        -112
+      ],
+      "id": "89ccb118-2bec-4400-8add-7de0e8dbed0e",
+      "name": "get schedules",
+      "credentials": {
+        "nocoDbApiToken": {
+          "id": "tg1sd8Mux2yjJLx7",
+          "name": "NocoDB"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "authentication": "nocoDbApiToken",
+        "operation": "delete",
+        "workspaceId": "wqp6q0zt",
+        "projectId": "p0a3eirwme1bmw7",
+        "table": "my3mge2lsx8utvk",
+        "id": "={{ $json.Id }}"
+      },
+      "type": "n8n-nodes-base.nocoDb",
+      "typeVersion": 3,
+      "position": [
+        464,
+        -304
+      ],
+      "id": "89deaf57-53b8-47c4-b299-5683d544c659",
+      "name": "del old",
+      "credentials": {
+        "nocoDbApiToken": {
+          "id": "tg1sd8Mux2yjJLx7",
+          "name": "NocoDB"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{$vars.nocodb_url}}api/v2/tables/my3mge2lsx8utvk/links/ccsb25nh9ftbm9z/records/{{ $json.Id }}",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "nocoDbApiToken",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "=[{{ $node[\"start\"].json[\"cs_id\"] }}]",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        912,
+        -16
+      ],
+      "id": "aba7be9b-4765-42c4-9797-62f65ae904f7",
+      "name": "link",
+      "credentials": {
+        "nocoDbApiToken": {
+          "id": "tg1sd8Mux2yjJLx7",
+          "name": "NocoDB"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "start": {
+      "main": [
+        [
+          {
+            "node": "get schedules",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create Shedule": {
+      "main": [
+        [
+          {
+            "node": "link",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "calc timer": {
+      "main": [
+        [
+          {
+            "node": "Create Shedule",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If": {
+      "main": [
+        [
+          {
+            "node": "calc timer",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "get",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "get": {
+      "main": [
+        [
+          {
+            "node": "Create Shedule",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Split Out": {
+      "main": [
+        [
+          {
+            "node": "del old",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "get schedules": {
+      "main": [
+        [
+          {
+            "node": "Split Out",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "If",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "del old": {
+      "main": [
+        []
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "callerPolicy": "workflowsFromSameOwner",
+    "availableInMCP": false,
+    "errorWorkflow": "agw6jjdVg6yAawFi"
+  },
+  "triggerCount": 0,
+  "versionId": "515840be-482c-49b2-ba7a-5e29969e2dac",
+  "owner": {
+    "type": "personal",
+    "projectId": "I8ZweZXokOc0zbYb",
+    "projectName": "BSU Agency <info@brilliantseedup.com>",
+    "personalEmail": "info@brilliantseedup.com"
+  },
+  "parentFolderId": "ZtZlVganCQMwp6yk",
+  "isArchived": false
+}

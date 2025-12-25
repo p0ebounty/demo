@@ -1,0 +1,157 @@
+{
+  "id": "IyEm0UhoStnBr1EH",
+  "name": "Data controller",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {}
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        -48,
+        -16
+      ],
+      "id": "abf9efcb-5eee-441c-9ede-a5a14f2a6ca2",
+      "name": "Schedule Trigger"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "-- Обновляем JSON-поле CData в таблице Contacts\nUPDATE p0a3eirwme1bmw7.\"Contacts\" AS cnt\nSET \"CData\" = COALESCE(\"CData\", '{}'::json)::jsonb || \n    jsonb_build_object(\n        'email_interval',\n        COALESCE(\n            (\n                SELECT CASE \n                    WHEN cs.\"Rating\" IN ('B', 'A', 'A+') THEN 34\n                    ELSE 84\n                END\n                FROM (\n                    SELECT DISTINCT ON (\"Contacts_id\")\n                        \"Contacts_id\",\n                        \"Rating\"\n                    FROM p0a3eirwme1bmw7.\"Call system\"\n                    ORDER BY \"Contacts_id\", created_at DESC\n                ) AS cs\n                WHERE cs.\"Contacts_id\" = cnt.id\n                LIMIT 1\n            ),\n            84  -- Значение по умолчанию, если нет связи\n        )\n    )\nWHERE cnt.\"Campagin\" = 'Progress';",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        176,
+        -112
+      ],
+      "id": "819e724b-c2d7-4b2c-82c9-68cf0b99c321",
+      "name": "EMInterval controller",
+      "credentials": {
+        "postgres": {
+          "id": "oZABCHH2vjfMvXoi",
+          "name": "nocodb"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "UPDATE {{ $vars.ncdbid }}.\"Contacts\"\nSET \"Campagin\" = 'Done'\nWHERE \"Campagin\" = 'Progress'\n  AND (created_at < NOW() - INTERVAL '180 days' OR \"DNC\" = true);",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        176,
+        80
+      ],
+      "id": "261448ae-183f-4297-9f83-13b471acd914",
+      "name": "to done",
+      "credentials": {
+        "postgres": {
+          "id": "oZABCHH2vjfMvXoi",
+          "name": "nocodb"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "-- Переводим контакты из Waiting в Progress если Fix = true\nUPDATE p0a3eirwme1bmw7.\"Contacts\"\nSET \n    \"Campagin\" = 'Progress',\n    \"updated_at\" = NOW()\nWHERE \n    \"Campagin\" = 'Waiting'\n    AND \"Fix\" = true;",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        176,
+        -304
+      ],
+      "id": "b48f959b-f5b6-43a4-880c-190cac411a1e",
+      "name": "Waiting > Progress",
+      "credentials": {
+        "postgres": {
+          "id": "oZABCHH2vjfMvXoi",
+          "name": "nocodb"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "-- Prune Script для таблицы CMails\n-- Удаляем зависшие Waiting (более 2 суток)\nDELETE FROM {{ $vars.ncdbid }}.\"CMails\"\nWHERE \"Status\" = 'Waiting'\n  AND (\n      updated_at IS NULL \n      OR updated_at < NOW() - INTERVAL '2 days'\n  );\n\n-- Удаляем зависшие Building, Ready, Queue (более 6 часов)\nDELETE FROM {{ $vars.ncdbid }}.\"CMails\"\nWHERE \"Status\" IN ('Building', 'Queue')\n  AND (\n      updated_at IS NULL \n      OR updated_at < NOW() - INTERVAL '6 hours'\n  );\n\n-- Удаляем старые Planned (более 1 месяца)\nDELETE FROM {{ $vars.ncdbid }}.\"CMails\"\nWHERE \"Status\" = 'Planned'\n  AND (\n      updated_at IS NULL \n      OR updated_at < NOW() - INTERVAL '1 month'\n  );\n\n-- Удаляем старые Done (более 30 дней)\nDELETE FROM {{ $vars.ncdbid }}.\"CMails\"\nWHERE \"Status\" IN ('Done', 'Canceled')\n  AND (\n      updated_at IS NULL \n      OR updated_at < NOW() - INTERVAL '30 days'\n  );\n\n-- Удаляем некорректные записи\nDELETE FROM {{ $vars.ncdbid }}.\"CMails\"\nWHERE \"Trigger\" IS NULL\n   OR \"Contacts_id\" IS NULL\n   OR \"Type\" IS NULL\n   OR \"Type\" = ''\n   OR \"Status\" IS NULL\n   OR \"Status\" = '';",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        176,
+        272
+      ],
+      "id": "2fd575de-d7ce-4b42-a0cf-ea925fdc4289",
+      "name": "Prune",
+      "credentials": {
+        "postgres": {
+          "id": "oZABCHH2vjfMvXoi",
+          "name": "nocodb"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "to done",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Waiting > Progress",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Prune",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "EMInterval controller",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "EMInterval controller": {
+      "main": [
+        []
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "callerPolicy": "workflowsFromSameOwner",
+    "executionTimeout": -1,
+    "availableInMCP": false,
+    "errorWorkflow": "EuAkMSh7w9p9TJgj"
+  },
+  "triggerCount": 1,
+  "versionId": "2b2980ee-fd92-4309-8008-4a5b4eb709a7",
+  "owner": {
+    "type": "personal",
+    "projectId": "I8ZweZXokOc0zbYb",
+    "projectName": "BSU Agency <info@brilliantseedup.com>",
+    "personalEmail": "info@brilliantseedup.com"
+  },
+  "parentFolderId": "HWn7vIRYn4vaHZR5",
+  "isArchived": false
+}

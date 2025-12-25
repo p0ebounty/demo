@@ -1,0 +1,15 @@
+{
+  "id": "yv48JNV4VmuIREaW",
+  "name": "TGBot",
+  "type": "telegramApi",
+  "data": {
+    "accessToken": ""
+  },
+  "ownedBy": {
+    "type": "personal",
+    "projectId": "I8ZweZXokOc0zbYb",
+    "projectName": "BSU Agency <info@brilliantseedup.com>",
+    "personalEmail": "info@brilliantseedup.com"
+  },
+  "isGlobal": false
+}

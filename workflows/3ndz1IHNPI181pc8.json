@@ -1,0 +1,357 @@
+{
+  "id": "3ndz1IHNPI181pc8",
+  "name": "Phone validator",
+  "nodes": [
+    {
+      "parameters": {
+        "workflowInputs": {
+          "values": [
+            {
+              "name": "contact_id",
+              "type": "number"
+            },
+            {
+              "name": "phone"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        0,
+        -96
+      ],
+      "id": "5b65c084-d9b1-41f5-84c1-76c7134acf23",
+      "name": "start"
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.contact_id }}",
+                    "rightValue": "",
+                    "operator": {
+                      "type": "number",
+                      "operation": "notEmpty",
+                      "singleValue": true
+                    },
+                    "id": "cc93146e-7ce9-4c07-b130-195a65d1c2a8"
+                  }
+                ],
+                "combinator": "and"
+              }
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "df7b6926-d1c6-40e2-96de-8558114c6bf5",
+                    "leftValue": "={{ $json.phone }}",
+                    "rightValue": "",
+                    "operator": {
+                      "type": "string",
+                      "operation": "notEmpty",
+                      "singleValue": true
+                    }
+                  }
+                ],
+                "combinator": "and"
+              }
+            }
+          ]
+        },
+        "options": {
+          "fallbackOutput": "extra"
+        }
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.3,
+      "position": [
+        224,
+        -96
+      ],
+      "id": "8cedece1-26cd-4ef2-bf96-2fd1b2a42a2d",
+      "name": "Switch"
+    },
+    {
+      "parameters": {
+        "jsCode": "const { parsePhoneNumber } = require('libphonenumber-js');\nreturn $input.all().map(item => {\n  try {\n    let phone = '+' + String($input.first().json.phone || '').replace(/[^0-9]/g, '');\n    const parsedPhone = parsePhoneNumber(phone);\n    const valid = parsedPhone?.isValid?.() || false;\n    return { json: { phone: valid ? parsedPhone.format('E.164') : null, valid } };\n  } catch {\n    return { json: { phone: null, valid: false } };\n  }\n});"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        672,
+        -96
+      ],
+      "id": "b8d04fcb-9b30-4564-958d-b1b3d75e0a4a",
+      "name": "libphonenumber"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "b9c6d9c9-0235-4a8d-8741-0393efae07e1",
+              "name": "valid",
+              "value": "={{ $json.valid || false }}",
+              "type": "boolean"
+            },
+            {
+              "id": "de4252ee-5843-43f5-b966-34b43bac7ace",
+              "name": "phone",
+              "value": "={{ $json.phone }}",
+              "type": "string"
+            },
+            {
+              "id": "27219c33-2aae-4202-80dd-f2caa8d7ff2d",
+              "name": "dnc",
+              "value": "={{ $('get contact').isExecuted ? $('get contact').item.json.DNC : false }}",
+              "type": "boolean"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        240,
+        320
+      ],
+      "id": "4c78e4a7-2d5f-4d14-951c-157c49e0fd18",
+      "name": "result"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "bb88376a-1842-4076-ab23-8d13b202595f",
+              "name": "phone",
+              "value": "={{ $('start').item.json.phone }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        448,
+        0
+      ],
+      "id": "849695af-3981-48da-b7ae-74a89a5651f1",
+      "name": "data"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "cc0528af-45c9-49e2-8418-3b914333706a",
+              "leftValue": "={{ $('get contact').isExecuted }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            },
+            {
+              "id": "690088ac-5e03-4f79-b3cf-f5e46ed3bc9c",
+              "leftValue": "={{ $json.phone }}",
+              "rightValue": "={{ $('get contact').isExecuted ? $('get contact').item.json.Phone : '' }}",
+              "operator": {
+                "type": "string",
+                "operation": "notEquals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        896,
+        -192
+      ],
+      "id": "ff075608-8def-4080-99cb-0c153d3e6e01",
+      "name": "update?"
+    },
+    {
+      "parameters": {
+        "operation": "get",
+        "id": "={{ $json.contact_id }}",
+        "collection": "contacts",
+        "returnAll": false,
+        "limit": 1,
+        "additionalFields": {}
+      },
+      "type": "@stumpworks/n8n-nodes-directus.directus",
+      "typeVersion": 1,
+      "position": [
+        448,
+        -208
+      ],
+      "id": "fee6ce97-5055-4ce3-b177-c79944a4469f",
+      "name": "get contact",
+      "credentials": {
+        "directusApi": {
+          "id": "kIJhRDZv2PR5UO1f",
+          "name": "Directus"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "id": "={{ $('start').item.json.contact_id }}",
+        "collection": "contacts",
+        "data": "={\"phone\":\"{{ $('libphonenumber').item.json.phone }}\"}"
+      },
+      "type": "@stumpworks/n8n-nodes-directus.directus",
+      "typeVersion": 1,
+      "position": [
+        1152,
+        -224
+      ],
+      "id": "a4daa4e8-a7e5-4eea-9b8a-128218afbb83",
+      "name": "update contact",
+      "credentials": {
+        "directusApi": {
+          "id": "kIJhRDZv2PR5UO1f",
+          "name": "Directus"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "start": {
+      "main": [
+        [
+          {
+            "node": "Switch",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Switch": {
+      "main": [
+        [
+          {
+            "node": "get contact",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "data",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "libphonenumber": {
+      "main": [
+        [
+          {
+            "node": "update?",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "data": {
+      "main": [
+        [
+          {
+            "node": "libphonenumber",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "update?": {
+      "main": [
+        [
+          {
+            "node": "update contact",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        []
+      ]
+    },
+    "get contact": {
+      "main": [
+        [
+          {
+            "node": "libphonenumber",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "callerPolicy": "workflowsFromSameOwner",
+    "errorWorkflow": "uG4YJnnTISaYTXXk"
+  },
+  "triggerCount": 0,
+  "versionId": "01c0f49a-04ca-4ee3-9cf1-19e6fcdbc559",
+  "owner": {
+    "type": "personal",
+    "projectId": "I8ZweZXokOc0zbYb",
+    "projectName": "BSU Agency <info@brilliantseedup.com>",
+    "personalEmail": "info@brilliantseedup.com"
+  },
+  "parentFolderId": "kK192fbu6GJvHsuJ",
+  "isArchived": false
+}

@@ -1,0 +1,548 @@
+{
+  "id": "bJE5YlhXAoMdJcvZ",
+  "name": "Agent CS",
+  "nodes": [
+    {
+      "parameters": {
+        "workflowInputs": {
+          "values": [
+            {
+              "name": "cs_id",
+              "type": "number"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        0,
+        0
+      ],
+      "id": "50e047cd-7523-4f5c-9032-78ad5bef1b32",
+      "name": "start"
+    },
+    {
+      "parameters": {
+        "authentication": "nocoDbApiToken",
+        "workspaceId": "wqp6q0zt",
+        "projectId": "p0a3eirwme1bmw7",
+        "table": "mkbhjd0aqdl1r1m",
+        "id": "={{ $node[\"start\"].json[\"cs_id\"] }}"
+      },
+      "type": "n8n-nodes-base.nocoDb",
+      "typeVersion": 3,
+      "position": [
+        224,
+        0
+      ],
+      "id": "685ee898-1300-407e-95ed-6ddb537b37de",
+      "name": "get cs",
+      "credentials": {
+        "nocoDbApiToken": {
+          "id": "tg1sd8Mux2yjJLx7",
+          "name": "NocoDB"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "cec8816c-5378-4f51-a2d6-33ab40f3529f",
+              "leftValue": "={{ $node[\"get cs\"].json[\"Agent\"][\"0\"][\"id\"] }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        432,
+        0
+      ],
+      "id": "426f2983-2e84-4a00-90d1-bd1a89aaf10c",
+      "name": "exists?"
+    },
+    {
+      "parameters": {
+        "authentication": "nocoDbApiToken",
+        "operation": "getAll",
+        "workspaceId": "wqp6q0zt",
+        "projectId": "p0a3eirwme1bmw7",
+        "table": "mrvcxcj5helhdz3",
+        "limit": 1,
+        "options": {
+          "where": "=(Account,eq,{{ $node[\"get cs\"].json[\"Agent\"][\"0\"][\"id\"] }})"
+        }
+      },
+      "type": "n8n-nodes-base.nocoDb",
+      "typeVersion": 3,
+      "position": [
+        672,
+        -16
+      ],
+      "id": "438fa048-ac81-439a-9070-8052291fddd6",
+      "name": "get agent data",
+      "alwaysOutputData": true,
+      "credentials": {
+        "nocoDbApiToken": {
+          "id": "tg1sd8Mux2yjJLx7",
+          "name": "NocoDB"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "f0f83613-8139-4e84-b60b-ad81d2d755ce",
+              "leftValue": "={{ $json.Account[0].id }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        880,
+        -16
+      ],
+      "id": "c191d05b-eada-4985-a8fe-6afa8a1a3c89",
+      "name": "check agent record"
+    },
+    {
+      "parameters": {
+        "authentication": "nocoDbApiToken",
+        "operation": "getAll",
+        "workspaceId": "wqp6q0zt",
+        "projectId": "p0a3eirwme1bmw7",
+        "table": "mrvcxcj5helhdz3",
+        "returnAll": true,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.nocoDb",
+      "typeVersion": 3,
+      "position": [
+        368,
+        464
+      ],
+      "id": "58d4832e-88f0-407d-af1f-30fef3e18e27",
+      "name": "get agents",
+      "alwaysOutputData": true,
+      "credentials": {
+        "nocoDbApiToken": {
+          "id": "tg1sd8Mux2yjJLx7",
+          "name": "NocoDB"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Получаем данные с проверками\nconst csData = $node[\"get cs\"].json;\nconst callSystem = Array.isArray(csData) ? csData[0] : csData;\n\n// Проверяем что данные получены\nif (!callSystem) {\n  return {\n    json: {\n      success: false,\n      error: 'No Call System data received'\n    }\n  };\n}\n\n// Используем $items для получения ВСЕХ входящих данных\nconst agentsItems = $items(\"get agents\");\nlet agents = agentsItems ? agentsItems.map(item => item.json) : [];\n\n// Фильтруем агентов - только те у кого есть Account\nagents = agents.filter(agent => {\n  return agent.Account && \n         Array.isArray(agent.Account) && \n         agent.Account.length > 0;\n});\n\n// Проверяем что агенты получены\nif (!agents || agents.length === 0) {\n  return {\n    json: {\n      success: false,\n      error: 'No agents available with Account',\n      callSystemId: callSystem.Id\n    }\n  };\n}\n\n// Извлекаем параметры из Call System\nconst rating = callSystem.Rating;\nconst hasTender = callSystem.Tender_id !== null && callSystem.Tender !== null;\n\n// Функция для проверки, есть ли тег в CsTags агента\nfunction hasTag(agent, tag) {\n  if (!agent.CsTags) return false;\n  const tags = agent.CsTags.split(',').map(t => t.trim());\n  return tags.includes(tag);\n}\n\n// Фильтруем и сортируем агентов\nlet suitableAgents = [];\n\n// Сначала ищем агентов с тегом \"Tender\" если в Call System есть Tender\nif (hasTender) {\n  suitableAgents = agents.filter(agent => hasTag(agent, 'Tender'));\n}\n\n// Если не нашли агентов с Tender или нет Tender в Call System\n// Ищем агентов с соответствующим Rating\nif (suitableAgents.length === 0 && rating) {\n  suitableAgents = agents.filter(agent => hasTag(agent, rating));\n}\n\n// Если нашли подходящих агентов, выбираем по ts\nif (suitableAgents.length > 0) {\n  // Сортируем по ts (null считаем как самое старое значение)\n  suitableAgents.sort((a, b) => {\n    if (a.ts === null && b.ts === null) return 0;\n    if (a.ts === null) return -1;\n    if (b.ts === null) return 1;\n    return a.ts - b.ts;\n  });\n  \n  const agent = suitableAgents[0];\n  \n  return {\n    json: {\n      success: true,\n      callSystemId: callSystem.Id,\n      agent: {\n        ...agent, // ВСЕ поля агента\n        reason: hasTender && hasTag(agent, 'Tender') \n          ? 'Tender priority' \n          : `Rating match: ${rating}`\n      }\n    }\n  };\n} else {\n  return {\n    json: {\n      success: false,\n      callSystemId: callSystem.Id,\n      agent: null,\n      reason: 'No suitable agent found'\n    }\n  };\n}"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        592,
+        464
+      ],
+      "id": "64c63382-db57-46e8-a98a-7ebc51de2b53",
+      "name": "agent selection"
+    },
+    {
+      "parameters": {
+        "authentication": "nocoDbApiToken",
+        "operation": "update",
+        "workspaceId": "wqp6q0zt",
+        "projectId": "p0a3eirwme1bmw7",
+        "table": "mrvcxcj5helhdz3",
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldName": "Id",
+              "fieldValue": "={{ $json.agent.Id }}"
+            },
+            {
+              "fieldName": "ts",
+              "fieldValue": "={{ Math.floor(Date.now() / 1000) }}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.nocoDb",
+      "typeVersion": 3,
+      "position": [
+        1120,
+        448
+      ],
+      "id": "284dfe5d-b854-4095-8e94-2d385bf4d5a8",
+      "name": "update ts agent",
+      "credentials": {
+        "nocoDbApiToken": {
+          "id": "tg1sd8Mux2yjJLx7",
+          "name": "NocoDB"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "eb461de7-24ef-4d06-b6a0-7ac28d5fd982",
+              "leftValue": "={{ $json.success }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        848,
+        464
+      ],
+      "id": "952e1eff-ed0d-4332-9c8b-40ee87c275dc",
+      "name": "success?"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "af49c6fd-21be-4d74-a076-dc0bb281b8a8",
+              "name": "success",
+              "value": true,
+              "type": "boolean"
+            },
+            {
+              "id": "0d158427-3f0e-468c-a446-44bb48b95297",
+              "name": "agent",
+              "value": "={{ $json.agent || $json }}",
+              "type": "object"
+            },
+            {
+              "id": "b4d3fc33-f1c7-4ee2-aa2c-ccedf2e08066",
+              "name": "tg",
+              "value": "={{ ($json.agent?.Telegram || $json.Telegram) ? '@' + ($json.agent?.Telegram || $json.Telegram).toString().replace(/^@+|https?:\\/\\/(t\\.me\\/|telegram\\.me\\/)/g, '') : null }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        848,
+        896
+      ],
+      "id": "b713770b-98ef-4c34-8859-0c9fb1b3a8fa",
+      "name": "output ok"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "caad9a66-8008-4030-82c7-86fae65bb290",
+              "name": "success",
+              "value": "={{ $json.success }}",
+              "type": "boolean"
+            },
+            {
+              "id": "b3524cda-c9cb-48bc-93ab-38a223f751d3",
+              "name": "error",
+              "value": "={{ $json.reason || $json.error }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        848,
+        720
+      ],
+      "id": "722eb89f-2de8-47dd-a8f2-032229040fc1",
+      "name": "output bad"
+    },
+    {
+      "parameters": {
+        "authentication": "nocoDbApiToken",
+        "operation": "update",
+        "workspaceId": "wqp6q0zt",
+        "projectId": "p0a3eirwme1bmw7",
+        "table": "mkbhjd0aqdl1r1m",
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldName": "Id",
+              "fieldValue": "={{ $node[\"get cs\"].json[\"Id\"] }}"
+            },
+            {
+              "fieldName": "Agent",
+              "fieldValue": "={{ $('success?').item.json.agent.Account[0].id }}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.nocoDb",
+      "typeVersion": 3,
+      "position": [
+        1328,
+        448
+      ],
+      "id": "aae5628c-2a78-4211-be64-7a6a813a5095",
+      "name": "agent to cs",
+      "credentials": {
+        "nocoDbApiToken": {
+          "id": "tg1sd8Mux2yjJLx7",
+          "name": "NocoDB"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $vars.warngroup }}",
+        "text": "=🎯 New Contact Assigned (CS)!\n-------------\n👤 Contact: {{ $node[\"get cs\"].json[\"Name\"] || \"-\" }}\n📧 Email: {{ $node[\"get cs\"].json[\"Email\"] || \"-\" }}\n📱 Phone: {{ $node[\"get cs\"].json[\"Phone\"] || \"-\" }}\n⭐ Rating: {{ $node[\"get cs\"].json[\"Rating\"] || \"-\" }}\n-------------\n\n👨‍💼 Assigned: \n- {{ $node[\"agent selection\"].json[\"agent\"][\"Account\"][\"0\"][\"display_name\"] || \"-\" }}\n- {{ $node[\"agent selection\"].json[\"agent\"][\"Account\"][\"0\"][\"email\"] || \"-\" }}\n- {{ ($node[\"get agents\"].json[\"Telegram\"]) ? '@' + ($node[\"get agents\"].json[\"Telegram\"]).toString().replace(/^@+|https?:\\/\\/(t\\.me\\/|telegram\\.me\\/)/g, '') : \"No username\" }}",
+        "replyMarkup": "inlineKeyboard",
+        "inlineKeyboard": {
+          "rows": [
+            {
+              "row": {
+                "buttons": [
+                  {
+                    "text": "Open",
+                    "additionalFields": {
+                      "url": "={{ $vars.nocodb_url_ex }}#/wqp6q0zt/p0a3eirwme1bmw7/mkbhjd0aqdl1r1m?rowId={{ $node[\"get cs\"].json[\"Id\"] }}"
+                    }
+                  }
+                ]
+              }
+            }
+          ]
+        },
+        "additionalFields": {
+          "appendAttribution": false,
+          "message_thread_id": 10
+        }
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        1536,
+        448
+      ],
+      "id": "7aa04a99-19d1-4564-a223-9ba271a939e8",
+      "name": "noti to event",
+      "webhookId": "b2f97887-034a-47e7-bdb4-75327f72f103",
+      "credentials": {
+        "telegramApi": {
+          "id": "yv48JNV4VmuIREaW",
+          "name": "Citycompany"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "start": {
+      "main": [
+        [
+          {
+            "node": "get cs",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "get cs": {
+      "main": [
+        [
+          {
+            "node": "exists?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "exists?": {
+      "main": [
+        [
+          {
+            "node": "get agent data",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "get agents",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "get agent data": {
+      "main": [
+        [
+          {
+            "node": "check agent record",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "check agent record": {
+      "main": [
+        [
+          {
+            "node": "output ok",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "get agents",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "get agents": {
+      "main": [
+        [
+          {
+            "node": "agent selection",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "agent selection": {
+      "main": [
+        [
+          {
+            "node": "success?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "success?": {
+      "main": [
+        [
+          {
+            "node": "update ts agent",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "output ok",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "output bad",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "update ts agent": {
+      "main": [
+        [
+          {
+            "node": "agent to cs",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "agent to cs": {
+      "main": [
+        [
+          {
+            "node": "noti to event",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "callerPolicy": "workflowsFromSameOwner",
+    "availableInMCP": false,
+    "errorWorkflow": "agw6jjdVg6yAawFi"
+  },
+  "triggerCount": 0,
+  "versionId": "c5089326-e368-4521-aa4d-fa9b4416b885",
+  "owner": {
+    "type": "personal",
+    "projectId": "I8ZweZXokOc0zbYb",
+    "projectName": "BSU Agency <info@brilliantseedup.com>",
+    "personalEmail": "info@brilliantseedup.com"
+  },
+  "parentFolderId": "0KEQXy0W85PP7KZ2",
+  "isArchived": false
+}

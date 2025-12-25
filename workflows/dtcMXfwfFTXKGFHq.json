@@ -1,0 +1,797 @@
+{
+  "id": "dtcMXfwfFTXKGFHq",
+  "name": "Single normalization",
+  "nodes": [
+    {
+      "parameters": {
+        "workflowInputs": {
+          "values": [
+            {
+              "name": "contact_id",
+              "type": "number"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        -2288,
+        592
+      ],
+      "id": "e68511f5-b618-49db-9d9d-4fd88e774fe6",
+      "name": "start"
+    },
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "value": "gpt-4.1-mini",
+          "mode": "list",
+          "cachedResultName": "GPT-4.1-MINI"
+        },
+        "messages": {
+          "values": [
+            {
+              "content": "=# Client Name Cleaner Agent\nYou are a specialized agent for cleaning and extracting client names from potentially messy input data.\n\n## Your Task\nYou will receive input in this format:\nName: <value>\nSurname: <value>\n\nYour job is to:\n1. Validate if the provided name and surname are clean and proper\n2. Extract the real client name and surname from messy data if needed\n3. Clean and format the names professionally\n\n## Common Issues to Handle\n- Professional titles and prefixes: Dr, Prof, Mr, Mrs, Ms, Lord, Sir, etc.\n- Multiple names in wrong fields\n- Organizational names mixed with personal names\n- Extra descriptive text\n- Inconsistent capitalization\n\n## Examples of Messy Data:\n- Name: Dr Renuka Thakore, Surname: Representing Global Communities\n- Name: Dr. Lord Arash, Surname: Nassouri Nason\n- Name: Prof. John Smith Jr., Surname: University Department\n\n## Output Format\nAlways respond with valid JSON in this exact format:\n{\n  \"name\": \"value\",\n  \"surname\": \"value\", \n  \"success\": true/false\n}\n\n## Rules:\n1. Name field: Must contain exactly ONE word, properly capitalized (e.g., \"John\", \"Maria\")\n2. Surname field: Must contain exactly ONE word, properly capitalized (e.g., \"Smith\", \"Johnson\")\n3. Success = true only when you successfully extract a real, addressable client name\n4. If surname cannot be determined, use null but this doesn't affect success if name is found\n5. Remove all titles, prefixes, suffixes, and organizational references\n6. Focus on extracting the actual person's name they would be addressed by\n\n## Process:\n1. First, THINK: Analyze if there's actually a real personal name present in the data\n2. Identify and remove professional titles and prefixes\n3. Separate personal names from organizational/descriptive text  \n4. Extract the most likely first name and surname\n5. Format with proper capitalization\n6. Final validation: Double-check that the extracted name represents a real, addressable person\n\n## Critical Thinking Required:\nBefore setting success: true, ask yourself:\n- Is there actually a real human name in the provided data?\n- Or is it just organizational names, job titles, or complete nonsense?\n- Can I confidently identify a personal name that a person would be addressed by?\n- Would this name make sense in a professional greeting like \"Hello [Name]\"?\n- Does the extracted name sound like a real human first name? (not objects, food, random words)\n- Look across BOTH fields - sometimes the real name is in the \"wrong\" field\n\n## Examples of when to set success: false:\n- Only company/organization names present\n- Only job titles without personal names\n- Gibberish or random text\n- Cannot identify any real personal name component\n- Extracted \"name\" is clearly not a human first name (like \"Milk\", \"Car\", \"Building\", etc.)\n\n## Smart Extraction Strategy:\n- Scan both Name and Surname fields for actual human names\n- The real first name might be in the \"Surname\" field and vice versa\n- Prioritize finding a believable human first name over field positioning\n- If you find \"Dr Milk\" and \"Alex 2 Tompson\", recognize that \"Alex\" is the real name, not \"Milk\"\n\nRemember: Your primary goal is to extract clean, professional, addressable client names that can be used for personal communication. Be conservative - only set success=true when you're confident there's a real personal name present.",
+              "role": "system"
+            },
+            {
+              "content": "=Name: {{ $json.name || \"-\" }}\nSurname: {{ $json.surname || \"-\" }}"
+            }
+          ]
+        },
+        "jsonOutput": true,
+        "options": {
+          "temperature": 0.2
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 1.8,
+      "position": [
+        -560,
+        640
+      ],
+      "id": "d1d58871-1264-4e65-a573-60ebd474c3b1",
+      "name": "fix name",
+      "retryOnFail": true,
+      "waitBetweenTries": 5000,
+      "credentials": {
+        "openAiApi": {
+          "id": "895vd8bC2qxU4JL4",
+          "name": "OpenAi"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "7728d75b-152f-446c-8407-a27f15d21e9a",
+              "leftValue": "={{ $json.message.content.success }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -192,
+        640
+      ],
+      "id": "74f01a31-1945-4145-8fff-8f52edf78c98",
+      "name": "valid name"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        -1072,
+        672
+      ],
+      "id": "360325a5-5448-461a-a295-45d760e780a8",
+      "name": "loop"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "0130dfc1-b695-4525-94fb-751f3ea3962c",
+              "name": "result",
+              "value": "deleted",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -160,
+        1008
+      ],
+      "id": "d405bb8e-f7eb-41d4-9936-5fc7a644f348",
+      "name": "deleted"
+    },
+    {
+      "parameters": {
+        "jsCode": "const { parsePhoneNumber } = require('libphonenumber-js');\n\nreturn $input.all().map(item => {\n  try {\n    // Берем телефон из loop узла\n    let phone = String($node[\"loop\"].json[\"phone\"] || '');\n    \n    // Удаляем все символы кроме цифр\n    phone = phone.replace(/[^0-9]/g, '');\n    \n    // Если остались цифры, добавляем + в начало\n    if (phone) {\n      phone = '+' + phone;\n    }\n    \n    // Валидируем через libphonenumber\n    const parsedPhone = parsePhoneNumber(phone);\n    \n    if (parsedPhone?.isValid?.()) {\n      // Если валиден - возвращаем очищенный номер\n      return { json: { phone: parsedPhone.format('E.164') } };\n    } else {\n      // Если не валиден - возвращаем null\n      return { json: { phone: null } };\n    }\n  } catch {\n    return { json: { phone: null } };\n  }\n});"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        240,
+        480
+      ],
+      "id": "6485d589-d193-4a65-ba3d-82fbbc526062",
+      "name": "libphonenumber"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "145842d0-b850-406b-8701-3dfd7d7701ee",
+              "leftValue": "={{ $json.id }}",
+              "rightValue": "",
+              "operator": {
+                "type": "number",
+                "operation": "notEmpty",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -672,
+        208
+      ],
+      "id": "0fc70944-0a12-4f81-901b-a57824c1ec99",
+      "name": "fixed?"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "7b80a7ee-bdd3-4719-b7f5-544b753a35b4",
+              "leftValue": "={{ $json.phone }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty",
+                "singleValue": true
+              }
+            },
+            {
+              "id": "197cd62f-d9c6-4119-b1b5-a792a68d082c",
+              "leftValue": "={{ $json.email }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty",
+                "singleValue": true
+              }
+            },
+            {
+              "id": "ccda4f3b-6070-4cda-9fc7-9de9f2de8140",
+              "leftValue": "={{ $('loop').item.json.linkedin }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "or"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        688,
+        688
+      ],
+      "id": "0119ba74-7a03-47eb-b3d4-53248a16ac02",
+      "name": "output data valid?"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "07c057cf-0ef2-47f2-899f-4023924c984c",
+              "name": "id",
+              "value": "={{ $('loop').item.json.id }}",
+              "type": "number"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        704,
+        1008
+      ],
+      "id": "a5e0207f-94d4-4e82-bac8-41c76c36cefe",
+      "name": "id"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "-- Скрипт для группировки компаний по схожести названий (Directus)\n-- Использует PostgreSQL расширение pg_trgm для нечёткого поиска\n-- Обрабатывает только записи без назначенной группы\n\n-- 1. Включаем расширение для работы со схожестью строк (если ещё не включено)\nCREATE EXTENSION IF NOT EXISTS pg_trgm;\n\n-- 2. Создаём временную таблицу для хранения уникальных компаний и их групп\nDROP TABLE IF EXISTS temp_company_groups;\nCREATE TEMP TABLE temp_company_groups (\n    group_id BIGINT,\n    company_name TEXT,\n    normalized_name TEXT,\n    existing_group_id BIGINT,\n    PRIMARY KEY (company_name)\n);\n\n-- 3. Создаём функцию для нормализации названий компаний\nCREATE OR REPLACE FUNCTION normalize_company_name(name TEXT) \nRETURNS TEXT AS $$\nBEGIN\n    -- Приводим к нижнему регистру и удаляем лишние пробелы\n    name := LOWER(TRIM(name));\n    \n    -- Удаляем распространённые суффиксы компаний\n    name := REGEXP_REPLACE(name, '\\s+(inc\\.?|incorporated|corp\\.?|corporation|llc|ltd\\.?|limited|gmbh|ag|sa|srl|spa|plc|pvt|pte|pty|co\\.?|company)$', '', 'gi');\n    \n    -- Удаляем специальные символы, оставляя только буквы, цифры и пробелы\n    name := REGEXP_REPLACE(name, '[^a-zа-я0-9\\s]', '', 'gi');\n    \n    -- Удаляем множественные пробелы\n    name := REGEXP_REPLACE(name, '\\s+', ' ', 'g');\n    \n    RETURN TRIM(name);\nEND;\n$$ LANGUAGE plpgsql;\n\n-- 4. Заполняем временную таблицу всеми уникальными компаниями (включая уже сгруппированные)\nINSERT INTO temp_company_groups (company_name, normalized_name, existing_group_id)\nSELECT DISTINCT \n    company,\n    normalize_company_name(company),\n    company_group\nFROM public.contacts\nWHERE company IS NOT NULL \n    AND TRIM(company) != '';\n\n-- 5. Создаём последовательность для генерации ID групп, начиная с максимального существующего + 1\nDO $$\nDECLARE\n    max_existing_group_id BIGINT;\nBEGIN\n    SELECT COALESCE(MAX(company_group), 0) INTO max_existing_group_id\n    FROM public.contacts\n    WHERE company_group IS NOT NULL;\n    \n    DROP SEQUENCE IF EXISTS company_group_seq;\n    EXECUTE 'CREATE SEQUENCE company_group_seq START WITH ' || (max_existing_group_id + 1);\nEND $$;\n\n-- 6. Сначала копируем существующие группы\nUPDATE temp_company_groups\nSET group_id = existing_group_id\nWHERE existing_group_id IS NOT NULL;\n\n-- 7. Присваиваем group_id для компаний без группы\nDO $$\nDECLARE\n    rec RECORD;\n    current_group_id BIGINT;\n    similarity_threshold FLOAT := 0.7; -- Порог схожести (70%)\nBEGIN\n    -- Обрабатываем только компании без назначенной группы\n    FOR rec IN \n        SELECT company_name, normalized_name \n        FROM temp_company_groups \n        WHERE group_id IS NULL\n        ORDER BY normalized_name, company_name\n    LOOP\n        -- Сначала ищем среди уже существующих групп (включая ранее назначенные)\n        SELECT group_id INTO current_group_id\n        FROM temp_company_groups\n        WHERE group_id IS NOT NULL\n            AND normalized_name IS NOT NULL\n            AND rec.normalized_name IS NOT NULL\n            AND similarity(normalized_name, rec.normalized_name) >= similarity_threshold\n        LIMIT 1;\n        \n        -- Если похожая группа не найдена, создаём новую\n        IF current_group_id IS NULL THEN\n            current_group_id := nextval('company_group_seq');\n        END IF;\n        \n        -- Обновляем group_id для текущей компании\n        UPDATE temp_company_groups\n        SET group_id = current_group_id\n        WHERE company_name = rec.company_name;\n    END LOOP;\nEND $$;\n\n-- 8. Создаём индекс для ускорения обновления основной таблицы\nCREATE INDEX IF NOT EXISTS idx_contacts_company \nON public.contacts (company);\n\n-- 9. Обновляем основную таблицу только для записей без группы\nUPDATE public.contacts c\nSET company_group = tg.group_id\nFROM temp_company_groups tg\nWHERE c.company = tg.company_name\n    AND c.company_group IS NULL;\n\n-- 10. Обнуляем группы для пустых компаний\nUPDATE public.contacts\nSET company_group = NULL\nWHERE company IS NULL \n    OR TRIM(company) = '';\n\n-- 11. Объединённый отчёт со статистикой и примерами группировки\nWITH statistics AS (\n    SELECT \n        (SELECT COUNT(DISTINCT company_name) FROM temp_company_groups) as total_companies,\n        (SELECT COUNT(DISTINCT group_id) FROM temp_company_groups) as total_groups,\n        (SELECT COUNT(*) FROM temp_company_groups WHERE existing_group_id IS NULL) as new_companies_processed,\n        (SELECT COUNT(*) FROM temp_company_groups WHERE existing_group_id IS NOT NULL) as existing_companies_skipped,\n        ROUND(AVG(cnt), 2) as avg_group_size\n    FROM (\n        SELECT group_id, COUNT(*) as cnt\n        FROM temp_company_groups\n        GROUP BY group_id\n    ) t\n),\ntop_groups AS (\n    SELECT \n        JSON_AGG(\n            JSON_BUILD_OBJECT(\n                'group_id', group_id,\n                'company_count', company_count,\n                'companies', companies_in_group,\n                'has_new_companies', has_new_companies\n            ) ORDER BY company_count DESC\n        ) as groups_data\n    FROM (\n        SELECT \n            group_id,\n            COUNT(*) as company_count,\n            STRING_AGG(company_name, ', ' ORDER BY company_name) as companies_in_group,\n            BOOL_OR(existing_group_id IS NULL) as has_new_companies\n        FROM temp_company_groups\n        GROUP BY group_id\n        HAVING COUNT(*) > 1\n        ORDER BY COUNT(*) DESC\n        LIMIT 10\n    ) grouped\n)\nSELECT \n    JSON_BUILD_OBJECT(\n        'status', 'success',\n        'message', 'Company grouping completed',\n        'statistics', JSON_BUILD_OBJECT(\n            'total_unique_companies', s.total_companies,\n            'total_groups_created', s.total_groups,\n            'new_companies_processed', s.new_companies_processed,\n            'existing_companies_skipped', s.existing_companies_skipped,\n            'average_group_size', s.avg_group_size\n        ),\n        'top_groups', COALESCE(tg.groups_data, '[]'::json)\n    ) as result\nFROM statistics s\nCROSS JOIN top_groups tg;\n\n-- 12. Очищаем временные объекты\nDROP TABLE IF EXISTS temp_company_groups;\nDROP SEQUENCE IF EXISTS company_group_seq;\nDROP FUNCTION IF EXISTS normalize_company_name(TEXT);",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        -2064,
+        592
+      ],
+      "id": "b72942e2-4055-45bb-8cc0-73a1a855e7fa",
+      "name": "Company Group",
+      "credentials": {
+        "postgres": {
+          "id": "oZABCHH2vjfMvXoi",
+          "name": "directus"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "-- Переносим company в name только если name пустой\nUPDATE public.contacts\nSET name = company\nWHERE id = {{ $node[\"start\"].json[\"contact_id\"] }}\n  AND human = false\n  AND (name IS NULL OR TRIM(name) = '')\n  AND company IS NOT NULL \n  AND TRIM(company) != '';\n\n-- Если name всё ещё пустой (и company тоже пустой), ставим прочерк\nUPDATE public.contacts\nSET name = '-'\nWHERE id = {{ $node[\"start\"].json[\"contact_id\"] }}\n  AND human = false\n  AND (name IS NULL OR TRIM(name) = '');",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        -1840,
+        592
+      ],
+      "id": "facbbe07-7500-46c1-9579-0c3deeb19ed8",
+      "name": "update HN name",
+      "alwaysOutputData": true,
+      "credentials": {
+        "postgres": {
+          "id": "oZABCHH2vjfMvXoi",
+          "name": "directus"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "df6439da-818a-4842-927c-abb2889830c9",
+                    "leftValue": "={{ $json.human }}",
+                    "rightValue": "",
+                    "operator": {
+                      "type": "boolean",
+                      "operation": "false",
+                      "singleValue": true
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "non human"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ !$json.name.isEmpty() && !($json.linkedin.isEmpty() && $json.phone.isEmpty() && $json.Email.isEmpty()) }}",
+                    "rightValue": "",
+                    "operator": {
+                      "type": "boolean",
+                      "operation": "true",
+                      "singleValue": true
+                    },
+                    "id": "fb43b04d-d7f7-42c5-85f6-8a87738697ba"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "valid human"
+            }
+          ]
+        },
+        "options": {
+          "fallbackOutput": "extra"
+        }
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.3,
+      "position": [
+        -848,
+        624
+      ],
+      "id": "8f549db3-946f-4330-ab0a-0f99994c0735",
+      "name": "Switch"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "8303d1c1-f378-4c35-9a21-88c76e8747c9",
+              "leftValue": "={{ $json.fix }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "false",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -1392,
+        592
+      ],
+      "id": "8940a244-7623-4253-a911-0bc57960e4b9",
+      "name": "non fix?"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "0130dfc1-b695-4525-94fb-751f3ea3962c",
+              "name": "result",
+              "value": false,
+              "type": "boolean"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -448,
+        288
+      ],
+      "id": "3dd22918-e497-401b-89e4-20aead7b8dff",
+      "name": "invalid"
+    },
+    {
+      "parameters": {
+        "operation": "get",
+        "id": "={{ $node[\"start\"].json[\"contact_id\"] }}",
+        "collection": "contacts",
+        "returnAll": false,
+        "limit": 1,
+        "additionalFields": {}
+      },
+      "type": "@stumpworks/n8n-nodes-directus.directus",
+      "typeVersion": 1,
+      "position": [
+        -1616,
+        592
+      ],
+      "id": "7366254a-44c7-454f-956c-d05b1861b123",
+      "name": "get contact",
+      "credentials": {
+        "directusApi": {
+          "id": "kIJhRDZv2PR5UO1f",
+          "name": "Directus"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "id": "={{ $node[\"loop\"].json[\"id\"] }}",
+        "collection": "contacts",
+        "data": "={\n\"name\":\"{{ $('fix name').item.json.message.content.name }}\",\n\"surname\":\"{{ $('fix name').item.json.message.content.surname || \"\" }}\"\n}"
+      },
+      "type": "@stumpworks/n8n-nodes-directus.directus",
+      "typeVersion": 1,
+      "position": [
+        32,
+        640
+      ],
+      "id": "bbde0955-2ae6-48b0-b257-285d7cd86b2d",
+      "name": "update name",
+      "credentials": {
+        "directusApi": {
+          "id": "kIJhRDZv2PR5UO1f",
+          "name": "Directus"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "id": "={{ $node[\"loop\"].json[\"id\"] }}",
+        "collection": "contacts",
+        "data": "={\n\"fix\":true,\n\"phone\":\"{{ $node[\"libphonenumber\"].json[\"phone\"] }}\",\n\"email\":\"{{ $node[\"loop\"].json[\"email\"].toLowerCase().replace(/\\s+/g, '').isEmail() ? $node[\"loop\"].json[\"email\"].toLowerCase().replace(/\\s+/g, '') : null }}\"\n}"
+      },
+      "type": "@stumpworks/n8n-nodes-directus.directus",
+      "typeVersion": 1,
+      "position": [
+        416,
+        688
+      ],
+      "id": "dc3f04a0-5795-46b9-b85d-3f089b90863a",
+      "name": "update data",
+      "credentials": {
+        "directusApi": {
+          "id": "kIJhRDZv2PR5UO1f",
+          "name": "Directus"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "delete",
+        "id": "={{ $('loop').item.json.id }}",
+        "collection": "contacts"
+      },
+      "type": "@stumpworks/n8n-nodes-directus.directus",
+      "typeVersion": 1,
+      "position": [
+        -400,
+        1008
+      ],
+      "id": "6e1daedc-0878-4ae5-bb10-a93a30eee720",
+      "name": "delete",
+      "credentials": {
+        "directusApi": {
+          "id": "kIJhRDZv2PR5UO1f",
+          "name": "Directus"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "get",
+        "id": "={{ $json.id }}",
+        "collection": "contacts",
+        "returnAll": false,
+        "limit": 1,
+        "additionalFields": {}
+      },
+      "type": "@stumpworks/n8n-nodes-directus.directus",
+      "typeVersion": 1,
+      "position": [
+        -448,
+        96
+      ],
+      "id": "4a303bd2-10bf-4c15-b4d2-7aeacb2013bb",
+      "name": "final",
+      "credentials": {
+        "directusApi": {
+          "id": "kIJhRDZv2PR5UO1f",
+          "name": "Directus"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "start": {
+      "main": [
+        [
+          {
+            "node": "Company Group",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "fix name": {
+      "main": [
+        [
+          {
+            "node": "valid name",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "valid name": {
+      "main": [
+        [
+          {
+            "node": "update name",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "delete",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "loop": {
+      "main": [
+        [
+          {
+            "node": "fixed?",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Switch",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "deleted": {
+      "main": [
+        [
+          {
+            "node": "loop",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "libphonenumber": {
+      "main": [
+        [
+          {
+            "node": "update data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "fixed?": {
+      "main": [
+        [
+          {
+            "node": "final",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "invalid",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "output data valid?": {
+      "main": [
+        [
+          {
+            "node": "id",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "delete",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "id": {
+      "main": [
+        [
+          {
+            "node": "loop",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Company Group": {
+      "main": [
+        [
+          {
+            "node": "update HN name",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "update HN name": {
+      "main": [
+        [
+          {
+            "node": "get contact",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Switch": {
+      "main": [
+        [
+          {
+            "node": "libphonenumber",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "fix name",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "delete",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "non fix?": {
+      "main": [
+        [
+          {
+            "node": "loop",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "final",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "get contact": {
+      "main": [
+        [
+          {
+            "node": "non fix?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "update name": {
+      "main": [
+        [
+          {
+            "node": "libphonenumber",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "update data": {
+      "main": [
+        [
+          {
+            "node": "output data valid?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "delete": {
+      "main": [
+        [
+          {
+            "node": "deleted",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "callerPolicy": "workflowsFromSameOwner",
+    "availableInMCP": false,
+    "errorWorkflow": "uG4YJnnTISaYTXXk"
+  },
+  "triggerCount": 0,
+  "versionId": "330f5f03-1b4f-417f-80e3-39aa36bf8d51",
+  "owner": {
+    "type": "personal",
+    "projectId": "I8ZweZXokOc0zbYb",
+    "projectName": "BSU Agency <info@brilliantseedup.com>",
+    "personalEmail": "info@brilliantseedup.com"
+  },
+  "parentFolderId": "bF4ciYwr94o73FSy",
+  "isArchived": false
+}

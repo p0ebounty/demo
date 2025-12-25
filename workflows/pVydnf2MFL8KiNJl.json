@@ -1,0 +1,232 @@
+{
+  "id": "pVydnf2MFL8KiNJl",
+  "name": "Calculator",
+  "nodes": [
+    {
+      "parameters": {
+        "workflowInputs": {
+          "values": [
+            {
+              "name": "cs_id",
+              "type": "number"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        -368,
+        16
+      ],
+      "id": "f82bf7ef-b6e0-4dda-bdf2-7e038ecd4d14",
+      "name": "start"
+    },
+    {
+      "parameters": {
+        "jsCode": "const loadsWeek = $node[\"get cs\"].json[\"Loads Week\"] || 0;\n\nlet volumeTier = \"\";\n\n// Присваиваем нужный тег на основе значения Loads Week\nif (loadsWeek >= 7) {\n  volumeTier = \"Very High\";\n} else if (loadsWeek >= 4) {\n  volumeTier = \"High\";\n} else if (loadsWeek >= 1) {\n  volumeTier = \"Medium\";\n} else if (loadsWeek >= 0.25) {\n  volumeTier = \"Low\";\n} else {\n  volumeTier = \"Very Low\";\n}\n\n// Возвращаем результат как тег\nreturn {\n  value: volumeTier\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        64,
+        16
+      ],
+      "id": "f33f6f0c-8959-4e06-815f-e1a4eb456e03",
+      "name": "volume tier"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Получаем значения из предыдущей ноды\nconst volumeTier = $node[\"volume tier\"].json[\"value\"] || \"Very Low\";  // Если данных нет, ставим \"Very Low\"\nconst interest = $node[\"get cs\"].json[\"Interest\"] || \"No interest\";  // Если данных нет, ставим \"No interest\"\nconst tenderId = $node[\"get cs\"].json[\"Tender\"] && $node[\"get cs\"].json[\"Tender\"][\"Id\"]; // Если нет данных о тендере, идём без изменения\n\n// Присваиваем баллы для VolumeScore\nlet volumeScore = 0;\nif (volumeTier === \"Very Low\") {\n  volumeScore = 0;\n} else if (volumeTier === \"Low\") {\n  volumeScore = 1;\n} else if (volumeTier === \"Medium\") {\n  volumeScore = 2;\n} else if (volumeTier === \"High\") {\n  volumeScore = 3;\n} else if (volumeTier === \"Very High\") {\n  volumeScore = 4;\n}\n\n// Присваиваем баллы для InterestScore\nlet interestScore = 0;\nif (interest === \"No interest\") {\n  interestScore = 0;\n} else if (interest === \"Low\") {\n  interestScore = 1;\n} else if (interest === \"Medium\") {\n  interestScore = 2;\n} else if (interest === \"Hot\") {\n  interestScore = 3;\n}\n\n// Проверка наличия записи в Tender и добавление бонусного балла\nlet tenderBonus = 0;\nif (tenderId) {\n  tenderBonus = 5;  // Если в поле Tender есть ID, добавляем 5 баллов\n}\n\n// Рассчитываем Priority Score\nconst priorityScore = Math.ceil((volumeScore * 0.7) + (interestScore * 0.3) + tenderBonus);\n\n// Возвращаем результат\nreturn {\n  value: priorityScore\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        272,
+        16
+      ],
+      "id": "42bdb227-d4b2-4349-8dbe-8b9c6d056f4a",
+      "name": "priority score"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Получаем Priority Score из предыдущего шага\nconst priorityScore = $node[\"priority score\"].json[\"value\"] || 0;\n\nlet rating = \"\";\n\n// Сопоставляем Priority Score с Rating\nif (priorityScore === 0) {\n  rating = \"D\";\n} else if (priorityScore === 1) {\n  rating = \"C\";\n} else if (priorityScore === 2) {\n  rating = \"B\";\n} else if (priorityScore === 3) {\n  rating = \"A\";\n} else if (priorityScore >= 4) {\n  rating = \"A+\";\n}\n\n// Возвращаем результат\nreturn {\n  value: rating\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        480,
+        16
+      ],
+      "id": "b746c662-355d-43de-82bd-e1616d88137c",
+      "name": "rating"
+    },
+    {
+      "parameters": {
+        "authentication": "nocoDbApiToken",
+        "workspaceId": "wqp6q0zt",
+        "projectId": "p0a3eirwme1bmw7",
+        "table": "mkbhjd0aqdl1r1m",
+        "id": "={{ $json.cs_id }}"
+      },
+      "type": "n8n-nodes-base.nocoDb",
+      "typeVersion": 3,
+      "position": [
+        -160,
+        16
+      ],
+      "id": "324c1dfd-274b-4d72-945f-aa4ff4dbf4ea",
+      "name": "get cs",
+      "credentials": {
+        "nocoDbApiToken": {
+          "id": "tg1sd8Mux2yjJLx7",
+          "name": "NocoDB"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "authentication": "nocoDbApiToken",
+        "operation": "update",
+        "workspaceId": "wqp6q0zt",
+        "projectId": "p0a3eirwme1bmw7",
+        "table": "mkbhjd0aqdl1r1m",
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldName": "Id",
+              "fieldValue": "={{ $('get cs').item.json.Id }}"
+            },
+            {
+              "fieldName": "Volume Tier",
+              "fieldValue": "={{ $('volume tier').item.json.value }}"
+            },
+            {
+              "fieldName": "Priority Score",
+              "fieldValue": "={{ $('priority score').item.json.value }}"
+            },
+            {
+              "fieldName": "Rating",
+              "fieldValue": "={{ $('rating').item.json.value }}"
+            },
+            {
+              "fieldName": "Schedule",
+              "fieldValue": "={{ $node[\"schedule\"].json[\"schedule\"] }}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.nocoDb",
+      "typeVersion": 3,
+      "position": [
+        912,
+        16
+      ],
+      "id": "02cf3318-44c9-4add-87d7-4747bb2053e2",
+      "name": "update cs",
+      "credentials": {
+        "nocoDbApiToken": {
+          "id": "tg1sd8Mux2yjJLx7",
+          "name": "NocoDB"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Получаем данные из предыдущих нод\nconst volumeTier = $node[\"volume tier\"].json[\"value\"] || \"\";\nconst freightOrgRaw = $node[\"get cs\"].json[\"Freight Org\"] || \"\";\n\n// Парсим Freight Org (приходит как строка \"Contract,Tender\" или массив)\nlet freightOrgArray = [];\nif (Array.isArray(freightOrgRaw)) {\n  freightOrgArray = freightOrgRaw;\n} else if (typeof freightOrgRaw === 'string' && freightOrgRaw.length > 0) {\n  freightOrgArray = freightOrgRaw.split(',').map(item => item.trim());\n}\n\n// ===== ПРОВЕРКА: только Tender =====\nconst hasTender = freightOrgArray.includes(\"Tender\");\nconst hasOtherTypes = freightOrgArray.some(item => \n  item === \"Contract\" || item === \"Occasional\" || item === \"Constant Lanes\"\n);\n\n// Если только Tender и ничего больше - STOP\nif (hasTender && !hasOtherTypes && freightOrgArray.length === 1) {\n  return {\n    schedule: \"Stop\",\n    daysBetween: null,\n    reason: \"Only Tender - manual handling required\",\n    hasHighActivity: false,\n    volumeTier: volumeTier,\n    freightOrg: freightOrgArray\n  };\n}\n\n// ===== ПРОВЕРКА: Volume Tier пустой = максимальный интервал =====\nif (!volumeTier || volumeTier === \"\") {\n  return {\n    schedule: \"E3W\",\n    daysBetween: 21,\n    reason: \"Volume Tier is empty - set to maximum interval\",\n    hasHighActivity: false,\n    volumeTier: volumeTier || \"empty\",\n    freightOrg: freightOrgArray\n  };\n}\n\n// ===== НОВАЯ ПРОВЕРКА: Very Low = STOP =====\nif (volumeTier === \"Very Low\") {\n  return {\n    schedule: \"Stop\",\n    daysBetween: null,\n    reason: \"Very Low volume - not worth automated contact\",\n    hasHighActivity: false,\n    volumeTier: volumeTier,\n    freightOrg: freightOrgArray\n  };\n}\n\n// Проверяем тип активности (для обычного расписания)\nconst hasHighActivity = freightOrgArray.some(item => \n  item === \"Contract\" || item === \"Occasional\"\n);\n\n// Матрица присвоения Schedule\nlet schedule = \"\";\nlet daysBetween = 0;\n\nif (volumeTier === \"Low\") {\n  if (hasHighActivity) {\n    schedule = \"EW\";\n    daysBetween = 7;\n  } else {\n    schedule = \"E2W\";\n    daysBetween = 14;\n  }\n} else if (volumeTier === \"Medium\") {\n  if (hasHighActivity) {\n    schedule = \"E5D\";\n    daysBetween = 5;\n  } else {\n    schedule = \"EW\";\n    daysBetween = 7;\n  }\n} else if (volumeTier === \"High\") {\n  if (hasHighActivity) {\n    schedule = \"E3D\";\n    daysBetween = 3;\n  } else {\n    schedule = \"E5D\";\n    daysBetween = 5;\n  }\n} else if (volumeTier === \"Very High\") {\n  if (hasHighActivity) {\n    schedule = \"E2D\";\n    daysBetween = 2;\n  } else {\n    schedule = \"E3D\";\n    daysBetween = 3;\n  }\n} else {\n  // Если пришло неизвестное значение Volume Tier - также максимальный интервал\n  schedule = \"E3W\";\n  daysBetween = 21;\n}\n\n// Возвращаем результат\nreturn {\n  schedule: schedule,\n  daysBetween: daysBetween,\n  hasHighActivity: hasHighActivity,\n  hasTender: hasTender,\n  volumeTier: volumeTier,\n  freightOrg: freightOrgArray\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        688,
+        16
+      ],
+      "id": "a1c9279d-e3b6-4593-a4cb-b74aed7f8f7e",
+      "name": "schedule"
+    }
+  ],
+  "connections": {
+    "start": {
+      "main": [
+        [
+          {
+            "node": "get cs",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "volume tier": {
+      "main": [
+        [
+          {
+            "node": "priority score",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "priority score": {
+      "main": [
+        [
+          {
+            "node": "rating",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "get cs": {
+      "main": [
+        [
+          {
+            "node": "volume tier",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "rating": {
+      "main": [
+        [
+          {
+            "node": "schedule",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "schedule": {
+      "main": [
+        [
+          {
+            "node": "update cs",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "callerPolicy": "workflowsFromSameOwner",
+    "availableInMCP": false,
+    "errorWorkflow": "agw6jjdVg6yAawFi"
+  },
+  "triggerCount": 0,
+  "versionId": "1cf29baa-c2ed-46d4-ad9f-3864689c250c",
+  "owner": {
+    "type": "personal",
+    "projectId": "I8ZweZXokOc0zbYb",
+    "projectName": "BSU Agency <info@brilliantseedup.com>",
+    "personalEmail": "info@brilliantseedup.com"
+  },
+  "parentFolderId": "ldWFZ7Y31LSfJYne",
+  "isArchived": false
+}

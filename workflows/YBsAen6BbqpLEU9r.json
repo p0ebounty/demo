@@ -1,0 +1,76 @@
+{
+  "id": "YBsAen6BbqpLEU9r",
+  "name": "TimeZone",
+  "nodes": [
+    {
+      "parameters": {
+        "workflowInputs": {
+          "values": [
+            {
+              "name": "contact_id",
+              "type": "number"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        -464,
+        -224
+      ],
+      "id": "953f8067-7b0b-46a8-9439-04111549a891",
+      "name": "start"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "-- SQL для Directus: обновление timezone для контакта\nWITH target_contact AS (\n  SELECT c.*\n  FROM public.contacts AS c\n  WHERE c.id = {{ $node[\"start\"].json[\"contact_id\"] }}\n),\ntimezone_resolution AS (\n  SELECT \n    tc.id,\n    tc.timezone as original_timezone,\n    tc.phone,\n    ph.digits,\n    -- Проверяем валидность существующего timezone\n    tz_ok.tz as valid_tz,\n    -- Находим timezone по коду телефона\n    m.tz as phone_tz,\n    -- Выбираем финальный timezone\n    COALESCE(\n      tz_ok.tz, \n      m.tz, \n      NULLIF(trim('{{ $env['GENERIC_TIMEZONE'] }}'), ''),\n      'UTC'  -- хардкод fallback на случай, если переменная окружения не задана\n    ) as final_tz\n  FROM target_contact AS tc\n  -- Нормализуем телефон до цифр\n  CROSS JOIN LATERAL (\n    SELECT regexp_replace(coalesce(tc.phone, ''), '\\D', '', 'g') AS digits\n  ) ph\n  -- Пытаемся определить TZ по коду телефона\n  LEFT JOIN LATERAL (\n    SELECT tz.timezone AS tz\n    FROM public.timezones AS tz\n    JOIN LATERAL (VALUES (4),(3),(2),(1)) AS lens(len) ON true\n    WHERE tz.code = NULLIF(LEFT(ph.digits, lens.len), '')::bigint\n    ORDER BY lens.len DESC\n    LIMIT 1\n  ) m ON true\n  -- Проверяем что timezone валиден в Postgres\n  LEFT JOIN LATERAL (\n    SELECT pgtz.name AS tz\n    FROM pg_timezone_names AS pgtz\n    WHERE pgtz.name = trim(tc.timezone)\n    LIMIT 1\n  ) tz_ok ON true\n)\n-- Обновляем только если текущий timezone не валидный\nUPDATE public.contacts c\nSET timezone = tr.final_tz\nFROM timezone_resolution tr\nWHERE c.id = tr.id\n  AND tr.valid_tz IS NULL  -- обновляем только если текущий timezone не валидный\nRETURNING \n  c.id,\n  c.timezone as new_timezone,\n  tr.original_timezone as old_timezone,\n  tr.phone as phone,\n  tr.phone_tz as matched_by_phone;",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        -240,
+        -224
+      ],
+      "id": "0af885fc-32b7-4689-ba5a-87085f62c026",
+      "name": "set timezone",
+      "alwaysOutputData": true,
+      "credentials": {
+        "postgres": {
+          "id": "oZABCHH2vjfMvXoi",
+          "name": "directus"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "start": {
+      "main": [
+        [
+          {
+            "node": "set timezone",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "callerPolicy": "workflowsFromSameOwner",
+    "errorWorkflow": "uG4YJnnTISaYTXXk"
+  },
+  "triggerCount": 0,
+  "versionId": "44a658b5-d273-4f11-a8d0-8c0bffcc1b17",
+  "owner": {
+    "type": "personal",
+    "projectId": "I8ZweZXokOc0zbYb",
+    "projectName": "BSU Agency <info@brilliantseedup.com>",
+    "personalEmail": "info@brilliantseedup.com"
+  },
+  "parentFolderId": "kK192fbu6GJvHsuJ",
+  "isArchived": false
+}

@@ -1,0 +1,266 @@
+{
+  "id": "a53W40kYJMg5JfwU",
+  "name": "Get Last Call",
+  "nodes": [
+    {
+      "parameters": {
+        "workflowInputs": {
+          "values": [
+            {
+              "name": "cs_id",
+              "type": "number"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        32,
+        -160
+      ],
+      "id": "ec8e60d1-049d-4d4b-b019-c34bb77e5b4a",
+      "name": "start"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "319a5041-a38d-4d0d-96b2-02389feca30b",
+              "name": "result",
+              "value": "=[MEMORY FROM PREVIOUS CALL(S)]\n{{ $json.message.content }}\n[MEMORY FROM PREVIOUS CALL(S)]",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1280,
+        -160
+      ],
+      "id": "96a67f12-029f-4194-a922-7a91c2ce2153",
+      "name": "end"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "319a5041-a38d-4d0d-96b2-02389feca30b",
+              "name": "result",
+              "value": "={{ null }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        64,
+        128
+      ],
+      "id": "27c5d324-53f1-4f79-bc54-db397be7606d",
+      "name": "null"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Code Node (JavaScript)\nconst items = $input.all();\nconst results = [];\n\n// Обрабатываем каждый входящий айтем\nfor (const item of items) {\n  // Получаем массив записей (может быть вложенным)\n  let records = item.json;\n  \n  // Если данные вложены в массив (как в примере), извлекаем\n  if (Array.isArray(records) && Array.isArray(records[0])) {\n    records = records[0];\n  }\n  \n  // Убеждаемся, что records - это массив\n  if (!Array.isArray(records)) {\n    records = [records];\n  }\n  \n  // Сортируем по дате создания (новые первыми)\n  const sorted = records.sort((a, b) => \n    new Date(b.date_created) - new Date(a.date_created)\n  );\n  \n  // Фильтруем и форматируем записи\n  const filtered = sorted\n    .filter(record => {\n      // Пропускаем записи без транскрипта\n      if (!record.transcript) return false;\n      \n      // Условие 1: Длительность больше 20 секунд\n      if (!record.duration || record.duration <= 20) return false;\n      \n      // Условие 2: Больше 35 слов в транскрипте\n      const wordCount = record.transcript.trim().split(/\\s+/).length;\n      if (wordCount <= 35) return false;\n      \n      return true;\n    })\n    .slice(0, 3) // Берём только первые 3 записи после фильтрации\n    .map(record => {\n      // Извлекаем только дату из date_created (формат: 2025-12-10)\n      const date = record.date_created.split('T')[0];\n      \n      return {\n        date: date,\n        text: record.transcript.trim()\n      };\n    });\n  \n  // Формируем итоговый текст\n  const formattedText = filtered\n    .map(item => `[Conversation ${item.date}]\\n${item.text}\\n---------------------------`)\n    .join('\\n');\n  \n  results.push({\n    json: {\n      formatted: formattedText,\n      count: filtered.length\n    }\n  });\n}\n\nreturn results;"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        480,
+        -160
+      ],
+      "id": "417a0906-8575-4dbf-8f69-abc547b9cf48",
+      "name": "prepare transcript"
+    },
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "value": "gpt-4.1-mini",
+          "mode": "list",
+          "cachedResultName": "GPT-4.1-MINI"
+        },
+        "messages": {
+          "values": [
+            {
+              "content": "=You are a Call Memory Generator for City Company's voice AI agents.\n\nYour job: Analyze call transcriptions and create a compact, structured memory that will be injected as an \"assistant\" message into the next call with this lead.\n\nThis memory helps the voice agent:\n- Avoid repeating questions already asked\n- Reference previous conversations naturally\n- Pick up where the last call left off\n- Sound human and contextually aware\n\n---\n\n## [Input Format]\n\nYou will receive one or multiple call transcriptions in this format:\n\n\n[Conversation YYYY-MM-DD]\nUser: [what they said]\nAI: [what agent said]\n...\n\n\n---\n\n## [Your Task]\n\nExtract ONLY the critical information and create a compact assistant memory message.\n\n**What to Extract:**\n- Lead info: name, title, company, who you spoke with\n- Business details: volumes, lanes, equipment, pain points, current carriers\n- Conversation stage: initial contact / qualification / documents sent / ready to close\n- Next steps and client readiness level\n- Important context: client's tone, specific requests, what matters to them\n\n**What to SKIP:**\n- Small talk, greetings, pleasantries\n- Repetitive confirmations\n- Technical details (\"call is being recorded\")\n\n---\n\n## [Output Format]\n\nCreate a single, compact assistant message (150-300 words max) using this structure:\n\n\nLast Contact: [Date]\n\nLEAD INFO:\n- Contact: [Name, Title if known]\n- Company: [Name if known]\n\nCALL STAGE: [Initial Contact / Qualification Started / Documents Sent / Ready to Close]\n\nWHAT HAPPENED:\n[Brief 2-4 bullet points of key events across all calls]\n- [e.g., \"Spoke with receptionist David, identified DM: Sarah Johnson\"]\n- [e.g., \"Collected volumes: 15-20 FTL/week, lanes: Chicago→NYC\"]\n- [e.g., \"Main pain point: detention times\"]\n- [e.g., \"Documents sent to email on Nov 5, callback scheduled for Nov 7\"]\n\nQUALIFICATION STATUS:\n✓ Information collected: [list what's known - e.g., \"volumes, lanes, equipment, pain points\"]\n✗ Still need: [what's missing - e.g., \"seasonal peaks, decision process, RFP timing\"]\n\nKEY DETAILS:\n- Volumes: [X shipments/week, or \"not asked yet\"]\n- Lanes: [specific routes, or \"not discussed yet\"]\n- Equipment: [types, or \"not discussed yet\"]\n- Pain Points: [specific issues, or \"not identified yet\"]\n- Current Carriers: [info if mentioned]\n\nDOCUMENTS: [Sent to email / Not sent yet]\n\nNEXT STEPS AGREED:\n[What was agreed - e.g., \"Client will review docs for 2 days, callback Friday 2pm\" or \"Client ready to proceed, waiting for ops manager\" or \"Just identified DM, need to call back\"]\n\nCLIENT READINESS: [Cold / Warm / Hot / Ready to Close]\n\nIMPORTANT NOTES:\n[Any specific context - e.g., \"DM expects callback today\", \"Client is very busy\", \"Price sensitive\", \"Interested in reefer services specifically\"]\n\n---\n\nYOUR APPROACH FOR THIS CALL:\n[Clear instruction for what to do RIGHT NOW in this current conversation - examples:]\n\nIF THIS IS OUTREACH CALL (calling DM directly for first time):\n- \"You're calling Sarah Johnson (DM identified from previous call). Confirm identity: 'Is this Sarah Johnson?'. Once confirmed, briefly mention: 'Got your contact from [receptionist name]. This is [your name] from City Company.' Then IMMEDIATELY use to_main_agent to transfer. DO NOT start qualification yourself.\"\n\nIF CALLING BACK AT SUGGESTED TIME (gatekeeper scenario):\n- \"You're calling back at the suggested time (EXAMPLE 1-1:30 PM). Ask if someone from logistics/carrier partnerships is available NOW. If transferred to DM, confirm identity and use to_main_agent. If STILL at front desk and they give you callback time again - ALWAYS call set_callback to schedule next attempt, even if it's the same time.\"\n\nIF THIS IS QUALIFICATION/FOLLOW-UP CALL:\n- \"You're speaking with Sarah again. Skip volume/lane questions (already done) - ask if she reviewed documents, then focus on detention solutions\"\n- \"Sarah reviewed docs and is ready. Gauge final readiness - if confirmed ready, use create_note\"\n- \"This is low engagement lead. Keep very brief, don't push hard\"\n\nIMPORTANT: \n- Write instructions as if the call is HAPPENING NOW, not in future tense\n- For outreach reaching identified DM - instruction must say \"IMMEDIATELY use to_main_agent\"\n- For gatekeeper callback scenarios - emphasize calling set_callback if given time again\n- For qualification/discovery - give specific guidance on what to focus on\n\n\n---\n\n## [Critical Rules]\n\n- **Be Compact:** 150-300 words total\n- **Be Specific:** \"7 shipments/week\" not \"several\", \"Chicago→NYC\" not \"various lanes\"  \n- **Present Tense Instructions:** Write as if call is HAPPENING NOW - \"You're speaking with...\" not \"Contact them...\"\n- **Clear Actions:** Tell agent what to do RIGHT NOW, what to skip, where to start\n- **Use Checkboxes:** ✓ collected, ✗ still need\n\n---\n\n## [Example]\n\n### Input:\n\n\n[Conversation 2025-11-05]\nUser: This is Sarah.\nAI: Hi Sarah, this is Alex from City Company following up.\nUser: Oh yes, hi.\nAI: How many shipments do you handle weekly?\nUser: About 15-20 full truckloads.\nAI: Got it. What are your main lanes?\nUser: Mostly Midwest to East Coast. Chicago to New York primarily.\nAI: What equipment types?\nUser: Mostly dry van, some reefer for food products.\nAI: Who are you using now?\nUser: We have three carriers but detention times are killing us.\nAI: I can send our credentials. What's best email?\nUser: sarah.johnson@abclog.com\nAI: Sending now... Let me know when you get it.\nUser: Got it. Let me review and I'll call you back in 2 days.\nAI: Perfect, I'll follow up Friday afternoon.\n\n\n### Output:\n\n\nLast Contact: Nov 5, 2025\n\nLEAD INFO:\n- Contact: Sarah Johnson, Transportation Manager\n- Company: ABC Logistics\n\nCALL STAGE: Qualification Started, Documents Sent\n\nWHAT HAPPENED:\n- Nov 3: Spoke with receptionist, identified DM Sarah Johnson\n- Nov 5: Reached Sarah, started qualification process\n- Collected volumes, lanes, equipment, current carrier situation\n- Identified major pain point: detention times\n- Sent company documents to Sarah's email\n\nQUALIFICATION STATUS:\n✓ Information collected: Volumes, main lanes, equipment types, current carriers, pain points\n✗ Still need: Seasonal peaks, decision process questions, specific lane challenges, RFP timing\n\nKEY DETAILS:\n- Volumes: 15-20 FTL per week\n- Lanes: Midwest → East Coast (primarily Chicago → New York)\n- Equipment: Mostly dry van, some reefer for food products\n- Pain Points: Detention times with current 3 carriers (MAJOR ISSUE)\n- Current Carriers: Using 3 carriers (names not mentioned)\n\nDOCUMENTS: Sent to sarah.johnson@abclog.com on Nov 5\n\nNEXT STEPS AGREED:\nSarah needs 2 days to review documents, callback scheduled for Friday afternoon (Nov 7)\n\nCLIENT READINESS: Warm - engaged, clear pain point, taking time to review\n\nIMPORTANT NOTES:\n- Sarah is methodical and detail-oriented (requested specific review time)\n- Detention times are her biggest frustration\n- She's actively looking for solutions\n\n---\n\nYOUR APPROACH FOR THIS CALL:\nYou're NOW speaking with Sarah again (callback as scheduled). Start by asking if she reviewed the documents we sent. If yes, ask for her thoughts or questions. Focus the conversation on their detention time problem - ask which specific lanes have the worst delays. Skip volume/lane/equipment questions (already covered in last call). Continue with seasonal peaks, service type needs, and decision process questions. Goal: address her pain point and gauge interest level for moving to proposal.",
+              "role": "system"
+            },
+            {
+              "content": "={{ $json.formatted || \"none\" }}"
+            }
+          ]
+        },
+        "options": {
+          "temperature": 0.5
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 1.8,
+      "position": [
+        928,
+        -160
+      ],
+      "id": "d117e031-4dce-412e-9af5-332adfa08d6b",
+      "name": "memory generator",
+      "credentials": {
+        "openAiApi": {
+          "id": "895vd8bC2qxU4JL4",
+          "name": "OpenAi"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "4eabbc8a-b5f3-4382-b918-7da5d05321d3",
+              "leftValue": "={{ $json.count }}",
+              "rightValue": 1,
+              "operator": {
+                "type": "number",
+                "operation": "gte"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        704,
+        -160
+      ],
+      "id": "0c3aba7b-476a-4246-935d-38aba435d145",
+      "name": "If"
+    },
+    {
+      "parameters": {
+        "collection": "calls",
+        "additionalFields": {
+          "filter": "={\n  \"_and\": [\n    {\n      \"call_system_id\": {\n        \"_eq\": \"{{ $json.cs_id }}\"\n      }\n    },\n    {\n      \"status\": {\n        \"_eq\": \"answered\"\n      }\n    }\n  ]\n}"
+        }
+      },
+      "type": "@stumpworks/n8n-nodes-directus.directus",
+      "typeVersion": 1,
+      "position": [
+        240,
+        -160
+      ],
+      "id": "db74fb5f-245a-4485-ae3c-6f29451e80c2",
+      "name": "get calls",
+      "credentials": {
+        "directusApi": {
+          "id": "kIJhRDZv2PR5UO1f",
+          "name": "Directus"
+        }
+      },
+      "onError": "continueErrorOutput"
+    }
+  ],
+  "connections": {
+    "start": {
+      "main": [
+        [
+          {
+            "node": "get calls",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "memory generator": {
+      "main": [
+        [
+          {
+            "node": "end",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "prepare transcript": {
+      "main": [
+        [
+          {
+            "node": "If",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If": {
+      "main": [
+        [
+          {
+            "node": "memory generator",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "null",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "get calls": {
+      "main": [
+        [
+          {
+            "node": "prepare transcript",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "null",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "callerPolicy": "workflowsFromSameOwner",
+    "availableInMCP": false,
+    "errorWorkflow": "agw6jjdVg6yAawFi"
+  },
+  "triggerCount": 0,
+  "versionId": "33a9dbdf-9045-44f9-b349-4559beefcb08",
+  "owner": {
+    "type": "personal",
+    "projectId": "I8ZweZXokOc0zbYb",
+    "projectName": "BSU Agency <info@brilliantseedup.com>",
+    "personalEmail": "info@brilliantseedup.com"
+  },
+  "parentFolderId": "rAakqP66NyIafoHi",
+  "isArchived": false
+}

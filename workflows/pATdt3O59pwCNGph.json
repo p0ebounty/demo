@@ -1,0 +1,390 @@
+{
+  "id": "pATdt3O59pwCNGph",
+  "name": "First check",
+  "nodes": [
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        80,
+        96
+      ],
+      "id": "c08efa78-f48b-4856-a9e0-682f242eb309",
+      "name": "main loop"
+    },
+    {
+      "parameters": {
+        "amount": 0.3
+      },
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        1168,
+        304
+      ],
+      "id": "6ddafe3a-90df-4536-a3c4-73ed3338aa56",
+      "name": "Wait",
+      "webhookId": "a65b3caf-aadb-4cf0-9a81-bdf913e1a22a"
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        -368,
+        96
+      ],
+      "id": "950a03ca-2bbb-46f6-99ba-acf943c87287",
+      "name": "start"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "7728d75b-152f-446c-8407-a27f15d21e9a",
+              "leftValue": "={{ $json.message.content.success }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        672,
+        128
+      ],
+      "id": "c669f57c-35e7-48f7-9928-292dc1e65877",
+      "name": "valid name"
+    },
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "value": "gpt-4.1-mini",
+          "mode": "list",
+          "cachedResultName": "GPT-4.1-MINI"
+        },
+        "messages": {
+          "values": [
+            {
+              "content": "=# Client Name Cleaner Agent\n\nYou are a specialized agent for cleaning and extracting client names from potentially messy input data.\n\n## Your Task\nYou will receive input in this format:\n\nName: <value>\nSurname: <value>\n\n\nYour job is to:\n1. Validate if the provided name and surname are clean and proper\n2. Extract the real client name and surname from messy data if needed\n3. Clean and format the names professionally\n\n## Common Issues to Handle\n- Professional titles and prefixes: Dr, Prof, Mr, Mrs, Ms, Lord, Sir, etc.\n- Multiple names in wrong fields\n- Organizational names mixed with personal names\n- Extra descriptive text\n- Inconsistent capitalization\n\n## Examples of Messy Data:\n- Name: Dr Renuka Thakore, Surname: Representing Global Communities\n- Name: Dr. Lord Arash, Surname: Nassouri Nason\n- Name: Prof. John Smith Jr., Surname: University Department\n\n## Output Format\nAlways respond with valid JSON in this exact format:\n\n{\n  \"name\": \"value\",\n  \"surname\": \"value\", \n  \"success\": true/false\n}\n\n\n## Rules:\n1. Name field: Must contain exactly ONE word, properly capitalized (e.g., \"John\", \"Maria\")\n2. Surname field: Must contain exactly ONE word, properly capitalized (e.g., \"Smith\", \"Johnson\")\n3. Success = true only when you successfully extract a real, addressable client name\n4. If surname cannot be determined, use \"-\" but this doesn't affect success if name is found\n5. Remove all titles, prefixes, suffixes, and organizational references\n6. Focus on extracting the actual person's name they would be addressed by\n\n## Process:\n1. First, THINK: Analyze if there's actually a real personal name present in the data\n2. Identify and remove professional titles and prefixes\n3. Separate personal names from organizational/descriptive text  \n4. Extract the most likely first name and surname\n5. Format with proper capitalization\n6. Final validation: Double-check that the extracted name represents a real, addressable person\n\n## Critical Thinking Required:\nBefore setting success: true, ask yourself:\n- Is there actually a real human name in the provided data?\n- Or is it just organizational names, job titles, or complete nonsense?\n- Can I confidently identify a personal name that a person would be addressed by?\n- Would this name make sense in a professional greeting like \"Hello [Name]\"?\n- Does the extracted name sound like a real human first name? (not objects, food, random words)\n- Look across BOTH fields - sometimes the real name is in the \"wrong\" field\n\n## Examples of when to set success: false:\n- Only company/organization names present\n- Only job titles without personal names\n- Gibberish or random text\n- Cannot identify any real personal name component\n- Extracted \"name\" is clearly not a human first name (like \"Milk\", \"Car\", \"Building\", etc.)\n\n## Smart Extraction Strategy:\n- Scan both Name and Surname fields for actual human names\n- The real first name might be in the \"Surname\" field and vice versa\n- Prioritize finding a believable human first name over field positioning\n- If you find \"Dr Milk\" and \"Alex 2 Tompson\", recognize that \"Alex\" is the real name, not \"Milk\"\n\nRemember: Your primary goal is to extract clean, professional, addressable client names that can be used for personal communication. Be conservative - only set success=true when you're confident there's a real personal name present.",
+              "role": "system"
+            },
+            {
+              "content": "=Name: {{ $json.Name || \"-\" }}\nSurname: {{ $json.Surname || \"-\" }}"
+            }
+          ]
+        },
+        "jsonOutput": true,
+        "options": {
+          "temperature": 0.2
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 1.8,
+      "position": [
+        336,
+        112
+      ],
+      "id": "82ba738a-ac1e-4cec-a954-06666664b24b",
+      "name": "check name",
+      "retryOnFail": true,
+      "waitBetweenTries": 5000,
+      "credentials": {
+        "openAiApi": {
+          "id": "895vd8bC2qxU4JL4",
+          "name": "OpenAi"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "authentication": "nocoDbApiToken",
+        "operation": "update",
+        "projectId": "p8rpeusfjiy5c1o",
+        "table": "m02ewnsmuh2qnum",
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldName": "Id",
+              "fieldValue": "={{ $('main loop').item.json.Id }}"
+            },
+            {
+              "fieldName": "Name",
+              "fieldValue": "={{ $json.message.content.name }}"
+            },
+            {
+              "fieldName": "Surname",
+              "fieldValue": "={{ $json.message.content.surname }}"
+            },
+            {
+              "fieldName": "Fix",
+              "fieldValue": "true"
+            },
+            {
+              "fieldName": "Phone",
+              "fieldValue": "={{ $node[\"main loop\"].json[\"Phone\"]      ? (String($node[\"main loop\"].json[\"Phone\"]).replace(/\\D/g, \"\").replace(/^(\\d+)/, (m) => m ? \"+\" + m : m))      : $node[\"main loop\"].json[\"Phone\"] }}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.nocoDb",
+      "typeVersion": 3,
+      "position": [
+        896,
+        32
+      ],
+      "id": "ca8bb347-ca27-490e-b5ed-66117f47c96e",
+      "name": "update name",
+      "credentials": {
+        "nocoDbApiToken": {
+          "id": "tg1sd8Mux2yjJLx7",
+          "name": "NocoDB"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "authentication": "nocoDbApiToken",
+        "operation": "delete",
+        "projectId": "p8rpeusfjiy5c1o",
+        "table": "mfxgwsk3e8fa07l",
+        "id": "={{ $('main loop').item.json.Id }}"
+      },
+      "type": "n8n-nodes-base.nocoDb",
+      "typeVersion": 3,
+      "position": [
+        896,
+        224
+      ],
+      "id": "678d7782-6a52-46f6-950d-d31a599eebda",
+      "name": "bad name",
+      "credentials": {
+        "nocoDbApiToken": {
+          "id": "tg1sd8Mux2yjJLx7",
+          "name": "NocoDB"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "authentication": "nocoDbApiToken",
+        "operation": "getAll",
+        "projectId": "p8rpeusfjiy5c1o",
+        "table": "m02ewnsmuh2qnum",
+        "returnAll": true,
+        "options": {
+          "where": "=(Fix,neq,true)"
+        }
+      },
+      "type": "n8n-nodes-base.nocoDb",
+      "typeVersion": 3,
+      "position": [
+        -144,
+        96
+      ],
+      "id": "39ae3c5b-de47-4824-bb71-8c5077b4c7bd",
+      "name": "non fixed",
+      "credentials": {
+        "nocoDbApiToken": {
+          "id": "tg1sd8Mux2yjJLx7",
+          "name": "NocoDB"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "authentication": "nocoDbApiToken",
+        "operation": "getAll",
+        "projectId": "p8rpeusfjiy5c1o",
+        "table": "m02ewnsmuh2qnum",
+        "returnAll": true,
+        "options": {
+          "where": "(Name,is,null)~or((LinkedIn,is,null)~and(Phone,is,null)~and(Email,is,null))"
+        }
+      },
+      "type": "n8n-nodes-base.nocoDb",
+      "typeVersion": 3,
+      "position": [
+        -144,
+        -96
+      ],
+      "id": "ccc6982c-2bef-4a74-bb64-e745f8800c04",
+      "name": "get bad",
+      "credentials": {
+        "nocoDbApiToken": {
+          "id": "tg1sd8Mux2yjJLx7",
+          "name": "NocoDB"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "authentication": "nocoDbApiToken",
+        "operation": "delete",
+        "projectId": "p8rpeusfjiy5c1o",
+        "table": "m02ewnsmuh2qnum",
+        "id": "={{ $json.Id }}"
+      },
+      "type": "n8n-nodes-base.nocoDb",
+      "typeVersion": 3,
+      "position": [
+        80,
+        -96
+      ],
+      "id": "64cf3496-dc8e-4a65-a122-4806724fa004",
+      "name": "del bad",
+      "credentials": {
+        "nocoDbApiToken": {
+          "id": "tg1sd8Mux2yjJLx7",
+          "name": "NocoDB"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "main loop": {
+      "main": [
+        [],
+        [
+          {
+            "node": "check name",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait": {
+      "main": [
+        [
+          {
+            "node": "main loop",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "start": {
+      "main": [
+        [
+          {
+            "node": "non fixed",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "get bad",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "valid name": {
+      "main": [
+        [
+          {
+            "node": "update name",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "bad name",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "check name": {
+      "main": [
+        [
+          {
+            "node": "valid name",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "update name": {
+      "main": [
+        [
+          {
+            "node": "Wait",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "bad name": {
+      "main": [
+        [
+          {
+            "node": "main loop",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "non fixed": {
+      "main": [
+        [
+          {
+            "node": "main loop",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "get bad": {
+      "main": [
+        [
+          {
+            "node": "del bad",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "triggerCount": 0,
+  "versionId": "88b0cc85-4d35-4acc-abbb-ec7fb91fada7",
+  "owner": {
+    "type": "personal",
+    "projectId": "I8ZweZXokOc0zbYb",
+    "projectName": "BSU Agency <info@brilliantseedup.com>",
+    "personalEmail": "info@brilliantseedup.com"
+  },
+  "parentFolderId": "HWn7vIRYn4vaHZR5",
+  "isArchived": true
+}

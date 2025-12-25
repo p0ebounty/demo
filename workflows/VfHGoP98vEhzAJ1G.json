@@ -1,0 +1,995 @@
+{
+  "id": "VfHGoP98vEhzAJ1G",
+  "name": "Batch nornalization",
+  "nodes": [
+    {
+      "parameters": {
+        "inputSource": "passthrough"
+      },
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        -1040,
+        160
+      ],
+      "id": "e35d152f-5906-4130-b61f-d88af3c1af79",
+      "name": "start"
+    },
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "value": "gpt-4.1-mini",
+          "mode": "list",
+          "cachedResultName": "GPT-4.1-MINI"
+        },
+        "messages": {
+          "values": [
+            {
+              "content": "=# Client Name Cleaner Agent\nYou are a specialized agent for cleaning and extracting client names from potentially messy input data.\n\n## Your Task\nYou will receive input in this format:\nName: <value>\nSurname: <value>\n\nYour job is to:\n1. Validate if the provided name and surname are clean and proper\n2. Extract the real client name and surname from messy data if needed\n3. Clean and format the names professionally\n\n## Common Issues to Handle\n- Professional titles and prefixes: Dr, Prof, Mr, Mrs, Ms, Lord, Sir, etc.\n- Multiple names in wrong fields\n- Organizational names mixed with personal names\n- Extra descriptive text\n- Inconsistent capitalization\n\n## Examples of Messy Data:\n- Name: Dr Renuka Thakore, Surname: Representing Global Communities\n- Name: Dr. Lord Arash, Surname: Nassouri Nason\n- Name: Prof. John Smith Jr., Surname: University Department\n\n## Output Format\nAlways respond with valid JSON in this exact format:\n{\n  \"name\": \"value\",\n  \"surname\": \"value\", \n  \"success\": true/false\n}\n\n## Rules:\n1. Name field: Must contain exactly ONE word, properly capitalized (e.g., \"John\", \"Maria\")\n2. Surname field: Must contain exactly ONE word, properly capitalized (e.g., \"Smith\", \"Johnson\")\n3. Success = true only when you successfully extract a real, addressable client name\n4. If surname cannot be determined, use null but this doesn't affect success if name is found\n5. Remove all titles, prefixes, suffixes, and organizational references\n6. Focus on extracting the actual person's name they would be addressed by\n\n## Process:\n1. First, THINK: Analyze if there's actually a real personal name present in the data\n2. Identify and remove professional titles and prefixes\n3. Separate personal names from organizational/descriptive text  \n4. Extract the most likely first name and surname\n5. Format with proper capitalization\n6. Final validation: Double-check that the extracted name represents a real, addressable person\n\n## Critical Thinking Required:\nBefore setting success: true, ask yourself:\n- Is there actually a real human name in the provided data?\n- Or is it just organizational names, job titles, or complete nonsense?\n- Can I confidently identify a personal name that a person would be addressed by?\n- Would this name make sense in a professional greeting like \"Hello [Name]\"?\n- Does the extracted name sound like a real human first name? (not objects, food, random words)\n- Look across BOTH fields - sometimes the real name is in the \"wrong\" field\n\n## Examples of when to set success: false:\n- Only company/organization names present\n- Only job titles without personal names\n- Gibberish or random text\n- Cannot identify any real personal name component\n- Extracted \"name\" is clearly not a human first name (like \"Milk\", \"Car\", \"Building\", etc.)\n\n## Smart Extraction Strategy:\n- Scan both Name and Surname fields for actual human names\n- The real first name might be in the \"Surname\" field and vice versa\n- Prioritize finding a believable human first name over field positioning\n- If you find \"Dr Milk\" and \"Alex 2 Tompson\", recognize that \"Alex\" is the real name, not \"Milk\"\n\nRemember: Your primary goal is to extract clean, professional, addressable client names that can be used for personal communication. Be conservative - only set success=true when you're confident there's a real personal name present.",
+              "role": "system"
+            },
+            {
+              "content": "=Name: {{ $json.name || \"-\" }}\nSurname: {{ $json.surname || \"-\" }}"
+            }
+          ]
+        },
+        "jsonOutput": true,
+        "options": {
+          "temperature": 0.2
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 1.8,
+      "position": [
+        -80,
+        912
+      ],
+      "id": "f5349b12-cf00-4490-8b8d-b90c526c4043",
+      "name": "fix name",
+      "retryOnFail": true,
+      "waitBetweenTries": 5000,
+      "credentials": {
+        "openAiApi": {
+          "id": "895vd8bC2qxU4JL4",
+          "name": "OpenAi"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "-- Скрипт для группировки компаний по схожести названий (Directus)\n-- Использует PostgreSQL расширение pg_trgm для нечёткого поиска\n-- Обрабатывает только записи без назначенной группы\n\n-- 1. Включаем расширение для работы со схожестью строк (если ещё не включено)\nCREATE EXTENSION IF NOT EXISTS pg_trgm;\n\n-- 2. Создаём временную таблицу для хранения уникальных компаний и их групп\nDROP TABLE IF EXISTS temp_company_groups;\nCREATE TEMP TABLE temp_company_groups (\n    group_id BIGINT,\n    company_name TEXT,\n    normalized_name TEXT,\n    existing_group_id BIGINT,\n    PRIMARY KEY (company_name)\n);\n\n-- 3. Создаём функцию для нормализации названий компаний\nCREATE OR REPLACE FUNCTION normalize_company_name(name TEXT) \nRETURNS TEXT AS $$\nBEGIN\n    -- Приводим к нижнему регистру и удаляем лишние пробелы\n    name := LOWER(TRIM(name));\n    \n    -- Удаляем распространённые суффиксы компаний\n    name := REGEXP_REPLACE(name, '\\s+(inc\\.?|incorporated|corp\\.?|corporation|llc|ltd\\.?|limited|gmbh|ag|sa|srl|spa|plc|pvt|pte|pty|co\\.?|company)$', '', 'gi');\n    \n    -- Удаляем специальные символы, оставляя только буквы, цифры и пробелы\n    name := REGEXP_REPLACE(name, '[^a-zа-я0-9\\s]', '', 'gi');\n    \n    -- Удаляем множественные пробелы\n    name := REGEXP_REPLACE(name, '\\s+', ' ', 'g');\n    \n    RETURN TRIM(name);\nEND;\n$$ LANGUAGE plpgsql;\n\n-- 4. Заполняем временную таблицу всеми уникальными компаниями (включая уже сгруппированные)\nINSERT INTO temp_company_groups (company_name, normalized_name, existing_group_id)\nSELECT DISTINCT \n    company,\n    normalize_company_name(company),\n    company_group\nFROM public.contacts\nWHERE company IS NOT NULL \n    AND TRIM(company) != '';\n\n-- 5. Создаём последовательность для генерации ID групп, начиная с максимального существующего + 1\nDO $$\nDECLARE\n    max_existing_group_id BIGINT;\nBEGIN\n    SELECT COALESCE(MAX(company_group), 0) INTO max_existing_group_id\n    FROM public.contacts\n    WHERE company_group IS NOT NULL;\n    \n    DROP SEQUENCE IF EXISTS company_group_seq;\n    EXECUTE 'CREATE SEQUENCE company_group_seq START WITH ' || (max_existing_group_id + 1);\nEND $$;\n\n-- 6. Сначала копируем существующие группы\nUPDATE temp_company_groups\nSET group_id = existing_group_id\nWHERE existing_group_id IS NOT NULL;\n\n-- 7. Присваиваем group_id для компаний без группы\nDO $$\nDECLARE\n    rec RECORD;\n    current_group_id BIGINT;\n    similarity_threshold FLOAT := 0.7; -- Порог схожести (70%)\nBEGIN\n    -- Обрабатываем только компании без назначенной группы\n    FOR rec IN \n        SELECT company_name, normalized_name \n        FROM temp_company_groups \n        WHERE group_id IS NULL\n        ORDER BY normalized_name, company_name\n    LOOP\n        -- Сначала ищем среди уже существующих групп (включая ранее назначенные)\n        SELECT group_id INTO current_group_id\n        FROM temp_company_groups\n        WHERE group_id IS NOT NULL\n            AND normalized_name IS NOT NULL\n            AND rec.normalized_name IS NOT NULL\n            AND similarity(normalized_name, rec.normalized_name) >= similarity_threshold\n        LIMIT 1;\n        \n        -- Если похожая группа не найдена, создаём новую\n        IF current_group_id IS NULL THEN\n            current_group_id := nextval('company_group_seq');\n        END IF;\n        \n        -- Обновляем group_id для текущей компании\n        UPDATE temp_company_groups\n        SET group_id = current_group_id\n        WHERE company_name = rec.company_name;\n    END LOOP;\nEND $$;\n\n-- 8. Создаём индекс для ускорения обновления основной таблицы\nCREATE INDEX IF NOT EXISTS idx_contacts_company \nON public.contacts (company);\n\n-- 9. Обновляем основную таблицу только для записей без группы\nUPDATE public.contacts c\nSET company_group = tg.group_id\nFROM temp_company_groups tg\nWHERE c.company = tg.company_name\n    AND c.company_group IS NULL;\n\n-- 10. Обнуляем группы для пустых компаний\nUPDATE public.contacts\nSET company_group = NULL\nWHERE company IS NULL \n    OR TRIM(company) = '';\n\n-- 11. Объединённый отчёт со статистикой и примерами группировки\nWITH statistics AS (\n    SELECT \n        (SELECT COUNT(DISTINCT company_name) FROM temp_company_groups) as total_companies,\n        (SELECT COUNT(DISTINCT group_id) FROM temp_company_groups) as total_groups,\n        (SELECT COUNT(*) FROM temp_company_groups WHERE existing_group_id IS NULL) as new_companies_processed,\n        (SELECT COUNT(*) FROM temp_company_groups WHERE existing_group_id IS NOT NULL) as existing_companies_skipped,\n        ROUND(AVG(cnt), 2) as avg_group_size\n    FROM (\n        SELECT group_id, COUNT(*) as cnt\n        FROM temp_company_groups\n        GROUP BY group_id\n    ) t\n),\ntop_groups AS (\n    SELECT \n        JSON_AGG(\n            JSON_BUILD_OBJECT(\n                'group_id', group_id,\n                'company_count', company_count,\n                'companies', companies_in_group,\n                'has_new_companies', has_new_companies\n            ) ORDER BY company_count DESC\n        ) as groups_data\n    FROM (\n        SELECT \n            group_id,\n            COUNT(*) as company_count,\n            STRING_AGG(company_name, ', ' ORDER BY company_name) as companies_in_group,\n            BOOL_OR(existing_group_id IS NULL) as has_new_companies\n        FROM temp_company_groups\n        GROUP BY group_id\n        HAVING COUNT(*) > 1\n        ORDER BY COUNT(*) DESC\n        LIMIT 10\n    ) grouped\n)\nSELECT \n    JSON_BUILD_OBJECT(\n        'status', 'success',\n        'message', 'Company grouping completed',\n        'statistics', JSON_BUILD_OBJECT(\n            'total_unique_companies', s.total_companies,\n            'total_groups_created', s.total_groups,\n            'new_companies_processed', s.new_companies_processed,\n            'existing_companies_skipped', s.existing_companies_skipped,\n            'average_group_size', s.avg_group_size\n        ),\n        'top_groups', COALESCE(tg.groups_data, '[]'::json)\n    ) as result\nFROM statistics s\nCROSS JOIN top_groups tg;\n\n-- 12. Очищаем временные объекты\nDROP TABLE IF EXISTS temp_company_groups;\nDROP SEQUENCE IF EXISTS company_group_seq;\nDROP FUNCTION IF EXISTS normalize_company_name(TEXT);",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        -1712,
+        448
+      ],
+      "id": "bfba28a2-4b9e-4284-8afc-43ae38599771",
+      "name": "Company Group",
+      "credentials": {
+        "postgres": {
+          "id": "oZABCHH2vjfMvXoi",
+          "name": "directus"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "-- Сначала обновляем name для нечеловеков, где name пустое, но company не пустое\nUPDATE public.contacts\nSET name = company\nWHERE fix = false\n  AND human = false\n  AND (name IS NULL OR TRIM(name) = '')\n  AND company IS NOT NULL \n  AND TRIM(company) != '';\n\n-- Теперь удаляем невалидные записи\nDELETE FROM public.contacts\nWHERE fix = false\n  AND (\n    -- Невалидные записи с human = true (имя пустое ИЛИ все контакты пустые)\n    (human = true AND (\n      name IS NULL OR TRIM(name) = '' OR\n      (\n        (linkedin IS NULL OR TRIM(linkedin) = '') AND\n        (phone IS NULL OR TRIM(phone) = '') AND\n        (email IS NULL OR TRIM(email) = '')\n      )\n    ))\n    OR\n    -- Невалидные записи с human = false (имя пустое И все контакты пустые)\n    (human = false AND\n      (name IS NULL OR TRIM(name) = '') AND\n      (linkedin IS NULL OR TRIM(linkedin) = '') AND\n      (phone IS NULL OR TRIM(phone) = '') AND\n      (email IS NULL OR TRIM(email) = '')\n    )\n  );",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        -1264,
+        448
+      ],
+      "id": "8e187185-3073-47c6-8a96-ebc3a013a772",
+      "name": "first clear",
+      "alwaysOutputData": true,
+      "credentials": {
+        "postgres": {
+          "id": "oZABCHH2vjfMvXoi",
+          "name": "directus"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "df6439da-818a-4842-927c-abb2889830c9",
+                    "leftValue": "={{ $json.human }}",
+                    "rightValue": "",
+                    "operator": {
+                      "type": "boolean",
+                      "operation": "false",
+                      "singleValue": true
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "non human"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ !$json.name.isEmpty() && !($json.linkedIn.isEmpty() && $json.phone.isEmpty() && $json.email.isEmpty()) }}",
+                    "rightValue": "",
+                    "operator": {
+                      "type": "boolean",
+                      "operation": "true",
+                      "singleValue": true
+                    },
+                    "id": "fb43b04d-d7f7-42c5-85f6-8a87738697ba"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "valid human"
+            }
+          ]
+        },
+        "options": {
+          "fallbackOutput": "extra"
+        }
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.3,
+      "position": [
+        -752,
+        432
+      ],
+      "id": "8e72fba6-6230-4323-810d-e702181a4b5b",
+      "name": "Switch"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "-- Скрипт дедупликации контактов с очисткой дублирующихся ячеек\n-- Ищем дубликаты во ВСЕХ записях, но очищаем только где fix = false\n\n-- Очистка дублирующихся Email\nWITH normalized_contacts AS (\n    SELECT\n        c.id,\n        c.fix,\n        NULLIF(LOWER(TRIM(c.email)), '') AS norm_email\n    FROM public.contacts c\n    WHERE c.email IS NOT NULL  -- ищем во всех записях\n),\ncontacts_with_email AS (\n    SELECT id, fix, norm_email AS dedup_key\n    FROM normalized_contacts\n    WHERE norm_email IS NOT NULL\n),\nranked_email AS (\n    SELECT\n        id,\n        fix,\n        dedup_key,\n        COUNT(*) OVER (PARTITION BY dedup_key) AS group_count,\n        ROW_NUMBER() OVER (\n            PARTITION BY dedup_key\n            ORDER BY id ASC\n        ) AS rn\n    FROM contacts_with_email\n),\nto_clear_email AS (\n    SELECT id\n    FROM ranked_email\n    WHERE group_count > 1 \n      AND rn > 1 \n      AND fix = false  -- очищаем только незафиксированные\n)\nUPDATE public.contacts\nSET email = NULL\nWHERE id IN (SELECT id FROM to_clear_email);\n\n-- Очистка дублирующихся Phone\nWITH normalized_contacts AS (\n    SELECT\n        c.id,\n        c.fix,\n        NULLIF(REGEXP_REPLACE(c.phone, '\\D', '', 'g'), '') AS norm_phone\n    FROM public.contacts c\n    WHERE c.phone IS NOT NULL  -- ищем во всех записях\n),\ncontacts_with_phone AS (\n    SELECT id, fix, norm_phone AS dedup_key\n    FROM normalized_contacts\n    WHERE norm_phone IS NOT NULL\n),\nranked_phone AS (\n    SELECT\n        id,\n        fix,\n        dedup_key,\n        COUNT(*) OVER (PARTITION BY dedup_key) AS group_count,\n        ROW_NUMBER() OVER (\n            PARTITION BY dedup_key\n            ORDER BY id ASC\n        ) AS rn\n    FROM contacts_with_phone\n),\nto_clear_phone AS (\n    SELECT id\n    FROM ranked_phone\n    WHERE group_count > 1 \n      AND rn > 1 \n      AND fix = false  -- очищаем только незафиксированные\n)\nUPDATE public.contacts\nSET phone = NULL\nWHERE id IN (SELECT id FROM to_clear_phone);\n\n-- Очистка дублирующихся LinkedIn\nWITH normalized_contacts AS (\n    SELECT\n        c.id,\n        c.fix,\n        NULLIF(\n            LOWER(\n                SUBSTRING(\n                    REGEXP_REPLACE(TRIM(c.linkedin), '/+$', '')\n                    FROM '([^/?#]+)$'\n                )\n            ),\n            ''\n        ) AS norm_linkedin\n    FROM public.contacts c\n    WHERE c.linkedin IS NOT NULL  -- ищем во всех записях\n),\ncontacts_with_linkedin AS (\n    SELECT id, fix, norm_linkedin AS dedup_key\n    FROM normalized_contacts\n    WHERE norm_linkedin IS NOT NULL\n),\nranked_linkedin AS (\n    SELECT\n        id,\n        fix,\n        dedup_key,\n        COUNT(*) OVER (PARTITION BY dedup_key) AS group_count,\n        ROW_NUMBER() OVER (\n            PARTITION BY dedup_key\n            ORDER BY id ASC\n        ) AS rn\n    FROM contacts_with_linkedin\n),\nto_clear_linkedin AS (\n    SELECT id\n    FROM ranked_linkedin\n    WHERE group_count > 1 \n      AND rn > 1 \n      AND fix = false  -- очищаем только незафиксированные\n)\nUPDATE public.contacts\nSET linkedin = NULL\nWHERE id IN (SELECT id FROM to_clear_linkedin);",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        -1488,
+        448
+      ],
+      "id": "6fb59609-1a2c-4f83-b005-575db9945b2c",
+      "name": "dedublicate",
+      "alwaysOutputData": true,
+      "credentials": {
+        "postgres": {
+          "id": "oZABCHH2vjfMvXoi",
+          "name": "directus"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "batchSize": 10,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        -272,
+        896
+      ],
+      "id": "e9b8aaee-7bb6-4b68-9a08-5c70d469b078",
+      "name": "loop name"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "6a264e3d-a85a-4cf0-93f6-3678cd8e1c69",
+              "name": "name",
+              "value": "={{ $node[\"fix name\"].json[\"message\"][\"content\"][\"name\"] }}",
+              "type": "string"
+            },
+            {
+              "id": "1085d2ce-e02d-4835-b737-bf9c834b4e15",
+              "name": "surname",
+              "value": "={{ $node[\"fix name\"].json[\"message\"][\"content\"][\"surname\"] }}",
+              "type": "string"
+            },
+            {
+              "id": "7ac243ea-dd58-468b-951d-d14bf5a2aaf0",
+              "name": "name_valid",
+              "value": "={{ $node[\"fix name\"].json[\"message\"][\"content\"][\"success\"] }}",
+              "type": "boolean"
+            }
+          ]
+        },
+        "includeOtherFields": true,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        416,
+        912
+      ],
+      "id": "c97b8dd8-eff4-479c-8494-6962df074af1",
+      "name": "exit name"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Получить все данные из ноды по имени\nconst nodeData = $(\"loop name\").all();\n\n// Вернуть данные для следующей ноды\nreturn nodeData;"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        240,
+        912
+      ],
+      "id": "cc483610-a2ed-4387-baca-6a1a5bcddf7b",
+      "name": "return"
+    },
+    {
+      "parameters": {
+        "amount": 0.4
+      },
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        592,
+        912
+      ],
+      "id": "7a527a10-65a6-4de7-81c1-3e27b2912310",
+      "name": "Wait",
+      "webhookId": "3d601225-ae01-425a-9e0d-083840ce6237",
+      "disabled": true
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "f5922c60-863d-4482-b9fb-fee090f42dbf",
+              "leftValue": "={{ $json.name_valid }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        304,
+        688
+      ],
+      "id": "d8973914-b399-4d4e-b267-c5688706382c",
+      "name": "valid name"
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        96,
+        432
+      ],
+      "id": "9e3a641e-754c-4702-b9b0-9551aac45521",
+      "name": "Merge"
+    },
+    {
+      "parameters": {
+        "jsCode": "const { parsePhoneNumber } = require('libphonenumber-js');\n\nreturn $input.all().map(item => {\n  const result = { json: { ...item.json } }; // Копируем все данные\n  \n  try {\n    // === ОБРАБОТКА ТЕЛЕФОНА ===\n    let phone = String(item.json.phone || '');\n    \n    // Удаляем все символы кроме цифр\n    phone = phone.replace(/[^0-9]/g, '');\n    \n    // Если остались цифры, добавляем + в начало\n    if (phone) {\n      phone = '+' + phone;\n      \n      // Валидируем через libphonenumber\n      const parsedPhone = parsePhoneNumber(phone);\n      \n      if (parsedPhone?.isValid?.()) {\n        result.json.phone = parsedPhone.format('E.164');\n      } else {\n        result.json.phone = null;\n      }\n    } else {\n      result.json.phone = null;\n    }\n    \n  } catch {\n    result.json.phone = null;\n  }\n  \n  try {\n    // === ВАЛИДАЦИЯ EMAIL ===\n    const email = String(item.json.email || '').trim();\n    \n    // Простая регулярка для валидации email\n    const emailRegex = /^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/;\n    \n    if (email && emailRegex.test(email)) {\n      result.json.email = email.toLowerCase();\n    } else {\n      result.json.email = null;\n    }\n    \n  } catch {\n    result.json.email = null;\n  }\n  \n  return result;\n});"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        336,
+        432
+      ],
+      "id": "dbc9ad79-6a62-4750-a2c8-5dc484f6d3e3",
+      "name": "validate phone&email"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "8209b50a-8a84-4521-94c4-a9817996d8a3",
+              "leftValue": "={{ $json.phone }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty",
+                "singleValue": true
+              }
+            },
+            {
+              "id": "4e2fee6c-bec0-4c90-b665-63755f3effea",
+              "leftValue": "={{ $json.email }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty",
+                "singleValue": true
+              }
+            },
+            {
+              "id": "eb938580-c80d-4649-b109-7a8d9271b365",
+              "leftValue": "={{ $json.linkedin }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "or"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        592,
+        432
+      ],
+      "id": "fb0a95b3-71be-4fdd-bd8d-e1fde6d53948",
+      "name": "final valid"
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        1120,
+        1104
+      ],
+      "id": "fac1af08-22ee-460e-b674-1be9eff92b8d",
+      "name": "Merge1"
+    },
+    {
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "value": "VfHGoP98vEhzAJ1G",
+          "mode": "list",
+          "cachedResultUrl": "/workflow/VfHGoP98vEhzAJ1G",
+          "cachedResultName": "Batch nornalization"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {},
+          "matchingColumns": [],
+          "schema": [],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": true
+        },
+        "options": {
+          "waitForSubWorkflow": false
+        }
+      },
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.3,
+      "position": [
+        1312,
+        1104
+      ],
+      "id": "57455555-acf4-49fa-8aee-f01939c31e7a",
+      "name": "restart",
+      "executeOnce": true
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        -1968,
+        448
+      ],
+      "id": "38dcbdf3-b5b8-49e8-97de-acb71afe2db3",
+      "name": "When clicking ‘Execute workflow’"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "1db562fc-1662-456a-87a2-834727b5e885",
+              "leftValue": "={{ $json.name.trim().split(' ').length === 1 && $json.name.trim().length > 3 && /^[a-zA-Zа-яА-ЯёЁ]+$/.test($json.name.trim()) && ($json.surname.trim() === '' || ($json.surname.trim().split(' ').length === 1 && $json.surname.trim().length > 3 && /^[a-zA-Zа-яА-ЯёЁ]+$/.test($json.surname.trim()))) }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -688,
+        720
+      ],
+      "id": "c81a8d87-8c83-4a60-ad7f-2a02a6bb677f",
+      "name": "skip valid name"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "7ac243ea-dd58-468b-951d-d14bf5a2aaf0",
+              "name": "name_valid",
+              "value": true,
+              "type": "boolean"
+            }
+          ]
+        },
+        "includeOtherFields": true,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -480,
+        672
+      ],
+      "id": "8e53aca4-a83e-43f3-9eaf-236b46c2d078",
+      "name": "exit skip name"
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        112,
+        688
+      ],
+      "id": "12559726-6702-429a-860b-9c0beb466bff",
+      "name": "Merge2"
+    },
+    {
+      "parameters": {
+        "collection": "contacts",
+        "returnAll": false,
+        "limit": 100,
+        "splitIntoItems": true,
+        "additionalFields": {
+          "filter": "{\n        \"_and\": [\n            {\n                \"fix\": {\n                    \"_neq\": true\n                }\n            }\n        ]\n    }"
+        }
+      },
+      "type": "@stumpworks/n8n-nodes-directus.directus",
+      "typeVersion": 1,
+      "position": [
+        -1008,
+        448
+      ],
+      "id": "e95eec82-4c9d-4df2-b845-3762a6d87b62",
+      "name": "get non fixed",
+      "credentials": {
+        "directusApi": {
+          "id": "kIJhRDZv2PR5UO1f",
+          "name": "Directus"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "ea08abb4-263d-4644-960f-deebb69b6fa8",
+              "name": "id",
+              "value": "={{ $json.id }}",
+              "type": "number"
+            },
+            {
+              "id": "d7fd40ab-6186-40db-95e3-d73aa73c55e6",
+              "name": "fix",
+              "value": true,
+              "type": "boolean"
+            },
+            {
+              "id": "3d0b7a68-fa76-4c30-b3d3-d1c6db22a91e",
+              "name": "name",
+              "value": "={{ $json.name || null }}",
+              "type": "string"
+            },
+            {
+              "id": "a6c97e00-f9fd-4be3-8325-355e90adc4db",
+              "name": "surname",
+              "value": "={{ $json.surname || null }}",
+              "type": "string"
+            },
+            {
+              "id": "78c6c180-7080-43df-811d-e04d9e3ed05f",
+              "name": "phone",
+              "value": "={{ $json.phone || null }}",
+              "type": "string"
+            },
+            {
+              "id": "ba1ac589-6384-441c-842b-d422d8816680",
+              "name": "email",
+              "value": "={{ $json.email || null }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        784,
+        432
+      ],
+      "id": "3b809144-48dd-43a5-9e60-425ab8bf0448",
+      "name": "prepare batch"
+    },
+    {
+      "parameters": {
+        "aggregate": "aggregateAllItemData",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.aggregate",
+      "typeVersion": 1,
+      "position": [
+        1008,
+        432
+      ],
+      "id": "22ad21bf-452c-4306-bfa0-fb57563e3f8a",
+      "name": "Aggregate"
+    },
+    {
+      "parameters": {
+        "method": "PATCH",
+        "url": "={{ $vars.directus_url }}items/contacts",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "directusApi",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ $json.data }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        1232,
+        432
+      ],
+      "id": "ece46bc7-9f7e-497d-805d-5053a3f7eda9",
+      "name": "update data",
+      "credentials": {
+        "directusApi": {
+          "id": "kIJhRDZv2PR5UO1f",
+          "name": "Directus"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "aggregate": "aggregateAllItemData",
+        "include": "specifiedFields",
+        "fieldsToInclude": "id",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.aggregate",
+      "typeVersion": 1,
+      "position": [
+        -752,
+        1120
+      ],
+      "id": "80406b45-69e1-400b-b73f-261664ae1655",
+      "name": "Aggregate1"
+    },
+    {
+      "parameters": {
+        "operation": "deleteMultiple",
+        "collection": "contacts",
+        "data": "={{ $json.data.map(item => item.id) }}"
+      },
+      "type": "@stumpworks/n8n-nodes-directus.directus",
+      "typeVersion": 1,
+      "position": [
+        -528,
+        1120
+      ],
+      "id": "827838e2-d980-441e-a0fc-cd951d337fff",
+      "name": "delete",
+      "credentials": {
+        "directusApi": {
+          "id": "kIJhRDZv2PR5UO1f",
+          "name": "Directus"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "start": {
+      "main": [
+        [
+          {
+            "node": "get non fixed",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "fix name": {
+      "main": [
+        [
+          {
+            "node": "return",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Company Group": {
+      "main": [
+        [
+          {
+            "node": "dedublicate",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "first clear": {
+      "main": [
+        [
+          {
+            "node": "get non fixed",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Switch": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "skip valid name",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Aggregate1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "dedublicate": {
+      "main": [
+        [
+          {
+            "node": "first clear",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "loop name": {
+      "main": [
+        [
+          {
+            "node": "Merge2",
+            "type": "main",
+            "index": 1
+          }
+        ],
+        [
+          {
+            "node": "fix name",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "return": {
+      "main": [
+        [
+          {
+            "node": "exit name",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "exit name": {
+      "main": [
+        [
+          {
+            "node": "Wait",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait": {
+      "main": [
+        [
+          {
+            "node": "loop name",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "valid name": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 1
+          }
+        ],
+        [
+          {
+            "node": "Aggregate1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge": {
+      "main": [
+        [
+          {
+            "node": "validate phone&email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "validate phone&email": {
+      "main": [
+        [
+          {
+            "node": "final valid",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "final valid": {
+      "main": [
+        [
+          {
+            "node": "prepare batch",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Aggregate1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge1": {
+      "main": [
+        [
+          {
+            "node": "restart",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "When clicking ‘Execute workflow’": {
+      "main": [
+        [
+          {
+            "node": "Company Group",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "skip valid name": {
+      "main": [
+        [
+          {
+            "node": "exit skip name",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "loop name",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "exit skip name": {
+      "main": [
+        [
+          {
+            "node": "Merge2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge2": {
+      "main": [
+        [
+          {
+            "node": "valid name",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "get non fixed": {
+      "main": [
+        [
+          {
+            "node": "Switch",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "prepare batch": {
+      "main": [
+        [
+          {
+            "node": "Aggregate",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Aggregate": {
+      "main": [
+        [
+          {
+            "node": "update data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "update data": {
+      "main": [
+        [
+          {
+            "node": "Merge1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Aggregate1": {
+      "main": [
+        [
+          {
+            "node": "delete",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "delete": {
+      "main": [
+        [
+          {
+            "node": "Merge1",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "callerPolicy": "workflowsFromSameOwner",
+    "errorWorkflow": "uG4YJnnTISaYTXXk"
+  },
+  "triggerCount": 0,
+  "versionId": "04bbf738-df1f-4c5c-8b1c-d7bf40e4bbfd",
+  "owner": {
+    "type": "personal",
+    "projectId": "I8ZweZXokOc0zbYb",
+    "projectName": "BSU Agency <info@brilliantseedup.com>",
+    "personalEmail": "info@brilliantseedup.com"
+  },
+  "parentFolderId": "bF4ciYwr94o73FSy",
+  "isArchived": false
+}

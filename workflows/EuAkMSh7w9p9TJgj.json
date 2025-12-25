@@ -1,0 +1,189 @@
+{
+  "id": "EuAkMSh7w9p9TJgj",
+  "name": "Error campagin",
+  "nodes": [
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.errorTrigger",
+      "typeVersion": 1,
+      "position": [
+        -368,
+        -48
+      ],
+      "id": "1afbc31b-d76e-422a-8098-7be9a55084db",
+      "name": "Error Trigger"
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $vars.warngroup }}",
+        "text": "=Error in the campagin system.\n\nWorkflow name: {{ $('Error Trigger').item.json.workflow.name }}\n\nWorkflow ID: {{ $('Error Trigger').item.json.workflow.id }}\n\nError message: {{ $('Error Trigger').item.json.execution.error.message.replace(/[\\\\`*_{}[\\]()#+\\-.!|<>~]/g, '').substring(0, 400) }}\n\nURL: {{ $('Error Trigger').item.json.execution.url }}\n\n@p0ebounty",
+        "additionalFields": {
+          "appendAttribution": false,
+          "message_thread_id": 2
+        }
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        -144,
+        -144
+      ],
+      "id": "a5f435c3-e1d4-4cd7-8723-a4b22c7e0d3b",
+      "name": "Sent error",
+      "webhookId": "48199868-b398-4b55-87df-ffaa5f874f35",
+      "credentials": {
+        "telegramApi": {
+          "id": "yv48JNV4VmuIREaW",
+          "name": "Citycompany"
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.workflow.id }}",
+                    "rightValue": "75EClO6NkeaqDfAl",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "id": "a6dd8835-403d-46de-9ad6-f808b71d4183"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "email"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.3,
+      "position": [
+        -144,
+        48
+      ],
+      "id": "785bb5a0-7846-4412-92a3-22b8df44ee63",
+      "name": "switch"
+    },
+    {
+      "parameters": {
+        "operation": "deactivate",
+        "workflowId": {
+          "__rl": true,
+          "value": "75EClO6NkeaqDfAl",
+          "mode": "list",
+          "cachedResultName": "Generate email (#75EClO6NkeaqDfAl)"
+        },
+        "requestOptions": {}
+      },
+      "type": "n8n-nodes-base.n8n",
+      "typeVersion": 1,
+      "position": [
+        80,
+        48
+      ],
+      "id": "2ccf32c2-a90c-4d3a-8fcd-71dc735eccbb",
+      "name": "dis genera email",
+      "credentials": {
+        "n8nApi": {
+          "id": "BnnXOoXTFn01aYiA",
+          "name": "local"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "deactivate",
+        "workflowId": {
+          "__rl": true,
+          "value": "60qVnVOE737qvTPl",
+          "mode": "list",
+          "cachedResultName": "New Tasks (#60qVnVOE737qvTPl)"
+        },
+        "requestOptions": {}
+      },
+      "type": "n8n-nodes-base.n8n",
+      "typeVersion": 1,
+      "position": [
+        304,
+        48
+      ],
+      "id": "3d84fb74-3e37-4271-a2de-149b886a9737",
+      "name": "dis new tasks",
+      "credentials": {
+        "n8nApi": {
+          "id": "BnnXOoXTFn01aYiA",
+          "name": "local"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Error Trigger": {
+      "main": [
+        [
+          {
+            "node": "Sent error",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "switch",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "switch": {
+      "main": [
+        [
+          {
+            "node": "dis genera email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "dis genera email": {
+      "main": [
+        [
+          {
+            "node": "dis new tasks",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "triggerCount": 0,
+  "versionId": "60d50ad6-4921-44e0-8cf1-700c171d412e",
+  "owner": {
+    "type": "personal",
+    "projectId": "I8ZweZXokOc0zbYb",
+    "projectName": "BSU Agency <info@brilliantseedup.com>",
+    "personalEmail": "info@brilliantseedup.com"
+  },
+  "parentFolderId": "HWn7vIRYn4vaHZR5",
+  "isArchived": false
+}
